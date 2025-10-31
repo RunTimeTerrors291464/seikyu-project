@@ -105,8 +105,12 @@ function GroupSection({ group, collapsed }: { group: Group; collapsed: boolean }
     [group.items, pathname]
   );
   useEffect(() => {
-    if (childActive && !open) setOpen(true);
-  }, [childActive, open, setOpen]);
+    let firstOpen = true;
+    if (firstOpen && childActive && !open) {
+      setOpen(true);
+      firstOpen = false;
+    }
+  }, []);
 
   return (
     <div>
