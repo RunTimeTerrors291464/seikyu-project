@@ -2,6 +2,8 @@ import KpiCard from "./components/KpiCard";
 import PageHeader from "@/components/layout/PageHeader";
 import DatePeriodControls from "@/components/dashboard/DatePeriodControls";
 import ChartCard from "./components/ChartCard";
+import BestSellingItemsCard from "./components/BestSellingItemsCard";
+import SystemEventLogCard from "./components/SystemEventLogCard";
 import { addDays, subDays } from "date-fns";
 
 export default function DashboardPage() {
@@ -36,25 +38,17 @@ export default function DashboardPage() {
         />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ChartCard
-            data={Array.from({ length: 12 }).map((_, i) => ({
-              x: addDays(subDays(new Date(), 11), i),
-              y: 80000 + Math.round(40000 * Math.sin((i / 11) * Math.PI * 1.2) + 15000 * Math.random()),
-            }))}
-          />
-        </div>
-        <div className="rounded-lg border bg-white p-4 shadow-sm dark:bg-neutral-900">
-          <div className="mb-3 text-sm font-medium">Best Selling Items</div>
-          <div className="h-48 w-full rounded-md bg-neutral-50 dark:bg-neutral-800" />
-        </div>
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard
+          data={Array.from({ length: 12 }).map((_, i) => ({
+            x: addDays(subDays(new Date(), 11), i),
+            y: 80000 + Math.round(40000 * Math.sin((i / 11) * Math.PI * 1.2) + 15000 * Math.random()),
+          }))}
+        />
+        <BestSellingItemsCard />
       </section>
 
-      <section className="rounded-lg border bg-white p-4 shadow-sm dark:bg-neutral-900">
-        <div className="mb-3 text-sm font-medium">System Event Log</div>
-        <div className="h-40 w-full rounded-md bg-neutral-50 dark:bg-neutral-800" />
-      </section>
+      <SystemEventLogCard />
     </div>
   );
 }

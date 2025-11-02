@@ -84,7 +84,7 @@ export default function ChartCard({ title = "Charts", data }: Props) {
               aria-label="About chart"
               className="text-neutral-300 transition-colors hover:text-neutral-500 focus:outline-none"
             >
-              <Info className="h-3.5 w-3.5" />
+              <Info className="h-4 w-4" />
             </button>
           </Tooltip>
         </div>
