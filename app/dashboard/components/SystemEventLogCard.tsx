@@ -92,7 +92,7 @@ export default function SystemEventLogCard() {
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="inline-flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">
-            <Images className="h-4 w-4 text-neutral-600 dark:text-neutral-300" strokeWidth={2.5} />
+            <Images className="h-4 w-4 text-neutral-600 dark:text-neutral-300" strokeWidth={2} />
           <span>System Event Log</span>
         </div>
         <div className="flex items-center gap-2">
