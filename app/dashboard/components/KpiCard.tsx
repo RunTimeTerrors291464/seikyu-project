@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { DollarSign, FileText, Info, Package, ShoppingCart } from "lucide-react";
 import Tooltip from "@/components/ui/Tooltip";
+import { useDashboardDate } from "@/components/dashboard/DashboardDateContext";
 
 type Delta = { value: number; type: "increase" | "decrease" | "neutral" };
 
@@ -17,6 +18,7 @@ export default function KpiCard({
   delta?: Delta;
   helpText?: string;
 }) {
+  const { preset } = useDashboardDate();
   const deltaTone =
     delta?.type === "increase"
       ? { text: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" }
@@ -61,7 +63,7 @@ export default function KpiCard({
       {/* Value + delta */}
       <div className="mt-2 flex items-center justify-between">
         <div className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</div>
-        {delta && (
+        {delta && preset !== "custom" && (
           <div className={clsx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", deltaTone.text, deltaTone.bg)}>
             {sign}
             {delta.value}%

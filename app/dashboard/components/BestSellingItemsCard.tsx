@@ -1,10 +1,9 @@
 "use client";
 import { Trophy, Filter, Barcode, Package, Tag, ExternalLink, Info } from "lucide-react";
-import DatePeriodControls, { Period } from "@/components/dashboard/DatePeriodControls";
 import DataTable, { Column } from "@/components/ui/DataTable";
-import { useState } from "react";
 import IconCircleButton from "@/components/ui/IconCircleButton";
 import Tooltip from "@/components/ui/Tooltip";
+import { useDashboardDate } from "@/components/dashboard/DashboardDateContext";
 
 export type BestSellingItem = {
   sku: string;
@@ -18,9 +17,7 @@ function formatNumber(n: number) {
 }
 
 export default function BestSellingItemsCard() {
-  // Controls
-  const today = new Date();
-  const [controls, setControls] = useState({ startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7), endDate: today, period: "Weekly" as Period });
+  const { preset } = useDashboardDate();
 
   // Mock data
   const rows: BestSellingItem[] = [
@@ -58,7 +55,7 @@ export default function BestSellingItemsCard() {
       accessor: (r) => (
         <div className="flex w-full items-center justify-between gap-3">
           <span className="tabular-nums">{formatNumber(r.units)}</span>
-          {typeof r.deltaPct === "number" && (
+          {preset !== "custom" && typeof r.deltaPct === "number" && (
             <span
               className={
                 "inline-flex min-w-[62px] items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium " +
@@ -92,7 +89,6 @@ export default function BestSellingItemsCard() {
             <Filter className="h-3.5 w-3.5 text-neutral-500" />
             <span>Filter</span>
           </button>
-          <DatePeriodControls value={controls} onChange={setControls} />
           <IconCircleButton aria-label="Open detailed view">
             <ExternalLink className="h-4 w-4" />
           </IconCircleButton>

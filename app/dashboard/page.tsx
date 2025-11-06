@@ -1,16 +1,18 @@
 import KpiCard from "./components/KpiCard";
 import PageHeader from "@/components/layout/PageHeader";
-import DatePeriodControls from "@/components/dashboard/DatePeriodControls";
 import ChartCard from "./components/ChartCard";
 import BestSellingItemsCard from "./components/BestSellingItemsCard";
 import SystemEventLogCard from "./components/SystemEventLogCard";
 import { addDays, subDays } from "date-fns";
+import MasterDateControls from "@/components/dashboard/MasterDateControls";
+import { DashboardDateProvider } from "@/components/dashboard/DashboardDateContext";
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      {/* Top header row to match design: title left, filters right */}
-      <PageHeader title="Overview" actions={<DatePeriodControls />} />
+    <DashboardDateProvider>
+      <div className="space-y-6">
+        {/* Top header row to match design: title left, filters right */}
+        <PageHeader title="Overview" actions={<MasterDateControls />} />
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Total Revenue"
@@ -49,6 +51,7 @@ export default function DashboardPage() {
       </section>
 
       <SystemEventLogCard />
-    </div>
+      </div>
+    </DashboardDateProvider>
   );
 }

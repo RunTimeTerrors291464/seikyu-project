@@ -1,11 +1,13 @@
 "use client";
 import { LineChart, ChevronDown, Info } from "lucide-react";
 import AreaLineChart, { Point } from "@/components/charts/AreaLineChart";
-import DatePeriodControls, { Period } from "@/components/dashboard/DatePeriodControls";
+import { Period } from "@/components/dashboard/DatePeriodControls";
 import { useRef, useState } from "react";
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
 import Tooltip from "@/components/ui/Tooltip";
-import { addDays, addMonths, addWeeks, isBefore } from "date-fns";
+import { addDays, addMonths, addWeeks, isBefore, differenceInDays, startOfDay } from "date-fns";
+import { useDashboardDate } from "@/components/dashboard/DashboardDateContext";
+import { PeriodSelect } from "@/components/ui/PeriodSelect";
 
 type Props = {
   title?: string;
@@ -20,18 +22,23 @@ export default function ChartCard({ title = "Charts", data }: Props) {
   const [metric, setMetric] = useState<Metric>("Revenue");
   const menuRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(menuRef, () => setOpenMenu(false));
-
-  // Controlled date/period for the chart
-  const today = new Date();
-  const defaultStart = addDays(today, -30);
-  const [startDate, setStartDate] = useState<Date>(defaultStart);
-  const [endDate, setEndDate] = useState<Date>(today);
+  // Use master date range from context
+  const { startDate, endDate } = useDashboardDate();
   const [period, setPeriod] = useState<Period>("Weekly");
 
-  function handleControlsChange(v: { startDate: Date; endDate: Date; period: Period }) {
-    setStartDate(v.startDate);
-    setEndDate(v.endDate);
-    setPeriod(v.period);
+  // Allowed granularity options based on selected range (simple rules)
+  const allowedOptions = (() => {
+    const spanDays = Math.max(1, differenceInDays(endDate, startDate));
+    if (spanDays <= 45) return ["Daily", "Weekly", "Monthly"] as Period[];
+    if (spanDays <= 120) return ["Weekly", "Monthly", "Quarterly"] as Period[];
+    if (spanDays <= 540) return ["Monthly", "Quarterly", "Yearly"] as Period[];
+    return ["Quarterly", "Yearly"] as Period[];
+  })();
+  // Ensure period is valid when range changes
+  if (!allowedOptions.includes(period)) {
+    // pick the closest sensible default
+    const next = allowedOptions[0];
+    if (period !== next) setPeriod(next);
   }
 
   const series: Point[] = generateMockSeries({ startDate, endDate, period, metric });
@@ -77,7 +84,7 @@ export default function ChartCard({ title = "Charts", data }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <DatePeriodControls value={{ startDate, endDate, period }} onChange={handleControlsChange} />
+          <PeriodSelect value={period} options={allowedOptions} onChange={(v) => setPeriod(v as Period)} ariaLabel="Change chart granularity" />
           <Tooltip content={`${metric} over the selected date range. Hover on the chart to inspect values.`}>
             <button
               type="button"
@@ -109,6 +116,8 @@ function generateMockSeries({
 }): Point[] {
   const pts: Point[] = [];
   let cursor = new Date(startDate);
+  // Clamp end date for daily so we never generate a point beyond today
+  const normalizedEnd = period === "Daily" ? startOfDay(endDate) : endDate;
   const step = (d: Date) => {
     if (period === "Daily") return addDays(d, 1);
     if (period === "Weekly") return addWeeks(d, 1);
@@ -117,7 +126,7 @@ function generateMockSeries({
     return addMonths(d, 12);
   };
   let i = 0;
-  while (isBefore(cursor, addDays(endDate, 1))) {
+  while (isBefore(cursor, addDays(normalizedEnd, 1))) {
     const base = metricBase(metric);
     const wave = Math.sin(i / 3) * base * 0.08;
     const noise = (Math.random() - 0.5) * base * 0.04;

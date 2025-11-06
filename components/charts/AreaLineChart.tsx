@@ -64,6 +64,54 @@ export default function AreaLineChart({ data, height = 220, period = "Daily" }: 
   const activePoint = active != null ? points[active] : null;
   const activeData = active != null ? data[active] : null;
 
+  // Determine which indices to show as axis ticks to avoid overcrowding
+  function maxTicksForPeriod(p: Props["period"]) {
+    switch (p) {
+      case "Daily":
+        return 14; // 2 weeks
+      case "Weekly":
+        return 13; // ~3 months
+      case "Monthly":
+        return 12; // 1 year
+      case "Yearly":
+        return 5; // 5 years
+      case "Quarterly":
+      default:
+        return 8; // reasonable default when quarterly
+    }
+  }
+
+  // Minimal pixel gap between labels based on period (longer strings need more room)
+  function minLabelGapPx(p: Props["period"]) {
+    switch (p) {
+      case "Weekly":
+        return 120; // long label like "Oct 27 - Nov 2"
+      case "Monthly":
+        return 60; // "Sep", sometimes year below
+      case "Quarterly":
+        return 56; // "Q1"
+      case "Yearly":
+        return 48; // "2025"
+      case "Daily":
+      default:
+        return 40; // "Mon 7"
+    }
+  }
+
+  function computeTickIndices(len: number, maxTicks: number) {
+    if (len <= 0) return [] as number[];
+    if (len <= maxTicks) return Array.from({ length: len }, (_, i) => i);
+    const step = Math.max(1, Math.ceil((len - 1) / Math.max(1, maxTicks - 1)));
+    const idx: number[] = [];
+    for (let i = 0; i < len - 1; i += step) idx.push(i);
+    if (idx[idx.length - 1] !== len - 1) idx.push(len - 1); // ensure last tick
+    return idx;
+  }
+
+  const desiredTicksByWidth = Math.max(2, Math.floor(innerW / minLabelGapPx(period)));
+  const desiredTicks = Math.min(maxTicksForPeriod(period), desiredTicksByWidth);
+  const tickIndices = computeTickIndices(data.length, desiredTicks);
+
   return (
     <div ref={ref} className="relative w-full" style={{ height }}>
       <svg
@@ -79,18 +127,20 @@ export default function AreaLineChart({ data, height = 220, period = "Daily" }: 
           </linearGradient>
         </defs>
 
-        {/* Vertical grid and day labels */}
-        {data.map((d, i) => {
+        {/* Vertical grid and time labels (thinned according to period) */}
+        {tickIndices.map((i) => {
+          const d = data[i];
           const x = padding.left + i * xStep;
-          const isLast = i === data.length - 1;
           let topLabel = "";
           let bottomLabel = "";
+          const today = new Date();
           if (period === "Daily") {
             topLabel = format(d.x, "EEE");
             bottomLabel = format(d.x, "d");
           } else if (period === "Weekly") {
             const s = startOfWeek(d.x, { weekStartsOn: 1 });
-            const e = endOfWeek(d.x, { weekStartsOn: 1 });
+            let e = endOfWeek(d.x, { weekStartsOn: 1 });
+            if (e > today) e = today; // clamp last week to today
             topLabel = `${format(s, "MMM d")} - ${format(e, "MMM d")}`;
             const prev = i > 0 ? startOfWeek(data[i - 1].x, { weekStartsOn: 1 }) : null;
             const showYear = !prev || prev.getFullYear() !== s.getFullYear();
@@ -140,21 +190,22 @@ export default function AreaLineChart({ data, height = 220, period = "Daily" }: 
                   {bottomLabel}
                 </text>
               ) : null}
-              {/* Right dashed continuation from last active */}
-              {activePoint && active === i && !isLast && (
-                <line
-                  x1={activePoint.x}
-                  x2={padding.left + innerW}
-                  y1={activePoint.y}
-                  y2={activePoint.y}
-                  stroke="#3b82f6"
-                  strokeDasharray="6 6"
-                  opacity={0.7}
-                />
-              )}
             </g>
           );
         })}
+
+        {/* Right dashed continuation from last active */}
+        {activePoint && (
+          <line
+            x1={activePoint.x}
+            x2={padding.left + innerW}
+            y1={activePoint.y}
+            y2={activePoint.y}
+            stroke="#3b82f6"
+            strokeDasharray="6 6"
+            opacity={0.7}
+          />
+        )}
 
         {/* Area */}
         <path d={areaPath} fill="url(#areaFill)" />
