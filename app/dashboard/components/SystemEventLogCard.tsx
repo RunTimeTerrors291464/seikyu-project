@@ -120,9 +120,13 @@ export default function SystemEventLogCard() {
             <ExternalLink className="h-4 w-4" />
           </IconCircleButton>
           <Tooltip content="Recent activity & how to read these logs">
-            <IconCircleButton aria-label="About logs">
+            <button
+              type="button"
+              aria-label="About chart"
+              className="text-neutral-300 transition-colors hover:text-neutral-500 focus:outline-none"
+            >
               <Info className="h-4 w-4" />
-            </IconCircleButton>
+            </button>
           </Tooltip>
         </div>
       </div>
