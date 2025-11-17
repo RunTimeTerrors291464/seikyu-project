@@ -1,7 +1,8 @@
 "use client";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import IconCircleButton from "@/components/ui/IconCircleButton";
-import { Braces, ChevronLeft, ChevronRight, Clock, Filter, GitCommit, Hash, MessageSquare, Receipt, RotateCcw, UserIcon } from "lucide-react";
+import RuleInput from "@/components/ui/RuleInput";
+import { Braces, ChevronLeft, ChevronRight, Clock, Filter, GitCommit, Hash, MessageSquare, Receipt, RotateCcw, User, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -284,9 +285,14 @@ export default function InvoicesListPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold">Sales Invoices</h1>
-          <input
-            placeholder="Search by Invoice Number, Customer…"
-            className="h-8 w-80 rounded-md border bg-white px-3 text-xs outline-none focus:ring-2 focus:ring-neutral-200 dark:bg-neutral-900"
+          <RuleInput
+            options={[
+              { label: "Invoice Number", icon: <Hash className="h-3 w-3" /> },
+              { label: "Customer Name", icon: <User className="h-3 w-3" /> },
+              { label: "Status", icon: <Braces className="h-3 w-3" /> },
+            ]}
+            placeholder="Type to search…"
+            onChange={({ rule, value }) => console.log(rule, value)}
           />
         </div>
 
