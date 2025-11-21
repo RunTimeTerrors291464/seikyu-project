@@ -245,24 +245,22 @@ export default function InvoicesListPage() {
     page * rowsPerPage
   );
 
-  const options = [10, 20, 50, 100, 500];
+  const options = [10, 20, 50, 100];
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">Sales Invoices</h1>
-          <RuleInput
-            options={[
-              { label: "Invoice Number", icon: <Hash className="h-3 w-3" /> },
-              { label: "Customer Name", icon: <User className="h-3 w-3" /> },
-              { label: "Status", icon: <Braces className="h-3 w-3" /> },
-            ]}
-            placeholder="Type to search…"
-            onChange={({ rule, value }) => console.log(rule, value)}
-          />
-        </div>
+        <h1 className="text-xl font-semibold">Sales Invoices</h1>
+        <RuleInput
+          options={[
+            { label: "Invoice No.", icon: <Hash className="h-3 w-3" /> },
+            { label: "Created By", icon: <User className="h-3 w-3" /> },
+            { label: "Status", icon: <Braces className="h-3 w-3" /> },
+          ]}
+          placeholder="Type to search…"
+          onChange={({ rule, value }) => console.log(rule, value)}
+        />
 
         <div className="flex items-center gap-2">
           <button
@@ -287,7 +285,7 @@ export default function InvoicesListPage() {
       </div>
 
       {/* DataTable */}
-      <div className="rounded-lg border bg-white shadow-sm dark:bg-neutral-900">
+      <div className="flex grow rounded-lg border bg-white shadow-sm dark:bg-neutral-900">
         <DataTable<SalesInvoice>
           columns={columns}
           data={pageRows}
