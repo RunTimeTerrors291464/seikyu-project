@@ -10,7 +10,7 @@ import { DashboardDateProvider } from "@/components/dashboard/DashboardDateConte
 export default function DashboardPage() {
   return (
     <DashboardDateProvider>
-      <div className="space-y-6">
+      <div className="flex grow flex-col space-y-6">
         {/* Top header row to match design: title left, filters right */}
         <PageHeader title="Overview" actions={<MasterDateControls />} />
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -19,3 +19,12 @@ html, body, #__next {
 body {
   @apply bg-[rgb(var(--bg))] text-[rgb(var(--fg))];
 }
+
+@layer utilities {
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: stable;
+  }
+  .scrollbar-gutter-both {
+    scrollbar-gutter: stable both-edges;
+  }
+}

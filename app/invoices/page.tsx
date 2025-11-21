@@ -248,7 +248,7 @@ export default function InvoicesListPage() {
   const options = [10, 20, 50, 100];
 
   return (
-    <div className="space-y-4">
+    <div className="flex grow flex-col space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Sales Invoices</h1>
