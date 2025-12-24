@@ -49,8 +49,11 @@ export default function DashboardPage() {
         />
         <BestSellingItemsCard />
       </section>
-
-      <SystemEventLogCard />
+      
+      {/* Because AppShell (the layout component) has the min-h-0 attribute, padding bottom in scrolling pages like dashboard page is disabled. Therefore, we add padding bottom here for spacing */}
+      <div className="pb-6"> {/* Padding bottom for spacing */}
+        <SystemEventLogCard />
+      </div>
       </div>
     </DashboardDateProvider>
   );

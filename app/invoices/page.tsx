@@ -2,6 +2,7 @@
 import DataTable, { Column } from "@/components/ui/DataTable";
 import IconCircleButton from "@/components/ui/IconCircleButton";
 import RuleInput from "@/components/ui/RuleInput";
+import AddInvoiceModal from "@/components/invoices/AddInvoiceModal";
 import { Braces, ChevronLeft, ChevronRight, Clock, Filter, GitCommit, Hash, MessageSquare, Receipt, RotateCcw, User, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -236,6 +237,9 @@ export default function InvoicesListPage() {
   // Pagination state
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // Modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const totalPages = Math.ceil(rows.length / rowsPerPage);
 
@@ -248,7 +252,7 @@ export default function InvoicesListPage() {
   const options = [10, 20, 50, 100];
 
   return (
-    <div className="flex grow flex-col space-y-6">
+    <div className="flex min-h-0 grow flex-col space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Sales Invoices</h1>
@@ -275,21 +279,33 @@ export default function InvoicesListPage() {
             <RotateCcw className="h-4 w-4" />
           </IconCircleButton>
 
-          <Link
-            href="/invoices/new"
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
             className="rounded-md bg-neutral-900 px-3 py-2 text-xs text-white dark:bg-white dark:text-neutral-900"
           >
             + Add Sales Invoice
-          </Link>
+          </button>
         </div>
       </div>
 
+      {/* Add Invoice Modal */}
+      <AddInvoiceModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={(data) => {
+          console.log("Invoice saved:", data);
+          // TODO: Handle save logic
+        }}
+      />
+
       {/* DataTable */}
-      <div className="flex grow rounded-lg border bg-white shadow-sm dark:bg-neutral-900">
+      <div className="min-h-0 grow rounded-lg border bg-white shadow-sm dark:bg-neutral-900">
         <DataTable<SalesInvoice>
           columns={columns}
           data={pageRows}
           getRowId={(r) => r.id}
+          maxHeight="fill"
         />
       </div>
 

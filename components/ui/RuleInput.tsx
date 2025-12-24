@@ -21,14 +21,21 @@ type RuleInputProps = {
 export default function RuleInput({
   options,
   value = "",
-  rule = options[0]?.label || "", // Default to first option if not provided
+  rule,
   onChange,
   placeholder = "Enter value…",
 }: RuleInputProps) {
-  // State
+  // State - use empty string initially to avoid hydration mismatch
   const [open, setOpen] = useState(false);         // Dropdown open/close
-  const [selectedRule, setSelectedRule] = useState(rule); // Currently selected rule
+  const [selectedRule, setSelectedRule] = useState(""); // Currently selected rule
   const [inputValue, setInputValue] = useState(value);    // Input text value
+  const [mounted, setMounted] = useState(false);  // Track if component has mounted
+
+  // Initialize selectedRule after mount to avoid hydration mismatch
+  useEffect(() => {
+    setSelectedRule(rule || options[0]?.label || "");
+    setMounted(true);
+  }, [rule, options]);
 
   const containerRef = useRef<HTMLDivElement>(null);      // Ref to detect clicks outside
 
@@ -69,8 +76,8 @@ export default function RuleInput({
                 className="inline-flex items-center gap-2 px-2.5 py-1.5 text-left text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
             >
                 {/* Show icon of selected rule if available */}
-                {options.find(o => o.label === selectedRule)?.icon}
-                <span>{selectedRule}</span>
+                {mounted && options.find(o => o.label === selectedRule)?.icon}
+                <span>{mounted ? selectedRule : "\u00A0"}</span>
                 <ChevronDown className="h-3 w-3 text-neutral-500" />
             </button>
             

@@ -30,6 +30,10 @@ function TagPill({ label }: { label: string }) {
 }
 
 export default function SystemEventLogCard() {
+  // Mock data for demonstration
+  // In real implementation, data would be fetched from an API or state management store
+  // And the data will only limit to recent 10 events
+  // For more details, user needs to click the "detailed view" button (next to filter button)
   const rows: SystemEvent[] = [
     {
       id: "e3b4c0a1-9d2f-4a7b-9c87-1a2b3c4d5e6f",
@@ -110,23 +114,7 @@ export default function SystemEventLogCard() {
       userName: "System",
       tag: "Inventory",
       message: "Startup completed successfully.",
-    },
-    {
-      id: "b3472c8e-5fd8-43d7-92a1-11b22c33d44f",
-      timestamp: "2025-10-12 22:45:02",
-      source: "System",
-      userName: "Maria Gomez",
-      tag: "Inbound Invoice",
-      message: "Startup completed successfully.",
-    },
-    {
-      id: "b3472c8e-5fd8-43d7-92a1-11b22c33d44a",
-      timestamp: "2025-10-12 22:45:02",
-      source: "System",
-      userName: "David Nguyen",
-      tag: "Sales Invoice",
-      message: "Startup completed successfully.",
-    },
+    }
   ];
 
   const columns: Column<SystemEvent>[] = [

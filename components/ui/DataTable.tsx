@@ -21,6 +21,12 @@ export type DataTableProps<T> = {
   showIndex?: boolean;
   className?: string;
   emptyMessage?: string;
+  /** 
+   * Set a max height for the table container. When content overflows, scrollbar appears.
+   * Use CSS value like "400px", "50vh", or "100%" (requires parent height).
+   * Use "fill" to fill the remaining height of a flex parent.
+   */
+  maxHeight?: string | "fill";
 };
 
 export default function DataTable<T>({
@@ -30,80 +36,88 @@ export default function DataTable<T>({
   showIndex = false,
   className,
   emptyMessage = "No records",
+  maxHeight,
 }: DataTableProps<T>) {
+  const isFill = maxHeight === "fill";
+  
   return (
-    <div className={clsx("overflow-x-auto", className)}>
-      <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-neutral-200 dark:border-neutral-800">
-              {showIndex && (
-                <th className="w-10 py-2 pl-3 pr-2 text-left text-neutral-500">#</th>
-              )}
-              {columns.map((c, idx) => (
-                <th
-                  key={c.id ?? c.header ?? idx}
-                  className={clsx(
-                    "py-2 px-2 text-left font-medium text-neutral-600 dark:text-neutral-300",
-                    c.thClassName
-                  )}
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    {c.icon && <span className="text-neutral-400">{c.icon}</span>}
-                    <span>{c.header}</span>
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={(showIndex ? 1 : 0) + columns.length}
-                  className="py-6 text-center text-neutral-500"
-                >
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              data.map((row, rIdx) => {
-                const rid = getRowId ? getRowId(row, rIdx) : rIdx;
-                return (
-                  <tr
-                    key={rid}
-                    className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/60"
-                  >
-                    {showIndex && (
-                      <td className="w-10 py-2 pl-3 pr-2 text-neutral-600 dark:text-neutral-300">{rIdx + 1}</td>
-                    )}
-                    {columns.map((c, cIdx) => {
-                      const content = c.accessor
-                        ? c.accessor(row, rIdx)
-                        : c.field
-                        ? ((row as Record<string, unknown>)[String(c.field)] as React.ReactNode)
-                        : null;
-                      return (
-                        <td
-                          key={(c.id ?? c.header ?? cIdx) + "-" + cIdx}
-                          className={clsx(
-                            "py-2 px-2 align-middle text-neutral-700 dark:text-neutral-200",
-                            c.align === "right" && "text-right",
-                            c.align === "center" && "text-center",
-                            c.tdClassName
-                          )}
-                        >
-                          {content}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })
+    <div 
+      className={clsx(
+        "w-full overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800",
+        isFill && "h-full",
+        className
+      )}
+      style={maxHeight && !isFill ? { maxHeight } : undefined}
+    >
+      <table className="w-full border-collapse text-sm">
+        <thead className="sticky top-0 z-10 bg-white dark:bg-neutral-900">
+          <tr className="border-b border-neutral-200 dark:border-neutral-800">
+            {showIndex && (
+              <th className="w-10 py-2 pl-3 pr-2 text-left text-neutral-500">#</th>
             )}
-          </tbody>
-        </table>
-      </div>
+            {columns.map((c, idx) => (
+              <th
+                key={c.id ?? c.header ?? idx}
+                className={clsx(
+                  "py-2 px-2 text-left font-medium text-neutral-600 dark:text-neutral-300",
+                  c.thClassName
+                )}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  {c.icon && <span className="text-neutral-400">{c.icon}</span>}
+                  <span>{c.header}</span>
+                </span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.length === 0 ? (
+            <tr>
+              <td
+                colSpan={(showIndex ? 1 : 0) + columns.length}
+                className="py-6 text-center text-neutral-500"
+              >
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : (
+            data.map((row, rIdx) => {
+              const rid = getRowId ? getRowId(row, rIdx) : rIdx;
+              return (
+                <tr
+                  key={rid}
+                  className="h-10 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/60"
+                >
+                  {showIndex && (
+                    <td className="w-10 py-2 pl-3 pr-2 text-neutral-600 dark:text-neutral-300">{rIdx + 1}</td>
+                  )}
+                  {columns.map((c, cIdx) => {
+                    const content = c.accessor
+                      ? c.accessor(row, rIdx)
+                      : c.field
+                      ? ((row as Record<string, unknown>)[String(c.field)] as React.ReactNode)
+                      : null;
+                    return (
+                      <td
+                        key={(c.id ?? c.header ?? cIdx) + "-" + cIdx}
+                        className={clsx(
+                          "py-2 px-2 align-middle text-neutral-700 dark:text-neutral-200",
+                          c.align === "right" && "text-right",
+                          c.align === "center" && "text-center",
+                          c.tdClassName
+                        )}
+                      >
+                        {content}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
