@@ -3,7 +3,7 @@ import DataTable, { Column } from "@/components/ui/DataTable";
 import IconCircleButton from "@/components/ui/IconCircleButton";
 import RuleInput from "@/components/ui/RuleInput";
 import AddInvoiceModal from "@/components/invoices/AddInvoiceModal";
-import { Braces, ChevronLeft, ChevronRight, Clock, Filter, GitCommit, Hash, MessageSquare, Receipt, RotateCcw, User, UserIcon } from "lucide-react";
+import { Braces, ChevronLeft, ChevronRight, Clock, Filter, GitCommit, Hash, MessageSquare, Receipt, RotateCcw, SquareCheck, User, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -13,6 +13,7 @@ export type SalesInvoice = {
   createdBy: string;         // renamed from "create by"
   createdAt: string;         // ISO date, renamed from "create date"
   note?: string;             // optional
+  inputInRE: boolean;        // whether input in RE
 };
 
 function truncateUuid(id: string) {
@@ -44,6 +45,7 @@ const rows: SalesInvoice[] = [
     createdBy: "Alex Johnson",
     createdAt: "2025-11-10 09:15:20",
     note: "Paid via bank transfer.",
+    inputInRE: true,
   },
   {
     id: "25-00002",
@@ -51,12 +53,14 @@ const rows: SalesInvoice[] = [
     createdBy: "Sarah Kim",
     createdAt: "2025-11-11 14:02:10",
     note: "Awaiting confirmation.",
+    inputInRE: true,
   },
   {
     id: "25-00003",
     status: "Draft",
     createdBy: "David Nguyen",
     createdAt: "2025-11-12 16:40:00",
+    inputInRE: false,
   },
   {
     id: "25-00004",
@@ -64,6 +68,7 @@ const rows: SalesInvoice[] = [
     createdBy: "Maria Gomez",
     createdAt: "2025-11-12 18:20:55",
     note: "Customer cancelled order.",
+    inputInRE: false,
   },
   {
     id: "25-00005",
@@ -71,18 +76,21 @@ const rows: SalesInvoice[] = [
     createdBy: "Emily Carter",
     createdAt: "2025-11-13 08:12:40",
     note: "Customer requested revised quote.",
+    inputInRE: false,
   },
   {
     id: "25-00006",
     status: "Completed",
     createdBy: "Daniel Lee",
     createdAt: "2025-11-13 09:33:10",
+    inputInRE: true,
   },
   {
     id: "25-00007",
     status: "Draft",
     createdBy: "Michael Chen",
     createdAt: "2025-11-13 10:21:55",
+    inputInRE: false,
   },
   {
     id: "25-00008",
@@ -90,12 +98,14 @@ const rows: SalesInvoice[] = [
     createdBy: "Anna Smith",
     createdAt: "2025-11-13 11:04:23",
     note: "Incorrect customer information.",
+    inputInRE: false,
   },
   {
     id: "25-00009",
     status: "Pending",
     createdBy: "Jacob Wilson",
     createdAt: "2025-11-13 11:45:12",
+    inputInRE: false,
   },
   {
     id: "25-00010",
@@ -103,18 +113,21 @@ const rows: SalesInvoice[] = [
     createdBy: "Sophia Martinez",
     createdAt: "2025-11-13 12:10:40",
     note: "Paid via e-wallet.",
+    inputInRE: true,
   },
   {
     id: "25-00011",
     status: "Draft",
     createdBy: "Chris Adams",
     createdAt: "2025-11-13 12:58:22",
+    inputInRE: false,
   },
   {
     id: "25-00012",
     status: "Completed",
     createdBy: "Olivia Brown",
     createdAt: "2025-11-13 13:22:14",
+    inputInRE: true,
   },
   {
     id: "25-00013",
@@ -122,24 +135,28 @@ const rows: SalesInvoice[] = [
     createdBy: "Ryan Miller",
     createdAt: "2025-11-13 14:01:09",
     note: "Payment via COD.",
+    inputInRE: false,
   },
   {
     id: "25-00014",
     status: "Cancelled",
     createdBy: "Laura Davis",
     createdAt: "2025-11-13 14:40:33",
+    inputInRE: false,
   },
   {
     id: "25-00015",
     status: "Draft",
     createdBy: "Peter Johnson",
     createdAt: "2025-11-13 15:18:50",
+    inputInRE: false,
   },
   {
     id: "25-00016",
     status: "Completed",
     createdBy: "Emily Carter",
     createdAt: "2025-11-13 16:05:12",
+    inputInRE: true,
   },
   {
     id: "25-00017",
@@ -147,12 +164,14 @@ const rows: SalesInvoice[] = [
     createdBy: "Daniel Lee",
     createdAt: "2025-11-13 16:42:59",
     note: "Requires approval.",
+    inputInRE: false,
   },
   {
     id: "25-00018",
     status: "Completed",
     createdBy: "Michael Chen",
     createdAt: "2025-11-13 17:20:40",
+    inputInRE: true,
   },
   {
     id: "25-00019",
@@ -160,12 +179,14 @@ const rows: SalesInvoice[] = [
     createdBy: "Anna Smith",
     createdAt: "2025-11-13 17:59:33",
     note: "Duplicate order.",
+    inputInRE: false,
   },
   {
     id: "25-00020",
     status: "Pending",
     createdBy: "Jacob Wilson",
     createdAt: "2025-11-13 18:33:21",
+    inputInRE: false,
   },
   {
     id: "25-00021",
@@ -173,18 +194,21 @@ const rows: SalesInvoice[] = [
     createdBy: "Sophia Martinez",
     createdAt: "2025-11-13 19:02:18",
     note: "Waiting for product pricing.",
+    inputInRE: false,
   },
   {
     id: "25-00022",
     status: "Completed",
     createdBy: "Chris Adams",
     createdAt: "2025-11-13 19:40:55",
+    inputInRE: true,
   },
   {
     id: "25-00023",
     status: "Pending",
     createdBy: "Olivia Brown",
     createdAt: "2025-11-13 20:11:42",
+    inputInRE: false,
   },
   {
     id: "25-00024",
@@ -192,6 +216,7 @@ const rows: SalesInvoice[] = [
     createdBy: "Ryan Miller",
     createdAt: "2025-11-13 20:55:30",
     note: "Delivered successfully.",
+    inputInRE: true,
   },
 ];
 
@@ -200,7 +225,14 @@ const columns: Column<SalesInvoice>[] = [
     id: "invoiceNumber",
     header: "Invoice No.",
     icon: <Hash className="h-3.5 w-3.5 text-neutral-700 dark:text-neutral-300" strokeWidth={2.5} />,
-    accessor: (r) => <span className="text-neutral-700 dark:text-neutral-200">{r.id}</span>,
+    accessor: (r) => (
+      <Link
+        href={`/invoices/${r.id}`}
+        className="font-semibold text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+      >
+        {r.id}
+      </Link>
+    ),
     thClassName: "w-[140px]",
   },
   {
@@ -216,6 +248,20 @@ const columns: Column<SalesInvoice>[] = [
     icon: <UserIcon className="h-3.5 w-3.5 text-neutral-700 dark:text-neutral-300" strokeWidth={2.5} />,
     accessor: (r) => <span className="text-neutral-700 dark:text-neutral-200">{r.createdBy}</span>,
     thClassName: "w-[140px]",
+  },
+  {
+    id: "inputInRE",
+    header: "Input in RE",
+    icon: <SquareCheck className="h-3.5 w-3.5 text-neutral-700 dark:text-neutral-300" strokeWidth={2.5} />,
+    thClassName: "w-[140px]",
+    accessor: (r) => (
+      <input
+        type="checkbox"
+        checked={r.inputInRE}
+        readOnly
+        className="h-4 w-4 rounded border-neutral-300 text-blue-600 pointer-events-none dark:border-neutral-600 dark:bg-neutral-800"
+      />
+    ),
   },
   {
     id: "createdAt",

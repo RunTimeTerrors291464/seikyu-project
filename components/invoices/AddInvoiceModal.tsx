@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Plus, Barcode, Package, Scale, Warehouse, Ruler, DollarSign, Percent, Calculator, Trash2 } from "lucide-react";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
@@ -283,11 +284,11 @@ export default function AddInvoiceModal({ isOpen, onClose, onSave }: AddInvoiceM
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
       
@@ -372,6 +373,18 @@ export default function AddInvoiceModal({ isOpen, onClose, onSave }: AddInvoiceM
                 </div>
               </div>
 
+              {/* Input in Revol Express */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="revolExpress" className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+                  Input in Revol Express
+                </label>
+                <input
+                  type="checkbox"
+                  id="revolExpress"
+                  className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-800"
+                />
+              </div>
+
               {/* Note */}
               <div>
                 <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 block mb-2">Note</span>
@@ -417,7 +430,7 @@ export default function AddInvoiceModal({ isOpen, onClose, onSave }: AddInvoiceM
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-3">
+              <div className="flex gap-3 pt-9">
                 <button
                   type="button"
                   onClick={onClose}
@@ -437,6 +450,7 @@ export default function AddInvoiceModal({ isOpen, onClose, onSave }: AddInvoiceM
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -66,7 +66,7 @@ const groups: Group[] = [
     collapsible: true,
     defaultOpen: false,
     items: [
-      { href: "/manager/product-inventory", label: "Product Inventory", icon: <FolderOpen className="h-4 w-4" />, disabled: true },
+      { href: "/manager/product-inventory", label: "Product Inventory", icon: <FolderOpen className="h-4 w-4" /> },
       { href: "/manager/inbound-invoices", label: "Inbound Invoices", icon: <FileCheck2 className="h-4 w-4" />, disabled: true },
       { href: "/manager/stock-audit-logs", label: "Stock Audit Logs", icon: <ClipboardList className="h-4 w-4" />, disabled: true },
     ],
@@ -182,7 +182,7 @@ export function Sidebar() {
   const sidebarWidth = "clamp(240px, 16vw, 320px)";
   return (
     <aside
-      className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-slate-800 bg-slate-900 text-slate-200 md:flex"
+      className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-slate-800 bg-slate-900 text-slate-200 md:flex print:hidden"
       style={{ width: sidebarWidth }}
     >
       <div
