@@ -1,0 +1,302 @@
+import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Role } from '../../../enums/role.enum';
+import { Transform, Type } from 'class-transformer';
+
+// Create new user request DTO.
+export class CreateNewUserRequestDto {
+    @ApiProperty({
+        description: 'First name of the user',
+        example: 'John',
+        maxLength: 64,
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(64, { message: 'firstName must be less than 64 characters.' })
+    firstName: string;
+
+    @ApiPropertyOptional({
+        description: 'Middle name of the user',
+        example: 'Smith',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'middleName must be less than 64 characters.' })
+    middleName?: string;
+
+    @ApiPropertyOptional({
+        description: 'Last name of the user',
+        example: 'Doe',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'lastName must be less than 64 characters.' })
+    lastName?: string;
+
+    @ApiProperty({
+        description: 'Username for login',
+        example: 'johndoe',
+        maxLength: 64,
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(64, { message: 'username must be less than 64 characters.' })
+    username: string;
+
+    @ApiProperty({
+        description: 'Password for the user account',
+        example: 'SecurePassword123!',
+        maxLength: 64,
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(64, { message: 'password must be less than 64 characters.' })
+    password: string;
+
+    @ApiProperty({
+        description: `The roles of the user:
+        1 - ADMIN
+        2 - MANAGER
+        3 - CASHIER`,
+        example: [Role.CASHIER],
+        enum: Role,
+        isArray: true,
+    })
+    @IsNotEmpty()
+    @IsArray()
+    @IsEnum(Role, { each: true })
+    roles: Role[];
+}
+
+// Create first admin account request DTO.
+export class CreateUserAdminRequestDto {
+
+    @ApiProperty({
+        description: 'First name of the user',
+        example: 'John',
+        maxLength: 64,
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(64, { message: 'firstName must be less than 64 characters.' })
+    firstName: string;
+
+    @ApiPropertyOptional({
+        description: 'Middle name of the user',
+        example: 'Smith',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'middleName must be less than 64 characters.' })
+    middleName?: string;
+
+    @ApiPropertyOptional({
+        description: 'Last name of the user',
+        example: 'Doe',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'lastName must be less than 64 characters.' })
+    lastName?: string;
+
+    @ApiProperty({
+        description: 'Username for login',
+        example: 'johndoe',
+        maxLength: 64,
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(64, { message: 'username must be less than 64 characters.' })
+    username: string;
+
+    @ApiProperty({
+        description: 'Password for the user account',
+        example: 'SecurePassword123!',
+    })
+    @IsNotEmpty()
+    @IsString()
+    password: string;
+}
+
+// Edit user request DTO.
+export class EditUserRequestDto {
+    @ApiProperty({
+        description: 'Unique identifier of the user',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @IsNotEmpty()
+    @IsUUID()
+    id: string;
+
+    @ApiPropertyOptional({
+        description: 'First name of the user',
+        example: 'John',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'firstName must be less than 64 characters.' })
+    firstName?: string;
+
+    @ApiPropertyOptional({
+        description: 'Middle name of the user',
+        example: 'Smith',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'middleName must be less than 64 characters.' })
+    middleName?: string;
+
+    @ApiPropertyOptional({
+        description: 'Last name of the user',
+        example: 'Doe',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'lastName must be less than 64 characters.' })
+    lastName?: string;
+
+    @ApiPropertyOptional({
+        description: 'Username',
+        example: 'johndoe',
+        maxLength: 64,
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64, { message: 'username must be less than 64 characters.' })
+    username?: string;
+
+    @ApiProperty({
+        description: 'User roles',
+        example: [Role.CASHIER],
+        enum: Role,
+        isArray: true,
+    })
+    @IsNotEmpty()
+    @IsArray()
+    @IsEnum(Role, { each: true })
+    roles: Role[];
+}
+
+// Get list of users request DTO.
+export class GetListOfUsersRequestDto {
+    @ApiPropertyOptional({
+        description: 'Page number for pagination',
+        example: 1,
+        minimum: 1,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1)
+    page?: number = 1;
+
+    @ApiPropertyOptional({
+        description: 'Number of items per page',
+        example: 10,
+        minimum: 1,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1)
+    limit?: number = 10;
+
+    @ApiPropertyOptional({
+        description: 'Search keyword',
+        example: 'john',
+    })
+    @IsOptional()
+    @IsString()
+    search?: string;
+
+    @ApiPropertyOptional({
+        description: 'Search field: "name" or "username"',
+        example: 'username',
+        enum: ['name', 'username'],
+    })
+    @IsOptional()
+    @IsString()
+    searchBy?: 'name' | 'username';
+
+    @ApiPropertyOptional({
+        description: 'Filter by user roles: [1, 2, 3]',
+        example: [1, 2, 3],
+        enum: Role,
+        isArray: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === undefined || value === null) return value;
+        return Array.isArray(value) ? value.map(Number) : [Number(value)];
+    })
+    @IsArray()
+    @IsEnum(Role, { each: true })
+    roles?: Role[];
+
+    @ApiPropertyOptional({
+        description: 'Filter by active status: "true", "false", or "all"',
+        example: 'all',
+        enum: ['true', 'false', 'all'],
+    })
+    @IsOptional()
+    @IsString()
+    active?: 'true' | 'false' | 'all' = 'all';
+
+    @ApiPropertyOptional({
+        description: 'Sort by field',
+        example: 'createdAt',
+        enum: ['firstName', 'lastName', 'username', 'createdAt', 'updatedAt', 'active'],
+    })
+    @IsOptional()
+    @IsString()
+    sortBy?: 'firstName' | 'lastName' | 'username' | 'createdAt' | 'updatedAt' | 'active';
+
+    @ApiPropertyOptional({
+        description: 'Sort order: "asc" or "desc"',
+        example: 'desc',
+        enum: ['asc', 'desc'],
+    })
+    @IsOptional()
+    @IsString()
+    sortOrder?: 'asc' | 'desc' = 'asc';
+}
+
+// Get list of users request DTO.
+export class GetListOfUsersForSearchRequestDto {
+    @ApiPropertyOptional({
+        description: 'Page number for pagination',
+        example: 1,
+        minimum: 1,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1)
+    page?: number = 1;
+
+    @ApiPropertyOptional({
+        description: 'Number of items per page',
+        example: 10,
+        minimum: 1,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1)
+    limit?: number = 10;
+
+    @ApiPropertyOptional({
+        description: 'Search the username only',
+        example: 'john',
+    })
+    @IsOptional()
+    @IsString()
+    search?: string;
+}

@@ -1,0 +1,51 @@
+import { Entity, Column, CreateDateColumn, UpdateDateColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+
+// Import entities.
+import { ImportInvoiceProductsEntity } from './importInvocieProducts.entity'
+
+// Import enums.
+import { ImportInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
+
+@Entity('import_invoice')
+export class ImportInvoiceEntity {
+
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @Column({ name: 'invoice_id', type: 'varchar', length: 15, nullable: true })
+    invoiceId: string | null;
+
+    @OneToMany(() => ImportInvoiceProductsEntity, (importInvoiceProduct) => importInvoiceProduct.importInvoice)
+    importInvoiceProducts: ImportInvoiceProductsEntity[];
+
+    @Column({ name: 'total_products', type: 'integer' })
+    totalProducts: number;
+
+    @Column({ name: 'total_quantity', type: 'integer' })
+    totalQuantity: number;
+
+    @Column({ name: 'total_import_price', type: 'decimal', precision: 10, scale: 2 })
+    totalImportPrice: number;
+
+    @Column({ name: 'notes', type: 'text', nullable: true })
+    notes: string | null;
+
+    @Column({ name: 'status', type: 'integer', enum: ImportInvoiceStatus, default: ImportInvoiceStatus.DRAFT })
+    status: ImportInvoiceStatus;
+
+    @Column({ name: 'stock_adjustment_number', type: 'integer', default: 0 })
+    stockAdjustmentNumber: number;
+
+    @Column({ name: 'draft_by', type: 'uuid', nullable: true })
+    draftBy: string | null;
+
+    @Column({ name: 'draft_at', type: 'timestamp', nullable: true })
+    draftAt: Date | null;
+
+    @Column({ name: 'confirmed_by', type: 'uuid', nullable: true })
+    confirmedBy: string | null;
+
+    @Column({ name: 'confirmed_at', type: 'timestamp', nullable: true })
+    confirmedAt: Date | null;
+
+}
