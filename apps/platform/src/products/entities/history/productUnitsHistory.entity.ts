@@ -4,7 +4,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDa
 import { ProductUnitsEntity } from '../productUnits.entity';
 
 // Import snapshots.
-import { ProductUnitSnapshotDto } from '@app/common/dtos/platform/products/history/productUnitSnapshot.dto';
+import { ProductUnitSnapshotDto } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
 
 @Entity('product_units_history')
 export class ProductUnitsHistoryEntity {

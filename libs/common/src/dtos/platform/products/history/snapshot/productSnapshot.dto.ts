@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+// Import enum
+import { StockStatus } from '@app/common/enums/stockStatus.enum';
+
 // Import snapshots.
 import { ProductUnitSnapshotDto } from './productUnitSnapshot.dto';
 import { ProductNameSnapshotDto } from './productNameSnapshot.dto';
@@ -23,16 +26,13 @@ export class ProductSnapshotDto {
 
     @ApiProperty({ example: 50, required: false, description: 'Stock reorder threshold' })
     reorderThreshold?: number;
-
-    @ApiProperty({ example: true })
-    active: boolean;
-
+    
     @ApiProperty({ 
         example: 0, 
-        enum: [0, 1, 2],
+        enum: StockStatus,
         description: '0: In stock, 1: Reorder threshold reached, 2: Out of stock' 
     })
-    stockStatus: 0 | 1 | 2;
+    stockStatus: StockStatus;
 
     @ApiProperty({ type: ProductUnitSnapshotDto })
     productUnit: ProductUnitSnapshotDto;
@@ -42,8 +42,4 @@ export class ProductSnapshotDto {
 
     @ApiProperty({ example: '2024-01-15T10:30:00Z' })
     createdAt: Date;
-
-    @ApiProperty({ example: '2024-01-15T10:30:00Z' })
-    updatedAt: Date;
-
 }

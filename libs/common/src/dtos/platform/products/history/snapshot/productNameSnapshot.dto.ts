@@ -11,7 +11,4 @@ export class ProductNameSnapshotDto {
     @ApiProperty({ example: '2024-01-15T10:30:00Z' })
     createdAt: Date;
 
-    @ApiProperty({ example: '2024-01-15T10:30:00Z' })
-    updatedAt: Date;
-
 }

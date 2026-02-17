@@ -2,7 +2,7 @@ import { IsNotEmpty, IsNumber, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 // Import snapshots.
-import { ProductUnitSnapshotDto } from './productUnitSnapshot.dto';
+import { ProductUnitSnapshotDto } from './snapshot/productUnitSnapshot.dto';
 
 export class GetProductUnitHistoryListRequestDto {
     @ApiProperty({

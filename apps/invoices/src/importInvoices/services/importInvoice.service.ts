@@ -40,6 +40,9 @@ export class ImportInvoiceService {
         private readonly importInvoicesMapper: ImportInvoicesMapper,
     ) { }
 
+    // --- Constants ---
+    private readonly _maxProductsPerImportInvoice = 64;
+
     // --- DRY methods ---
     // Get an invoice by ID.
     private async getInvoiceById(id: string): Promise<ImportInvoiceEntity> {
@@ -118,7 +121,7 @@ export class ImportInvoiceService {
     async createDraftImportInvoice(dto: CreateImportInvoiceRequestDto, user: AccessTokenPayload): Promise<ImportInvoiceResponseDto> {
 
         // Check if the number of products exceeds the limit.
-        if (dto.products.length > 64) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_IMPORT_INVOICE_PRODUCTS, 'Too many products in import invoice. Maximum is 64.');
+        if (dto.products.length > this._maxProductsPerImportInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_IMPORT_INVOICE_PRODUCTS, `Too many products in import invoice. Maximum is ${this._maxProductsPerImportInvoice}.`);
 
         // Check whether the productId exists and active.
         const productIds: string[] = dto.products.map(product => product.productId);
@@ -136,7 +139,7 @@ export class ImportInvoiceService {
     async editDraftImportInvoice(dto: EditImportInvoiceRequestDto, user: AccessTokenPayload): Promise<ImportInvoiceResponseDto> {
 
         // Check if the number of products exceeds the limit.
-        if (dto.products.length > 64) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_IMPORT_INVOICE_PRODUCTS, 'Too many products in import invoice. Maximum is 64.');
+        if (dto.products.length > this._maxProductsPerImportInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_IMPORT_INVOICE_PRODUCTS, `Too many products in import invoice. Maximum is ${this._maxProductsPerImportInvoice}.`);
 
         // Get invoice by ID.
         const invoice: ImportInvoiceEntity = await this.getInvoiceById(dto.id);

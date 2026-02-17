@@ -5,7 +5,7 @@ import { ProductUnitsEntity } from 'apps/platform/src/products/entities/productU
 
 // Import DTOs.
 import { ProductUnitResponseDto } from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
-import { ProductUnitSnapshotDto } from '@app/common/dtos/platform/products/history/productUnitSnapshot.dto';
+import { ProductUnitSnapshotDto } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
 
 @Injectable()
 export class ProductUnitMapper {
@@ -36,9 +36,7 @@ export class ProductUnitMapper {
             id: productUnitEntity.id,
             unitName: productUnitEntity.unitName,
             unitDescription: productUnitEntity.unitDescription,
-            active: productUnitEntity.active,
             createdAt: productUnitEntity.createdAt,
-            updatedAt: productUnitEntity.updatedAt,
         };
     }
 

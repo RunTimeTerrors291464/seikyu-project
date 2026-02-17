@@ -99,6 +99,18 @@ export class ProductStockHistoryResponseDto {
     referenceId: string;
 
     @ApiProperty({
+        description: 'Before inventory stock',
+        example: 1,
+    })
+    beforeInventoryStock: number;
+
+    @ApiProperty({
+        description: 'After inventory stock',
+        example: 2,
+    })
+    afterInventoryStock: number;
+
+    @ApiProperty({
         description: 'The date and time when this version was created',
         example: '2024-01-15T10:30:00Z',
     })

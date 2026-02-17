@@ -10,12 +10,6 @@ export class ProductUnitSnapshotDto {
     @ApiProperty({ example: 'Kilogram', required: false })
     unitDescription?: string;
 
-    @ApiProperty({ example: true })
-    active: boolean;
-
     @ApiProperty({ example: '2024-01-15T10:30:00Z' })
     createdAt: Date;
-
-    @ApiProperty({ example: '2024-01-15T10:30:00Z' })
-    updatedAt: Date;
 }

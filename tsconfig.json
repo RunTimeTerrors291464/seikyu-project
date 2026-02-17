@@ -41,5 +41,15 @@
         "libs/services/src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "apps/**/*",
+    "libs/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*spec.ts",
+    "**/*.e2e-spec.ts"
+  ]
 }

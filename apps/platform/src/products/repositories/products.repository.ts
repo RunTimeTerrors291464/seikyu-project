@@ -235,9 +235,12 @@ export class ProductsRepository {
     ): Promise<ProductsEntity> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
 
+            const beforeInventoryStock = productEntity.inventoryStock;
+
             // Update product stock.
             if (action === StockActionType.ADD) productEntity.inventoryStock += quantity;
             else if (action === StockActionType.SUBTRACT) productEntity.inventoryStock -= quantity;
+            const afterInventoryStock = productEntity.inventoryStock;
 
             // Update stock status.
             if (productEntity.inventoryStock <= 0) productEntity.stockStatus = StockStatus.OUT_OF_STOCK;
@@ -260,6 +263,8 @@ export class ProductsRepository {
                 quantity: quantity,
                 referenceType: referenceType,
                 referenceId: referenceId,
+                beforeInventoryStock,
+                afterInventoryStock,
             });
             await transactionalManager.save(ProductStockHistoryEntity, history);
             await this.cleanupOldProductStockHistory(productEntity.id, transactionalManager);
@@ -336,13 +341,13 @@ export class ProductsRepository {
             }
         }
 
-        // Apply active filter (B-tree index).
+        // Apply active filter.
         if (active !== undefined && active !== 'all') {
             const isActive = active === 'true';
             queryBuilder.andWhere('product.active = :active', { active: isActive });
         }
 
-        // Apply stock status filter (B-tree index).
+        // Apply stock status filter.
         if (stockStatus !== undefined && stockStatus !== 'all') {
             const status = parseInt(stockStatus);
             if (!isNaN(status)) {
@@ -350,7 +355,7 @@ export class ProductsRepository {
             }
         }
 
-        // Apply sorting (B-tree indexes).
+        // Apply sorting.
         const sortField = sortBy === 'unit' ? 'productUnit.unitName'
             : sortBy === 'importPrice' ? 'product.importPrice'
                 : sortBy === 'sellingPrice' ? 'product.sellingPrice'

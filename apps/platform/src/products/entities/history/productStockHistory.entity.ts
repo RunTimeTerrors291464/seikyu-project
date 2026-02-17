@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, OneToMany, JoinColumn, ManyToOne, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, OneToMany, JoinColumn, ManyToOne, Column, CreateDateColumn } from 'typeorm';
 
 // Import entities.
 import { ProductsEntity } from '../products.entity';
@@ -29,6 +29,12 @@ export class ProductStockHistoryEntity {
 
     @Column({ name: 'reference_id', type: 'uuid' })
     referenceId: string;
+
+    @Column({ name: 'before_inventory_stock', type: 'integer' })
+    beforeInventoryStock: number;
+
+    @Column({ name: 'after_inventory_stock', type: 'integer' })
+    afterInventoryStock: number;
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

@@ -1,5 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, OneToMany, JoinColumn, ManyToOne, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
+// Import enum
+import { StockStatus } from '@app/common/enums/stockStatus.enum';
+
 // Import entities.
 import { ProductNamesEntity } from './productNames.entity';
 import { ProductUnitsEntity } from './productUnits.entity';
@@ -43,8 +46,8 @@ export class ProductsEntity {
     // 0: In stock.
     // 1: Reorder threshold reached.
     // 2: Out of stock.
-    @Column({ name: 'stock_status', type: 'integer', enum: [0, 1, 2] })
-    stockStatus: 0 | 1 | 2;
+    @Column({ name: 'stock_status', type: 'integer', enum: StockStatus })
+    stockStatus: StockStatus;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;

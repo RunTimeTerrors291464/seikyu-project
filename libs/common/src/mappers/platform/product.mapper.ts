@@ -8,7 +8,7 @@ import {
     ProductResponseDto,
     ProductCashierResponseDto,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
-import { ProductSnapshotDto } from '@app/common/dtos/platform/products/history/productSnapshot.dto';
+import { ProductSnapshotDto } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
 
 @Injectable()
 export class ProductMapper {
@@ -66,24 +66,19 @@ export class ProductMapper {
             importPrice: productEntity.importPrice,
             sellingPrice: productEntity.sellingPrice,
             reorderThreshold: productEntity.reorderThreshold || undefined,
-            active: productEntity.active,
             stockStatus: productEntity.stockStatus,
             productUnit: {
                 id: productEntity.productUnit.id,
                 unitName: productEntity.productUnit.unitName,
                 unitDescription: productEntity.productUnit.unitDescription || undefined,
-                active: productEntity.productUnit.active,
                 createdAt: productEntity.productUnit.createdAt,
-                updatedAt: productEntity.productUnit.updatedAt,
             },
             productNames: productEntity.productNames.map(pn => ({
                 id: pn.id,
                 name: pn.name,
-                createdAt: pn.createdAt,
-                updatedAt: pn.updatedAt,
+                createdAt: pn.createdAt
             })),
             createdAt: productEntity.createdAt,
-            updatedAt: productEntity.updatedAt,
         };
     }
 }

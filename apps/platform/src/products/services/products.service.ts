@@ -32,7 +32,6 @@ import {
     GetProductHistoryByVersionResponseDto
 } from '@app/common/dtos/platform/products/history/crudProduct.dto';
 import {
-    CreateProductStockRequestDto,
     GetListOfProductStockHistoryResponseDto,
     GetProductStockHistoryRequestDto,
     ProductStockHistoryResponseDto,
@@ -41,6 +40,7 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 
 // Import enums.
 import { StockStatus } from '@app/common/enums/stockStatus.enum';
+import { StockActionType } from '@app/common/enums/stockActionType.enum';
 
 // Import mappers.
 import { ProductMapper } from '@app/common/mappers/platform/product.mapper';
@@ -176,7 +176,7 @@ export class ProductsService {
             if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `The product with ID ${productUpdate.id} is not found.`);
 
             // Validate quantity is not negative after the operation.
-            if (productUpdate.action === 'subtract' && product.inventoryStock < productUpdate.quantity) {
+            if (productUpdate.action === StockActionType.SUBTRACT && product.inventoryStock < productUpdate.quantity) {
                 throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, `Insufficient inventory to subtract for Product ID ${productUpdate.id}.`);
             }
 
@@ -287,7 +287,7 @@ export class ProductsService {
 
     // --- Product Stock History APIs ---
     // Get stock history list of a product.
-    @HandleServiceError(ErrorCode.GET_PRODUCT_HISTORY_LIST_SERVICE)
+    @HandleServiceError(ErrorCode.GET_PRODUCT_STOCK_HISTORY_LIST_SERVICE)
     async getProductStockHistoryList(dto: GetProductStockHistoryRequestDto): Promise<GetListOfProductStockHistoryResponseDto> {
 
         // Check if the product already exists.
@@ -304,6 +304,8 @@ export class ProductsService {
             quantity: history.quantity,
             referenceType: history.referenceType,
             referenceId: history.referenceId,
+            beforeInventoryStock: history.beforeInventoryStock,
+            afterInventoryStock: history.afterInventoryStock,
             createdAt: history.createdAt,
         }));
 
@@ -328,6 +330,8 @@ export class ProductsService {
             quantity: history.quantity,
             referenceType: history.referenceType,
             referenceId: history.referenceId,
+            beforeInventoryStock: history.beforeInventoryStock,
+            afterInventoryStock: history.afterInventoryStock,
             createdAt: history.createdAt,
         };
     }

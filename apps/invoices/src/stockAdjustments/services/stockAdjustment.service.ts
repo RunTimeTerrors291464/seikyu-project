@@ -42,6 +42,9 @@ export class StockAdjustmentService {
         private readonly importInvoiceRepository: ImportInvoiceRepository,
     ) { }
 
+    // --- Constants ---
+    private readonly _maxProductsPerStockAdjustment = 64;
+
     // --- DRY methods ---
     // Get an adjustment by ID.
     async getAdjustmentById(id: string): Promise<StockAdjustmentEntity> {
@@ -136,7 +139,7 @@ export class StockAdjustmentService {
     async createDraftStockAdjustment(dto: CreateStockAdjustmentRequestDto, user: AccessTokenPayload): Promise<StockAdjustmentResponseDto> {
 
         // Check if the number of products exceeds the limit.
-        if (dto.products.length > 64) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_STOCK_ADJUSTMENT_PRODUCTS, 'Too many products in stock adjustment. Maximum is 128.');
+        if (dto.products.length > this._maxProductsPerStockAdjustment) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_STOCK_ADJUSTMENT_PRODUCTS, `Too many products in stock adjustment. Maximum is ${this._maxProductsPerStockAdjustment}.`);
 
         // Check whether the productId exists and active.
         const productIds: string[] = dto.products.map(product => product.productId);
@@ -153,7 +156,7 @@ export class StockAdjustmentService {
     async editDraftStockAdjustment(dto: EditStockAdjustmentRequestDto, user: AccessTokenPayload): Promise<StockAdjustmentResponseDto> {
 
         // Check if the number of products exceeds the limit.
-        if (dto.products.length > 64) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_STOCK_ADJUSTMENT_PRODUCTS, 'Too many products in stock adjustment. Maximum is 128.');
+        if (dto.products.length > this._maxProductsPerStockAdjustment) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_STOCK_ADJUSTMENT_PRODUCTS, `Too many products in stock adjustment. Maximum is ${this._maxProductsPerStockAdjustment}.`);
 
         // Get adjustment by ID.
         const adjustment: StockAdjustmentEntity = await this.getAdjustmentById(dto.id);

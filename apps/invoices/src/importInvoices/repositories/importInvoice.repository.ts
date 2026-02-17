@@ -340,7 +340,7 @@ export class ImportInvoiceRepository {
         return { data, total };
     }
 
-    // Increase the stock adjustment number for import invoice.
+    // Increase the stock adjustment number for import invoice and set the invoice status to adjusted.
     async increaseStockAdjustment(id: string): Promise<void> {
         await this.importInvoiceRepository.manager.transaction(async (transactionalManager) => {
             await transactionalManager.increment(ImportInvoiceEntity, { id }, 'stockAdjustmentNumber', 1);
