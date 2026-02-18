@@ -66,7 +66,6 @@ export class ProductMapper {
             importPrice: productEntity.importPrice,
             sellingPrice: productEntity.sellingPrice,
             reorderThreshold: productEntity.reorderThreshold || undefined,
-            stockStatus: productEntity.stockStatus,
             productUnit: {
                 id: productEntity.productUnit.id,
                 unitName: productEntity.productUnit.unitName,

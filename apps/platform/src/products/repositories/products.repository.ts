@@ -178,63 +178,15 @@ export class ProductsRepository {
         });
     }
 
-    // Update the inventory stock of a product.
-    async updateInventoryStock(productEntity: ProductsEntity, quantity: number, action: StockActionType, user: AccessTokenPayload): Promise<ProductsEntity> {
-        return await this.productsRepository.manager.transaction(async (transactionalManager) => {
-            if (action === StockActionType.ADD) {
-                productEntity.inventoryStock += quantity;
-            } else if (action === StockActionType.SUBTRACT) {
-                productEntity.inventoryStock -= quantity;
-            }
-
-            // Update the stock status.
-            if (productEntity.inventoryStock <= 0) {
-                productEntity.stockStatus = StockStatus.OUT_OF_STOCK;
-            } else if (productEntity.reorderThreshold !== null && productEntity.inventoryStock <= productEntity.reorderThreshold) {
-                productEntity.stockStatus = StockStatus.REORDER_THRESHOLD_REACHED;
-            } else {
-                productEntity.stockStatus = StockStatus.IN_STOCK;
-            }
-
-            await transactionalManager.save(ProductsEntity, productEntity);
-
-            // Load all relations in one query.
-            const productWithRelations = await transactionalManager.findOne(ProductsEntity, {
-                where: { id: productEntity.id },
-                relations: ['productUnit', 'productNames'],
-            });
-
-            const productToReturn = productWithRelations || productEntity;
-
-            // Get the latest version from history using transactionalManager.
-            const currentVersion = await this.getLatestHistoryVersion(productEntity.id, transactionalManager);
-            const nextVersion = currentVersion + 1;
-
-            // Create a new product history entry.
-            await transactionalManager.save(ProductsHistoryEntity, {
-                product: productToReturn,
-                version: nextVersion,
-                createdBy: user.id,
-                data: this.productMapper.toProductSnapshotDto(productToReturn),
-            } as ProductsHistoryEntity);
-
-            // Clean up old product history versions if exceeding 10.
-            await this.cleanupOldProductHistoryVersions(productEntity.id, transactionalManager);
-
-            return productToReturn;
-        });
-    }
-
-    // Update product stock with history.
-    async updateProductStockWithHistory(
+    // Update the inventory stock of a product with stock history.
+    async updateInventoryStock(
         productEntity: ProductsEntity,
         quantity: number,
         action: StockActionType,
         referenceType: any,
-        referenceId: string
+        referenceId: string,
     ): Promise<ProductsEntity> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
-
             const beforeInventoryStock = productEntity.inventoryStock;
 
             // Update product stock.
@@ -249,7 +201,7 @@ export class ProductsRepository {
 
             await transactionalManager.save(ProductsEntity, productEntity);
 
-            // Load relations.
+            // Load all relations in one query.
             const productWithRelations = await transactionalManager.findOne(ProductsEntity, {
                 where: { id: productEntity.id },
                 relations: ['productUnit', 'productNames'],
@@ -499,6 +451,7 @@ export class ProductsRepository {
     }
 
     // --- Product Stock History APIs ---
+    // Create product stock history.
     async createProductStockHistory(dto: CreateProductStockRequestDto): Promise<ProductStockHistoryEntity> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
             const history = this.productStockHistoryRepository.create({
@@ -517,6 +470,7 @@ export class ProductsRepository {
         });
     }
 
+    // Get a list of product stock history.
     async getProductStockHistoryList(productId: string): Promise<{ data: ProductStockHistoryEntity[], total: number }> {
         const [data, total] = await this.productStockHistoryRepository.findAndCount({
             where: { product: { id: productId } },
@@ -528,6 +482,7 @@ export class ProductsRepository {
         return { data, total };
     }
 
+    // Get a specific product stock history.
     async getProductStockHistoryById(id: string): Promise<ProductStockHistoryEntity | null> {
         const history = await this.productStockHistoryRepository.findOne({
             where: { id },

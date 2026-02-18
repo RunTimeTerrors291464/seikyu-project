@@ -181,7 +181,7 @@ export class ProductsService {
             }
 
             // Update inventory stock and history.
-            const updatedProduct = await this.productsRepository.updateProductStockWithHistory(
+            const updatedProduct = await this.productsRepository.updateInventoryStock(
                 product,
                 productUpdate.quantity,
                 productUpdate.action,
