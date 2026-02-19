@@ -42,7 +42,7 @@ export class PostgresModule {
                             entities: options.entities,
                             synchronize: false, // By default, the database will not be synchronized.
                             logging: true,
-                            autoLoadEntities: false 
+                            autoLoadEntities: false,
                         };
                     },
                     inject: [ConfigService],

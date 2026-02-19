@@ -6,6 +6,7 @@ import { HandleServiceError } from '@app/common/decorators/handleServiceError.de
 import { ErrorCode } from '@app/common/enums/errorCode.enum';
 
 // Import entities.
+import { DataSource } from 'typeorm';
 import { ProductsEntity } from '../entities/products.entity';
 
 // Import repositories.
@@ -52,6 +53,7 @@ export class ProductsService {
         private readonly productUnitsRepository: ProductUnitsRepository,
         private readonly productMapper: ProductMapper,
         private readonly usersRepository: UsersRepository,
+        private readonly dataSource: DataSource,
     ) { }
 
     // --- DRY methods ---
@@ -166,9 +168,9 @@ export class ProductsService {
     @HandleServiceError(ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE)
     async updateProductInventoryBulk(dto: UpdateProductInventoryBulkRequestDto): Promise<ProductResponseDto[]> {
 
-        const results: ProductResponseDto[] = [];
+        // Validate all products before touching the DB.
+        const validatedProducts: { product: ProductsEntity, update: (typeof dto.products)[number] }[] = [];
 
-        // Process each product in the bulk update.
         for (const productUpdate of dto.products) {
 
             // Check if the product already exists.
@@ -180,19 +182,38 @@ export class ProductsService {
                 throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, `Insufficient inventory to subtract for Product ID ${productUpdate.id}.`);
             }
 
-            // Update inventory stock and history.
-            const updatedProduct = await this.productsRepository.updateInventoryStock(
-                product,
-                productUpdate.quantity,
-                productUpdate.action,
-                dto.invoiceType,
-                dto.invoiceId,
-            );
-
-            results.push(this.productMapper.toProductResponseDto(updatedProduct));
+            validatedProducts.push({ product, update: productUpdate });
         }
 
-        return results;
+        // Run all updates inside a single transaction.
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            const results: ProductResponseDto[] = [];
+
+            for (const { product, update } of validatedProducts) {
+                const updatedProduct = await this.productsRepository.updateInventoryStock(
+                    product,
+                    update.quantity,
+                    update.action,
+                    dto.invoiceType,
+                    dto.invoiceId,
+                    queryRunner.manager,
+                );
+                results.push(this.productMapper.toProductResponseDto(updatedProduct));
+            }
+
+            await queryRunner.commitTransaction();
+            return results;
+
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE, 'Failed to update product inventory stock.');
+        } finally {
+            await queryRunner.release();
+        }
     }
 
     // Activate a product.

@@ -185,44 +185,47 @@ export class ProductsRepository {
         action: StockActionType,
         referenceType: any,
         referenceId: string,
+        manager: any,
     ): Promise<ProductsEntity> {
-        return await this.productsRepository.manager.transaction(async (transactionalManager) => {
-            const beforeInventoryStock = productEntity.inventoryStock;
 
-            // Update product stock.
-            if (action === StockActionType.ADD) productEntity.inventoryStock += quantity;
-            else if (action === StockActionType.SUBTRACT) productEntity.inventoryStock -= quantity;
-            const afterInventoryStock = productEntity.inventoryStock;
+        // Get the iventory stock before any changes.
+        const beforeInventoryStock = productEntity.inventoryStock;
 
-            // Update stock status.
-            if (productEntity.inventoryStock <= 0) productEntity.stockStatus = StockStatus.OUT_OF_STOCK;
-            else if (productEntity.reorderThreshold !== null && productEntity.inventoryStock <= productEntity.reorderThreshold) productEntity.stockStatus = StockStatus.REORDER_THRESHOLD_REACHED;
-            else productEntity.stockStatus = StockStatus.IN_STOCK;
+        // Update product stock.
+        if (action === StockActionType.ADD) productEntity.inventoryStock += quantity;
+        else if (action === StockActionType.SUBTRACT) productEntity.inventoryStock -= quantity;
 
-            await transactionalManager.save(ProductsEntity, productEntity);
+        // Get the iventory stock after any changes.
+        const afterInventoryStock = productEntity.inventoryStock;
 
-            // Load all relations in one query.
-            const productWithRelations = await transactionalManager.findOne(ProductsEntity, {
-                where: { id: productEntity.id },
-                relations: ['productUnit', 'productNames'],
-            });
-            const productToReturn = productWithRelations || productEntity;
+        // Update stock status.
+        if (productEntity.inventoryStock <= 0) productEntity.stockStatus = StockStatus.OUT_OF_STOCK;
+        else if (productEntity.reorderThreshold !== null && productEntity.inventoryStock <= productEntity.reorderThreshold) productEntity.stockStatus = StockStatus.REORDER_THRESHOLD_REACHED;
+        else productEntity.stockStatus = StockStatus.IN_STOCK;
 
-            // Create product stock history.
-            const history = this.productStockHistoryRepository.create({
-                product: { id: productEntity.id },
-                quantityType: action,
-                quantity: quantity,
-                referenceType: referenceType,
-                referenceId: referenceId,
-                beforeInventoryStock,
-                afterInventoryStock,
-            });
-            await transactionalManager.save(ProductStockHistoryEntity, history);
-            await this.cleanupOldProductStockHistory(productEntity.id, transactionalManager);
+        await manager.save(ProductsEntity, productEntity);
 
-            return productToReturn;
+        // Load all relations in one query.
+        const productWithRelations = await manager.findOne(ProductsEntity, {
+            where: { id: productEntity.id },
+            relations: ['productUnit', 'productNames'],
         });
+        const productToReturn = productWithRelations || productEntity;
+
+        // Create product stock history.
+        const history = this.productStockHistoryRepository.create({
+            product: { id: productEntity.id },
+            quantityType: action,
+            quantity: quantity,
+            referenceType: referenceType,
+            referenceId: referenceId,
+            beforeInventoryStock,
+            afterInventoryStock,
+        });
+        await manager.save(ProductStockHistoryEntity, history);
+        await this.cleanupOldProductStockHistory(productEntity.id, manager);
+
+        return productToReturn;
     }
 
     // Get a product by sku.
