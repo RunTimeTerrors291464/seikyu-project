@@ -21,15 +21,15 @@ import {
 import { UpdateProductInventoryBulkRequestDto } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
-// Import helper repository.
-import { InvoiceHelperRepository } from './invoiceHelper.repository';
+// Import helper service.
+import { InvoiceHelperService } from '../../invoiceHelper/invoiceHelper.service';
 
 @Injectable()
 export class ImportInvoiceRepository {
     constructor(
         @InjectRepository(ImportInvoiceEntity) private importInvoiceRepository: Repository<ImportInvoiceEntity>,
         @InjectRepository(ImportInvoiceProductsEntity) private importInvoiceProductsRepository: Repository<ImportInvoiceProductsEntity>,
-        private invoiceHelperRepository: InvoiceHelperRepository,
+        private invoiceHelperService: InvoiceHelperService,
     ) { }
 
     // Generate a new import invoice ID.
@@ -78,7 +78,7 @@ export class ImportInvoiceRepository {
                 totalImportPrice,
                 notes: dto.notes ?? null,
                 status: ImportInvoiceStatus.DRAFT,
-                stockAdjustmentNumber: 0,
+                returnCount: 0,
                 draftBy: user.id,
                 draftAt: new Date(),
             });
@@ -94,6 +94,7 @@ export class ImportInvoiceRepository {
                     productName: product.productName,
                     productUnit: product.productUnit,
                     quantity: product.quantity,
+                    returnedQuantity: 0,
                     importPrice: product.importPrice,
                     totalImportPrice: product.quantity * product.importPrice,
                     notes: product.notes ?? null,
@@ -134,7 +135,7 @@ export class ImportInvoiceRepository {
             invoice.draftBy = user.id;
             invoice.draftAt = new Date();
             invoice.notes = dto.notes ?? null;
-            invoice.stockAdjustmentNumber = 0;
+            invoice.returnCount = 0;
 
             await transactionalManager.save(ImportInvoiceEntity, invoice);
 
@@ -152,6 +153,7 @@ export class ImportInvoiceRepository {
                     productName: product.productName,
                     productUnit: product.productUnit,
                     quantity: product.quantity,
+                    returnedQuantity: 0,
                     importPrice: product.importPrice,
                     totalImportPrice: product.quantity * product.importPrice,
                     notes: product.notes ?? null,
@@ -200,7 +202,7 @@ export class ImportInvoiceRepository {
             invoice.status = ImportInvoiceStatus.CONFIRMED;
             invoice.confirmedBy = user.id;
             invoice.confirmedAt = new Date();
-            invoice.stockAdjustmentNumber = 0;
+            invoice.returnCount = 0;
 
             await transactionalManager.save(ImportInvoiceEntity, invoice);
 
@@ -226,7 +228,7 @@ export class ImportInvoiceRepository {
                 })),
             };
 
-            await this.invoiceHelperRepository.updateProductInventoryStockBulk(stockUpdateDto);
+            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
 
             // Reload with relations.
             const invoiceWithRelations = await transactionalManager.findOne(ImportInvoiceEntity, {
@@ -297,7 +299,8 @@ export class ImportInvoiceRepository {
                     queryBuilder.andWhere('invoice.draftAt >= :fromDate', { fromDate });
                     break;
                 case ImportInvoiceStatus.CONFIRMED:
-                case ImportInvoiceStatus.STOCK_ADJUSTED:
+                case ImportInvoiceStatus.PARTIALLY_RETURNED:
+                case ImportInvoiceStatus.RETURNED:
                     queryBuilder.andWhere('invoice.confirmedAt >= :fromDate', { fromDate });
                     break;
                 default:
@@ -312,7 +315,8 @@ export class ImportInvoiceRepository {
                     queryBuilder.andWhere('invoice.draftAt <= :toDate', { toDate });
                     break;
                 case ImportInvoiceStatus.CONFIRMED:
-                case ImportInvoiceStatus.STOCK_ADJUSTED:
+                case ImportInvoiceStatus.PARTIALLY_RETURNED:
+                case ImportInvoiceStatus.RETURNED:
                     queryBuilder.andWhere('invoice.confirmedAt <= :toDate', { toDate });
                     break;
                 default:
@@ -327,8 +331,7 @@ export class ImportInvoiceRepository {
         else if (sortBy === 'totalImportPrice') sortField = 'invoice.totalImportPrice';
         else if (sortBy === 'createdAt') {
             if (status === ImportInvoiceStatus.DRAFT) sortField = 'invoice.draftAt';
-            else if (status === ImportInvoiceStatus.CONFIRMED || status === ImportInvoiceStatus.STOCK_ADJUSTED) sortField = 'invoice.confirmedAt';
-            else sortField = 'invoice.draftAt';
+            else sortField = 'invoice.confirmedAt';
         }
 
         queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');
@@ -340,11 +343,4 @@ export class ImportInvoiceRepository {
         return { data, total };
     }
 
-    // Increase the stock adjustment number for import invoice and set the invoice status to adjusted.
-    async increaseStockAdjustment(id: string): Promise<void> {
-        await this.importInvoiceRepository.manager.transaction(async (transactionalManager) => {
-            await transactionalManager.increment(ImportInvoiceEntity, { id }, 'stockAdjustmentNumber', 1);
-            await transactionalManager.update(ImportInvoiceEntity, { id }, { status: ImportInvoiceStatus.STOCK_ADJUSTED });
-        });
-    }
 }

@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 
 // Import repositories.
 import { ImportInvoiceRepository } from '../repositories/importInvoice.repository';
-import { InvoiceHelperRepository } from '../repositories/invoiceHelper.repository';
+import { InvoiceHelperService } from '../../invoiceHelper/invoiceHelper.service';
 
 // Import DTOs.
 import {
@@ -36,7 +36,7 @@ import { ErrorCode } from '@app/common/enums/errorCode.enum';
 export class ImportInvoiceService {
     constructor(
         private readonly importInvoiceRepository: ImportInvoiceRepository,
-        private readonly invoiceHelperRepository: InvoiceHelperRepository,
+        private readonly invoiceHelperService: InvoiceHelperService,
         private readonly importInvoicesMapper: ImportInvoicesMapper,
     ) { }
 
@@ -51,24 +51,6 @@ export class ImportInvoiceService {
         return invoice;
     }
 
-    // Check whether the productId exists and active.
-    private async checkProductIdExistsAndActive(productIds: string[]): Promise<{ notFound: string[], notActive: string[] }> {
-        const notFound: string[] = [];
-        const notActive: string[] = [];
-
-        const products = await Promise.all(
-            productIds.map(id => this.invoiceHelperRepository.getProductById(id))
-        );
-
-        products.forEach((product, index) => {
-            const id = productIds[index];
-            if (!product) notFound.push(id);
-            else if (!product.active) notActive.push(id);
-        });
-
-        return { notFound, notActive };
-    }
-
     // Map an invoice to response DTO.
     private async mapToResponseDto(invoice: ImportInvoiceEntity): Promise<ImportInvoiceResponseDto> {
         const userIds = new Set<string>();
@@ -77,7 +59,7 @@ export class ImportInvoiceService {
 
         let users: UserResponseDto[] = [];
         if (userIds.size > 0) {
-            users = await this.invoiceHelperRepository.getUsersByIds(Array.from(userIds));
+            users = await this.invoiceHelperService.getUsersByIds(Array.from(userIds));
         }
 
         const draftByUsername = users.find(u => u.id === invoice.draftBy)?.username;
@@ -100,7 +82,7 @@ export class ImportInvoiceService {
 
         let users: UserResponseDto[] = [];
         if (userIds.size > 0) {
-            users = await this.invoiceHelperRepository.getUsersByIds(Array.from(userIds));
+            users = await this.invoiceHelperService.getUsersByIds(Array.from(userIds));
         }
 
         return invoices.map(invoice => {
@@ -125,9 +107,11 @@ export class ImportInvoiceService {
 
         // Check whether the productId exists and active.
         const productIds: string[] = dto.products.map(product => product.productId);
-        const { notFound, notActive }: { notFound: string[], notActive: string[] } = await this.checkProductIdExistsAndActive(productIds);
-        if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
-        if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
+        const { success, notFound, notActive }: { success: boolean, notFound: string[], notActive: string[] } = await this.invoiceHelperService.checkProductIdExistsAndActive(productIds);
+        if (!success) {
+            if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
+            if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
+        }
 
         // Save a draft invoice.
         const savedInvoice = await this.importInvoiceRepository.createDraftImportInvoice(dto, user);
@@ -150,9 +134,11 @@ export class ImportInvoiceService {
 
         // Check whether the productId exists and active.
         const productIds: string[] = dto.products.map(product => product.productId);
-        const { notFound, notActive }: { notFound: string[], notActive: string[] } = await this.checkProductIdExistsAndActive(productIds);
-        if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
-        if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
+        const { success, notFound, notActive }: { success: boolean, notFound: string[], notActive: string[] } = await this.invoiceHelperService.checkProductIdExistsAndActive(productIds);
+        if (!success) {
+            if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
+            if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
+        }
 
         // Edit a draft invoice.
         const savedInvoice = await this.importInvoiceRepository.editDraftImportInvoice(dto, invoice, user);
@@ -190,9 +176,11 @@ export class ImportInvoiceService {
 
         // Check whether the productId exists and active.
         const productIds: string[] = invoice.importInvoiceProducts.map(product => product.productId);
-        const { notFound, notActive }: { notFound: string[], notActive: string[] } = await this.checkProductIdExistsAndActive(productIds);
-        if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
-        if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
+        const { success, notFound, notActive }: { success: boolean, notFound: string[], notActive: string[] } = await this.invoiceHelperService.checkProductIdExistsAndActive(productIds);
+        if (!success) {
+            if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
+            if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
+        }
 
         // Confirm invoice.
         const confirmedInvoice = await this.importInvoiceRepository.confirmImportInvoice(invoice, user);

@@ -30,11 +30,11 @@ export class ImportInvoiceEntity {
     @Column({ name: 'notes', type: 'text', nullable: true })
     notes: string | null;
 
-    @Column({ name: 'status', type: 'integer', enum: ImportInvoiceStatus, default: ImportInvoiceStatus.DRAFT })
+    @Column({ name: 'status', type: 'varchar', enum: ImportInvoiceStatus, default: ImportInvoiceStatus.DRAFT })
     status: ImportInvoiceStatus;
 
-    @Column({ name: 'stock_adjustment_number', type: 'integer', default: 0 })
-    stockAdjustmentNumber: number;
+    @Column({ name: 'return_count', type: 'integer', default: 0 })
+    returnCount: number;
 
     @Column({ name: 'draft_by', type: 'uuid', nullable: true })
     draftBy: string | null;

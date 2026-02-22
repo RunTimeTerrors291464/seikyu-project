@@ -195,12 +195,11 @@ export class GetListOfImportInvoiceRequestDto {
 
     @ApiPropertyOptional({
         description: 'Filter by status',
-        example: 1,
+        example: ImportInvoiceStatus.CONFIRMED,
         enum: ImportInvoiceStatus,
     })
     @IsOptional()
     @IsEnum(ImportInvoiceStatus)
-    @Type(() => Number)
     status?: ImportInvoiceStatus;
 
     @ApiPropertyOptional({

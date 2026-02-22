@@ -14,7 +14,7 @@ import { ProductResponseDto } from '@app/common/dtos/platform/products/crudProdu
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 @Injectable()
-export class InvoiceHelperRepository {
+export class InvoiceHelperService {
     constructor(
         @Inject('PLATFORM_SERVICE') private platformClient: ClientProxy
     ) { }
@@ -40,11 +40,27 @@ export class InvoiceHelperRepository {
     // Update product inventory stock in bulk.
     async updateProductInventoryStockBulk(dto: UpdateProductInventoryBulkRequestDto): Promise<ProductResponseDto[]> {
         return lastValueFrom(
-            this.platformClient.send(
-                { cmd: 'products.updateInventoryStockBulk' },
-                { dto }
-            )
+            this.platformClient.send({ cmd: 'products.updateInventoryStockBulk' }, dto)
         );
+    }
+
+    // Check whether the productId exists and active.
+    async checkProductIdExistsAndActive(productIds: string[]): Promise<{ success: boolean, notFound: string[], notActive: string[] }> {
+        const notFound: string[] = [];
+        const notActive: string[] = [];
+
+        const products = await Promise.all(
+            productIds.map(id => this.getProductById(id))
+        );
+
+        products.forEach((product, index) => {
+            const id = productIds[index];
+            if (!product) notFound.push(id);
+            else if (!product.active) notActive.push(id);
+        });
+
+        if (!notFound.length && !notActive.length) return { success: true, notFound, notActive };
+        return { success: false, notFound, notActive };
     }
 
     // Get a product by ID.

@@ -5,6 +5,12 @@ import * as path from 'path';
 // Platform application entities.
 import { UserEntity } from '../../../../apps/platform/src/users/entities/user.entity';
 import { UserRoleEntity } from '../../../../apps/platform/src/users/entities/userRole.entity';
+import { ProductsEntity } from '../../../../apps/platform/src/products/entities/products.entity';
+import { ProductNamesEntity } from '../../../../apps/platform/src/products/entities/productNames.entity';
+import { ProductUnitsEntity } from '../../../../apps/platform/src/products/entities/productUnits.entity';
+import { ProductsHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productsHistory.entity';
+import { ProductUnitsHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productUnitsHistory.entity';
+import { ProductStockHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productStockHistory.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -19,6 +25,12 @@ export default new DataSource({
     entities: [
         UserEntity,
         UserRoleEntity,
+        ProductsEntity,
+        ProductNamesEntity,
+        ProductUnitsEntity,
+        ProductsHistoryEntity,
+        ProductUnitsHistoryEntity,
+        ProductStockHistoryEntity,
     ],
     migrations: [path.join(__dirname, '../platform/*.{ts,js}')],
     synchronize: false,

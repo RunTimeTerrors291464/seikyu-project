@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 // Import microservices.
-import { ClientsModule, Transport } from '@nestjs/microservices';
 
 // Import typeorm and entities.
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -11,7 +10,9 @@ import { ImportInvoiceProductsEntity } from './entities/importInvocieProducts.en
 
 // Import repositories.
 import { ImportInvoiceRepository } from './repositories/importInvoice.repository';
-import { InvoiceHelperRepository } from './repositories/invoiceHelper.repository';
+
+// Import invoice helper module.
+import { InvoiceHelperModule } from '../invoiceHelper/invoiceHelper.module';
 
 // Import controllers.
 import { ImportInvoiceController } from './controllers/importInvoice.controller';
@@ -24,19 +25,7 @@ import { ImportInvoicesMapper } from '@app/common/mappers/invoices/importInvoice
 
 @Module({
     imports: [
-        ClientsModule.registerAsync([
-            {
-                name: 'PLATFORM_SERVICE',
-                useFactory: (configService: ConfigService) => ({
-                    transport: Transport.TCP,
-                    options: {
-                        host: configService.getOrThrow<string>('PLATFORM_SERVICE_HOST'),
-                        port: configService.getOrThrow<number>('PLATFORM_SERVICE_PORT'),
-                    },
-                }),
-                inject: [ConfigService],
-            },
-        ]),
+        InvoiceHelperModule,
 
         TypeOrmModule.forFeature([
             ImportInvoiceEntity,
@@ -48,13 +37,11 @@ import { ImportInvoicesMapper } from '@app/common/mappers/invoices/importInvoice
     ],
     providers: [
         ImportInvoiceRepository,
-        InvoiceHelperRepository,
         ImportInvoicesMapper,
         ImportInvoiceService,
     ],
     exports: [
         ImportInvoiceRepository,
-        InvoiceHelperRepository,
         ImportInvoicesMapper,
         ImportInvoiceService,
     ],

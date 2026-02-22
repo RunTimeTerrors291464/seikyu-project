@@ -42,6 +42,12 @@ export class ImportInvoiceProductResponseDto {
     quantity: number;
 
     @ApiProperty({
+        description: 'Quantity returned',
+        example: 0,
+    })
+    returnedQuantity: number;
+
+    @ApiProperty({
         description: 'Import price per unit',
         example: 5000,
     })
@@ -115,10 +121,10 @@ export class ImportInvoiceResponseDto {
     status: ImportInvoiceStatus;
 
     @ApiProperty({
-        description: 'Stock adjustment number',
-        example: 1,
+        description: 'Return count',
+        example: 0,
     })
-    stockAdjustmentNumber: number;
+    returnCount: number;
 
     @ApiPropertyOptional({
         description: 'User who drafted the import invoice',
@@ -209,10 +215,10 @@ export class ImportInvoiceWithoutProductsDto {
     status: ImportInvoiceStatus;
 
     @ApiProperty({
-        description: 'Stock adjustment number',
-        example: 1,
+        description: 'Return count',
+        example: 0,
     })
-    stockAdjustmentNumber: number;
+    returnCount: number;
 
     @ApiPropertyOptional({
         description: 'User who drafted the import invoice',

@@ -7,13 +7,9 @@ import { PostgresModule } from '@app/services';
 import { ImportInvoiceEntity } from './importInvoices/entities/importInvoices.entity';
 import { ImportInvoiceProductsEntity } from './importInvoices/entities/importInvocieProducts.entity';
 
-import { StockAdjustmentEntity } from './stockAdjustments/entities/stockAdjustment.entity';
-import { StockAdjustmentProductsEntity } from './stockAdjustments/entities/stockAdjustmentProducts.entity';
-
 // Import modules.
 import { ImportInvoicesModule } from './importInvoices/importInvoices.module';
-import { StockAdjustmentsModule } from './stockAdjustments/stockAdjustments.module';
-
+import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
 
 @Module({
   imports: [
@@ -27,13 +23,11 @@ import { StockAdjustmentsModule } from './stockAdjustments/stockAdjustments.modu
       entities: [
         ImportInvoiceEntity,
         ImportInvoiceProductsEntity,
-        StockAdjustmentEntity,
-        StockAdjustmentProductsEntity,
       ],
     }),
 
     ImportInvoicesModule,
-    StockAdjustmentsModule,
+    InvoiceHelperModule,
   ],
   controllers: [],
   providers: [],

@@ -28,6 +28,9 @@ export class ImportInvoiceProductsEntity {
     @Column({ name: 'quantity', type: 'integer' })
     quantity: number;
 
+    @Column({ name: 'returned_quantity', type: 'integer', default: 0 })
+    returnedQuantity: number;
+
     @Column({ name: 'import_price', type: 'decimal', precision: 10, scale: 2 })
     importPrice: number;
 
