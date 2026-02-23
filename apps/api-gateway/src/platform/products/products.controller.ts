@@ -260,24 +260,4 @@ export class ProductsController {
         }
     }
 
-    // Get a specific stock history by id.
-    // GET /api/v1/products/stock-history/detail/:id
-    @Get('stock-history/detail/:id')
-    @Roles(Role.ADMIN, Role.MANAGER)
-    @ApiOperation({ summary: '[ADMIN, MANAGER] Get a specific stock history by id' })
-    @ApiParam({ name: 'id', description: 'The ID of the stock history record', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A specific stock history record has been retrieved successfully.', type: ProductStockHistoryResponseDto })
-    @HttpCode(HttpStatus.OK)
-    async getProductStockHistoryById(@Param('id') id: string): Promise<ProductStockHistoryResponseDto> {
-        try {
-            const result: ProductStockHistoryResponseDto = await firstValueFrom(
-                this.platformService.send({ cmd: 'products.getProductStockHistoryById' }, { id })
-            );
-            return result;
-        } catch (error: any) {
-            if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
-            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UNKNOWN_ERROR, error.message);
-        }
-    }
-
 }

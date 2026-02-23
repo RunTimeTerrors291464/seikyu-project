@@ -170,6 +170,7 @@ export class ProductsService {
 
         // Validate all products before touching the DB.
         const validatedProducts: { product: ProductsEntity, update: (typeof dto.products)[number] }[] = [];
+        const negativeStockProductIds: string[] = [];
 
         for (const productUpdate of dto.products) {
 
@@ -178,12 +179,11 @@ export class ProductsService {
             if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `The product with ID ${productUpdate.id} is not found.`);
 
             // Validate quantity is not negative after the operation.
-            if (productUpdate.action === StockActionType.SUBTRACT && product.inventoryStock < productUpdate.quantity) {
-                throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, `Insufficient inventory to subtract for Product ID ${productUpdate.id}.`);
-            }
-
+            if (productUpdate.action === StockActionType.SUBTRACT && product.inventoryStock < productUpdate.quantity) negativeStockProductIds.push(productUpdate.id);
             validatedProducts.push({ product, update: productUpdate });
         }
+
+        if (negativeStockProductIds.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, 'One or more products would have negative stock when subtracted.', { productIds: negativeStockProductIds });
 
         // Run all updates inside a single transaction.
         const queryRunner = this.dataSource.createQueryRunner();
@@ -335,25 +335,6 @@ export class ProductsService {
             limit: 10,
             total,
             products: historyList,
-        };
-    }
-
-    // Get a specific stock history by id.
-    @HandleServiceError(ErrorCode.GET_PRODUCT_STOCK_HISTORY_BY_ID_SERVICE)
-    async getProductStockHistoryById(id: string): Promise<ProductStockHistoryResponseDto> {
-        const history = await this.productsRepository.getProductStockHistoryById(id);
-        if (!history) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_STOCK_HISTORY_NOT_FOUND, 'The stock history record is not found.');
-
-        return {
-            id: history.id,
-            productId: history.product.id,
-            quantityType: history.quantityType,
-            quantity: history.quantity,
-            referenceType: history.referenceType,
-            referenceId: history.referenceId,
-            beforeInventoryStock: history.beforeInventoryStock,
-            afterInventoryStock: history.afterInventoryStock,
-            createdAt: history.createdAt,
         };
     }
 }

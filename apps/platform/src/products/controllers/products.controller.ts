@@ -112,10 +112,4 @@ export class ProductsController {
     async getProductStockHistoryList(dto: GetProductStockHistoryRequestDto): Promise<GetListOfProductStockHistoryResponseDto> {
         return this.productsService.getProductStockHistoryList(dto);
     }
-
-    // Get a specific stock history by id.
-    @MessagePattern({ cmd: 'products.getProductStockHistoryById' })
-    async getProductStockHistoryById(data: { id: string }): Promise<ProductStockHistoryResponseDto> {
-        return this.productsService.getProductStockHistoryById(data.id);
-    }
 }

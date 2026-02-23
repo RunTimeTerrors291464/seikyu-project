@@ -5,3 +5,8 @@ export enum ImportInvoiceStatus {
     RETURNED = 'returned'
 }
 
+export enum ReturnImportInvoiceStatus {
+    DRAFT = 'draft',
+    CONFIRMED = 'confirmed'
+}
+

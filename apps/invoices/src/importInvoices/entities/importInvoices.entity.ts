@@ -1,7 +1,8 @@
 import { Entity, Column, CreateDateColumn, UpdateDateColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 // Import entities.
-import { ImportInvoiceProductsEntity } from './importInvocieProducts.entity'
+import { ImportInvoiceProductsEntity } from './importInvocieProducts.entity';
+import { ReturnImportInvoiceEntity } from '../../returnImportInvoices/entities/returnImportInvoices.entity';
 
 // Import enums.
 import { ImportInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
@@ -17,6 +18,9 @@ export class ImportInvoiceEntity {
 
     @OneToMany(() => ImportInvoiceProductsEntity, (importInvoiceProduct) => importInvoiceProduct.importInvoice)
     importInvoiceProducts: ImportInvoiceProductsEntity[];
+
+    @OneToMany(() => ReturnImportInvoiceEntity, (returnImportInvoice) => returnImportInvoice.importInvoice)
+    returnImportInvoices: ReturnImportInvoiceEntity[];
 
     @Column({ name: 'total_products', type: 'integer' })
     totalProducts: number;

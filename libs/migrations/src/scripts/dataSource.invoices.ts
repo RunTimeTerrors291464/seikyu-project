@@ -5,6 +5,8 @@ import * as path from 'path';
 // Invoices application entities.
 import { ImportInvoiceEntity } from '../../../../apps/invoices/src/importInvoices/entities/importInvoices.entity';
 import { ImportInvoiceProductsEntity } from '../../../../apps/invoices/src/importInvoices/entities/importInvocieProducts.entity';
+import { ReturnImportInvoiceEntity } from '../../../../apps/invoices/src/returnImportInvoices/entities/returnImportInvoices.entity';
+import { ReturnImportInvoiceProductsEntity } from '../../../../apps/invoices/src/returnImportInvoices/entities/returnImportInvoiceProducts.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -19,6 +21,8 @@ export default new DataSource({
     entities: [
         ImportInvoiceEntity,
         ImportInvoiceProductsEntity,
+        ReturnImportInvoiceEntity,
+        ReturnImportInvoiceProductsEntity,
     ],
     migrations: [path.join(__dirname, '../invoices/*.{ts,js}')],
     synchronize: false,
