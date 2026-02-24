@@ -127,7 +127,7 @@ export class ImportInvoicesController {
     // GET /api/v1/invoices/import/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get an import invoice by ID' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get an import invoice by ID' })
     @ApiParam({ name: 'id', description: 'The ID of the import invoice', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'An import invoice has been retrieved successfully.', type: ImportInvoiceResponseDto })
     @HttpCode(HttpStatus.OK)
@@ -147,7 +147,7 @@ export class ImportInvoicesController {
     // GET /api/v1/invoices/import
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a list of import invoices' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of import invoices' })
     @ApiResponse({ status: 200, description: 'A list of import invoices has been retrieved successfully.', type: GetListOfImportInvoicesResponseDto })
     @HttpCode(HttpStatus.OK)
     async getListOfImportInvoices(@Query() dto: GetListOfImportInvoiceRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<GetListOfImportInvoicesResponseDto> {

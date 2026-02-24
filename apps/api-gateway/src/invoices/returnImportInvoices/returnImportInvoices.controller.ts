@@ -127,7 +127,7 @@ export class ReturnImportInvoicesController {
     // GET /api/v1/invoices/return-import/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a return import invoice by ID' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a return import invoice by ID' })
     @ApiParam({ name: 'id', description: 'The ID of the return import invoice', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A return import invoice has been retrieved successfully.', type: ReturnImportInvoiceResponseDto })
     @HttpCode(HttpStatus.OK)

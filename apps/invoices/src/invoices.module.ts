@@ -8,10 +8,13 @@ import { ImportInvoiceEntity } from './importInvoices/entities/importInvoices.en
 import { ImportInvoiceProductsEntity } from './importInvoices/entities/importInvocieProducts.entity';
 import { ReturnImportInvoiceEntity } from './returnImportInvoices/entities/returnImportInvoices.entity';
 import { ReturnImportInvoiceProductsEntity } from './returnImportInvoices/entities/returnImportInvoiceProducts.entity';
+import { SellingInvoiceEntity } from './sellingInvoices/entities/sellingInvoices.entity';
+import { SellingInvoiceProductsEntity } from './sellingInvoices/entities/sellingInvoiceProducts.entity';
 
 // Import modules.
 import { ImportInvoicesModule } from './importInvoices/importInvoices.module';
 import { ReturnImportInvoicesModule } from './returnImportInvoices/returnImportInvoices.module';
+import { SellingInvoicesModule } from './sellingInvoices/sellingInvoices.module';
 import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
 
 @Module({
@@ -28,11 +31,14 @@ import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
         ImportInvoiceProductsEntity,
         ReturnImportInvoiceEntity,
         ReturnImportInvoiceProductsEntity,
+        SellingInvoiceEntity,
+        SellingInvoiceProductsEntity,
       ],
     }),
 
     ImportInvoicesModule,
     ReturnImportInvoicesModule,
+    SellingInvoicesModule,
     InvoiceHelperModule,
   ],
   controllers: [],

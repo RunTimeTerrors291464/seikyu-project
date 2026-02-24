@@ -46,7 +46,7 @@ export class SellingInvoiceService {
         if (!invoice) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.INVOICE_NOT_FOUND, `Invoice with ID ${id} not found`);
         return invoice;
     }
-
+    
     // Map an invoice to response DTO.
     private async mapToResponseDto(invoice: SellingInvoiceEntity): Promise<SellingInvoiceResponseDto> {
         let confirmedByUsername: string | undefined;
@@ -78,23 +78,21 @@ export class SellingInvoiceService {
     }
 
     // --- APIs ---
-    // Create a new selling invoice (always confirmed immediately).
+    // Create a new selling invoice.
     @HandleServiceError(ErrorCode.CREATE_SELLING_INVOICE_SERVICE)
     async createSellingInvoice(dto: CreateSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<SellingInvoiceResponseDto> {
 
         // Check if the number of products exceeds the limit.
         if (dto.products.length > this._maxProductsPerSellingInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_SELLING_INVOICE_PRODUCTS, `Too many products in selling invoice. Maximum is ${this._maxProductsPerSellingInvoice}.`);
 
-        // Check whether all productIds exist and are active.
-        const productIds: string[] = dto.products.map(product => product.productId);
+        // Check whether all product SKUs exist and are active.
+        const productSkus: string[] = dto.products.map(product => product.productSku);
         const { success, notFound, notActive }: { success: boolean, notFound: string[], notActive: string[] } =
-            await this.invoiceHelperService.checkProductIdExistsAndActive(productIds);
+            await this.invoiceHelperService.checkProductSkuExistsAndActive(productSkus);
         if (!success) {
             if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
             if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
         }
-
-        // Check ò
 
         // Create and confirm the selling invoice.
         const savedInvoice = await this.sellingInvoiceRepository.createSellingInvoice(dto, user);

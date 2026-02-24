@@ -62,14 +62,14 @@ export class SellingInvoiceRepository {
             const invoiceId = await this.generateInvoiceId();
 
             // Fetch product details from the platform service.
-            const productIds = dto.products.map(p => p.productId);
+            const productSkus = dto.products.map(p => p.productSku);
             const productDetails = await Promise.all(
-                productIds.map(id => this.invoiceHelperService.getProductById(id))
+                productSkus.map(sku => this.invoiceHelperService.getProductBySku(sku))
             );
 
-            // Build a lookup map: productId -> product details.
+            // Build a lookup map: productSku -> product details.
             const productMap = new Map(
-                productDetails.map(p => [p.id, p])
+                productDetails.map(p => [p.sku, p])
             );
 
             // Calculate totals.
@@ -87,25 +87,12 @@ export class SellingInvoiceRepository {
 
             dto.products.forEach(product => {
                 totalQuantity += product.quantity;
-                const detail = productMap.get(product.productId);
+                const detail = productMap.get(product.productSku);
                 const unitPrice = detail?.sellingPrice ?? 0;
                 const discountRate = resolveDiscountRate(product.productDiscount);
                 const subtotal = product.quantity * unitPrice;
                 totalSellingPrice += subtotal * (1 - discountRate / 100);
             });
-
-            // Update inventory stock BEFORE saving to DB.
-            // If the platform service call fails, the transaction is rolled back.
-            const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
-                invoiceType: InvoiceType.SELLING,
-                invoiceId: invoiceId,
-                products: dto.products.map(p => ({
-                    id: p.productId,
-                    quantity: p.quantity,
-                    action: StockActionType.SUBTRACT,
-                })),
-            };
-            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
 
             // Create and save the selling invoice.
             const sellingInvoice = this.sellingInvoiceRepository.create({
@@ -122,16 +109,29 @@ export class SellingInvoiceRepository {
 
             const savedInvoice = await transactionalManager.save(SellingInvoiceEntity, sellingInvoice);
 
+            // Update inventory stock AFTER saving to DB so we have the UUID.
+            // If the platform service call fails, the transaction is rolled back.
+            const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
+                invoiceType: InvoiceType.SELLING,
+                invoiceId: savedInvoice.id,
+                products: dto.products.map(p => ({
+                    id: productMap.get(p.productSku)?.id ?? '',
+                    quantity: p.quantity,
+                    action: StockActionType.SUBTRACT,
+                })),
+            };
+            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
+
             // Create selling invoice products.
             const products = dto.products.map(product => {
-                const detail = productMap.get(product.productId);
+                const detail = productMap.get(product.productSku);
                 const unitPrice = detail?.sellingPrice ?? 0;
                 const discountRate = resolveDiscountRate(product.productDiscount);
                 const subtotal = product.quantity * unitPrice;
                 const totalProductPrice = subtotal * (1 - discountRate / 100);
                 return this.sellingInvoiceProductsRepository.create({
                     sellingInvoice: savedInvoice,
-                    productId: product.productId,
+                    productId: detail?.id ?? '',
                     productSku: detail?.sku ?? '',
                     productName: detail?.productNames?.[0] ?? '',
                     productUnit: detail?.productUnitName ?? '',
@@ -154,4 +154,57 @@ export class SellingInvoiceRepository {
             return invoiceWithRelations || savedInvoice;
         });
     }
+
+    // Get a selling invoice by id. 
+    async getSellingInvoiceById(id: string): Promise<SellingInvoiceEntity | null> {
+        return await this.sellingInvoiceRepository.findOne({
+            where: { id },
+            relations: ['sellingInvoiceProducts'],
+        }); 
+    }
+
+    // Get a list of selling invoices.
+    async getListOfSellingInvoices(dto: GetListOfSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<{ data: SellingInvoiceEntity[], total: number }> {
+        const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', fromDate, toDate } = dto;
+
+        const queryBuilder = this.sellingInvoiceRepository.createQueryBuilder('invoice');
+        queryBuilder.leftJoinAndSelect('invoice.sellingInvoiceProducts', 'products');
+
+        // Apply search filters.
+        if (search) {
+            if (searchBy === 'invoiceId') {
+                queryBuilder.andWhere('invoice.invoiceId ILIKE :search', { search: `${search}%` });
+            } else if (searchBy === 'userId') {
+                queryBuilder.andWhere('invoice.confirmedBy = :search', { search });
+            } else if (searchBy === 'productId') {
+                queryBuilder.andWhere('products.productId = :search', { search });
+            } else {
+                queryBuilder.andWhere('invoice.invoiceId ILIKE :search', { search: `${search}%` });
+            }
+        }
+
+        // Apply date range filters.
+        if (fromDate) {
+            queryBuilder.andWhere('invoice.confirmedAt >= :fromDate', { fromDate });
+        }
+
+        if (toDate) {
+            queryBuilder.andWhere('invoice.confirmedAt <= :toDate', { toDate });
+        }
+
+        // Apply sorting.
+        let sortField = 'invoice.confirmedAt';
+        if (sortBy === 'invoiceId') sortField = 'invoice.invoiceId';
+        else if (sortBy === 'totalSellingPrice') sortField = 'invoice.totalSellingPrice';
+        else if (sortBy === 'confirmedAt') sortField = 'invoice.confirmedAt';
+
+        queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');
+
+        // Apply pagination.
+        queryBuilder.skip((page - 1) * limit).take(limit);
+
+        const [data, total] = await queryBuilder.getManyAndCount();
+        return { data, total };
+    }
+
 }

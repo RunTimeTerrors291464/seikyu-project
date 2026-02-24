@@ -47,11 +47,14 @@ export class InvoiceHelperService {
         return lastValueFrom(
             this.platformClient.send({ cmd: 'products.updateInventoryStockBulk' }, dto).pipe(
                 retry({ count: 3, delay: 250 }),
-                catchError((err) => throwError(() => new CustomException(
-                    err?.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
-                    err?.errorCode ?? ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE,
-                    `[updateProductInventoryStockBulk] ${err?.message ?? 'Platform service unavailable, please try again later.'}`,
-                )))
+                catchError((err) => {
+                    const errorData = err?.error || err;
+                    const status = errorData?.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
+                    const errorCode = errorData?.errorCode ?? ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE;
+                    const message = errorData?.message ?? 'Platform service unavailable, please try again later.';
+                    
+                    return throwError(() => new CustomException(status, errorCode, `[updateProductInventoryStockBulk] ${message}`));
+                })
             )
         );
     }
@@ -62,13 +65,33 @@ export class InvoiceHelperService {
         const notActive: string[] = [];
 
         const products = await Promise.all(
-            productIds.map(id => this.getProductById(id))
+            productIds.map(id => this.getProductById(id).catch(() => null))
         );
 
         products.forEach((product, index) => {
             const id = productIds[index];
             if (!product) notFound.push(id);
             else if (!product.active) notActive.push(id);
+        });
+
+        if (!notFound.length && !notActive.length) return { success: true, notFound, notActive };
+        return { success: false, notFound, notActive };
+    }
+
+
+    // Check whether the product SKU exists and is active.
+    async checkProductSkuExistsAndActive(skus: string[]): Promise<{ success: boolean, notFound: string[], notActive: string[] }> {
+        const notFound: string[] = [];
+        const notActive: string[] = [];
+
+        const products = await Promise.all(
+            skus.map(sku => this.getProductBySku(sku).catch(() => null))
+        );
+
+        products.forEach((product, index) => {
+            const sku = skus[index];
+            if (!product) notFound.push(sku);
+            else if (!product.active) notActive.push(sku);
         });
 
         if (!notFound.length && !notActive.length) return { success: true, notFound, notActive };
@@ -94,6 +117,4 @@ export class InvoiceHelperService {
             )
         );
     }
-
-
 }

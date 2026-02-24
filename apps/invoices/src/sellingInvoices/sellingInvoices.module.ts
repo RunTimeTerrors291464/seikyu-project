@@ -11,6 +11,9 @@ import { SellingInvoiceRepository } from './repositories/sellingInvoices.reposit
 // Import invoice helper module.
 import { InvoiceHelperModule } from '../invoiceHelper/invoiceHelper.module';
 
+// Import controllers.
+import { SellingInvoiceController } from './controllers/sellingInvoice.controller';
+
 // Import services.
 import { SellingInvoiceService } from './services/sellingInvoice.service';
 
@@ -27,7 +30,7 @@ import { SellingInvoicesMapper } from '@app/common/mappers/invoices/sellingInvoi
         ]),
     ],
     controllers: [
-        // Add controllers here
+        SellingInvoiceController,
     ],
     providers: [
         SellingInvoiceRepository,

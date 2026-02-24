@@ -76,8 +76,8 @@ export class SellingInvoiceResponseDto {
     id: string;
 
     @ApiPropertyOptional({
-        description: 'Selling invoice ID (format: SIYY-XXXXXXX). Assigned upon confirmation',
-        example: 'SI26-0000001',
+        description: 'Selling invoice ID (format: SYY-XXXXXXX). Assigned upon confirmation',
+        example: 'S26-0000001',
         nullable: true,
     })
     invoiceId: string | null;
@@ -157,8 +157,8 @@ export class SellingInvoiceWithoutProductsDto {
     id: string;
 
     @ApiPropertyOptional({
-        description: 'Selling invoice ID (format: SIYY-XXXXXXX)',
-        example: 'SI26-0000001',
+        description: 'Selling invoice ID (format: SYY-XXXXXXX)',
+        example: 'SS26-0000001',
         nullable: true,
     })
     invoiceId: string | null;

@@ -5,12 +5,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class SellingInvoiceProductRequestDto {
 
     @ApiProperty({
-        description: 'Product UUID',
-        example: '550e8400-e29b-41d4-a716-446655440000',
+        description: 'Product SKU',
+        example: '123456789111',
     })
     @IsNotEmpty()
-    @IsUUID()
-    productId: string;
+    @IsString()
+    productSku: string;
 
     @ApiProperty({
         description: 'Quantity to sell',
@@ -50,7 +50,7 @@ export class CreateSellingInvoiceRequestDto {
         type: [SellingInvoiceProductRequestDto],
         example: [
             {
-                productId: '550e8400-e29b-41d4-a716-446655440000',
+                productSku: '123456789111',
                 quantity: 10,
                 productDiscount: 10,
                 notes: 'Gift-wrapped',
@@ -77,7 +77,7 @@ export class CreateSellingInvoiceRequestDto {
 
     @ApiPropertyOptional({
         description: 'Additional notes for this selling invoice',
-        example: 'Customer: Nguyen Van A',
+        example: '4th of July promotion',
     })
     @IsOptional()
     @IsString()
@@ -106,7 +106,7 @@ export class GetListOfSellingInvoiceRequestDto {
 
     @ApiPropertyOptional({
         description: 'The search query',
-        example: 'SI26-0000001',
+        example: 'S26-0000001',
     })
     @IsString()
     @ValidateIf((object) => object.searchBy !== undefined || object.search !== undefined)
