@@ -258,7 +258,7 @@ export class ReturnImportInvoiceService {
         if (returnImportInvoice.status !== ReturnImportInvoiceStatus.DRAFT) {
             throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NOT_DRAFT, `Return import invoice must be DRAFT to be confirmed.`);
         }
-
+ 
         // Check if user has permission.
         if (returnImportInvoice.draftBy !== user.id) {
             throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NO_PERMISSION_DRAFT, 'User has no permission to confirm this invoice.');

@@ -1,6 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, HttpStatus } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, retry, catchError, throwError } from 'rxjs';
+
+// Import error exceptions.
+import { CustomException } from '@app/common/error-exceptions/customException';
+import { ErrorCode } from '@app/common/enums/errorCode.enum';
 
 // Import DTOs.
 import {
@@ -38,9 +42,17 @@ export class InvoiceHelperService {
     }
 
     // Update product inventory stock in bulk.
+    // Retry 3 times. If all retries fail, throw a CustomException.
     async updateProductInventoryStockBulk(dto: UpdateProductInventoryBulkRequestDto): Promise<ProductResponseDto[]> {
         return lastValueFrom(
-            this.platformClient.send({ cmd: 'products.updateInventoryStockBulk' }, dto)
+            this.platformClient.send({ cmd: 'products.updateInventoryStockBulk' }, dto).pipe(
+                retry({ count: 3, delay: 250 }),
+                catchError((err) => throwError(() => new CustomException(
+                    err?.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+                    err?.errorCode ?? ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE,
+                    `[updateProductInventoryStockBulk] ${err?.message ?? 'Platform service unavailable, please try again later.'}`,
+                )))
+            )
         );
     }
 

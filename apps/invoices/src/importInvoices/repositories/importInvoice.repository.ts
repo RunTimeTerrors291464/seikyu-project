@@ -197,15 +197,6 @@ export class ImportInvoiceRepository {
             // Generate invoice ID.
             const invoiceId = await this.generateInvoiceId();
 
-            // Update invoice details.
-            invoice.invoiceId = invoiceId;
-            invoice.status = ImportInvoiceStatus.CONFIRMED;
-            invoice.confirmedBy = user.id;
-            invoice.confirmedAt = new Date();
-            invoice.returnCount = 0;
-
-            await transactionalManager.save(ImportInvoiceEntity, invoice);
-
             // Load products if relations are missing.
             let products = invoice.importInvoiceProducts;
             if (!products) {
@@ -230,7 +221,16 @@ export class ImportInvoiceRepository {
 
             await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
 
-            // Reload with relations.
+            // Update invoice details.
+            invoice.invoiceId = invoiceId;
+            invoice.status = ImportInvoiceStatus.CONFIRMED;
+            invoice.confirmedBy = user.id;
+            invoice.confirmedAt = new Date();
+            invoice.returnCount = 0;
+
+            await transactionalManager.save(ImportInvoiceEntity, invoice);
+
+            // Reload with relations to return the latest data.
             const invoiceWithRelations = await transactionalManager.findOne(ImportInvoiceEntity, {
                 where: { id: invoice.id },
                 relations: ['importInvoiceProducts'],

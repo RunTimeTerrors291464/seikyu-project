@@ -84,6 +84,9 @@ export enum ErrorCode {
     // return-import-invoices errors.
     TOO_MANY_RETURN_IMPORT_INVOICE_PRODUCTS = 4006,
 
+    // selling-invoices errors.
+    TOO_MANY_SELLING_INVOICE_PRODUCTS = 4007,
+
     // import-invoices services.
     CREATE_DRAFT_IMPORT_INVOICE_SERVICE = 4101,
     EDIT_DRAFT_IMPORT_INVOICE_SERVICE = 4102,
@@ -99,6 +102,11 @@ export enum ErrorCode {
     CONFIRM_RETURN_IMPORT_INVOICE_SERVICE = 4204,
     GET_RETURN_IMPORT_INVOICE_BY_ID_SERVICE = 4205,
     GET_LIST_OF_RETURN_IMPORT_INVOICES_SERVICE = 4206,
+
+    // selling-invoices services.
+    CREATE_SELLING_INVOICE_SERVICE = 4301,
+    GET_SELLING_INVOICE_BY_ID_SERVICE = 4302,
+    GET_LIST_OF_SELLING_INVOICES_SERVICE = 4303,
 
 
     // DTO validation error.

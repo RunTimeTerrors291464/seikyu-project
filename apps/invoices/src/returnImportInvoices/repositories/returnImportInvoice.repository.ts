@@ -213,15 +213,7 @@ export class ReturnImportInvoiceRepository {
             // Generate return invoice ID.
             const returnInvoiceId = await this.generateReturnInvoiceId();
 
-            // Update return import invoice details.
-            returnImportInvoice.returnInvoiceId = returnInvoiceId;
-            returnImportInvoice.status = ReturnImportInvoiceStatus.CONFIRMED;
-            returnImportInvoice.confirmedBy = user.id;
-            returnImportInvoice.confirmedAt = new Date();
-
-            const savedReturnInvoice = await transactionalManager.save(ReturnImportInvoiceEntity, returnImportInvoice);
-
-            // Need to update returnedQuantity in original import invoice products.
+            // Load products if relations are missing.
             if (!returnImportInvoice.returnImportInvoiceProducts) {
                 const loadedReturnInvoice = await transactionalManager.findOne(ReturnImportInvoiceEntity, {
                     where: { id: returnImportInvoice.id },
@@ -241,6 +233,26 @@ export class ReturnImportInvoiceRepository {
                     originalImportInvoice.importInvoiceProducts = loadedImportInvoice.importInvoiceProducts;
                 }
             }
+
+            // Update inventory stock.
+            const stockUpdateDto = {
+                invoiceType: InvoiceType.RETURN_IMPORT,
+                invoiceId: returnImportInvoice.id,
+                products: (returnImportInvoice.returnImportInvoiceProducts || []).map(p => ({
+                    id: p.productId,
+                    quantity: p.returnQuantity,
+                    action: StockActionType.SUBTRACT,
+                })),
+            };
+            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
+
+            // Update return import invoice details.
+            returnImportInvoice.returnInvoiceId = returnInvoiceId;
+            returnImportInvoice.status = ReturnImportInvoiceStatus.CONFIRMED;
+            returnImportInvoice.confirmedBy = user.id;
+            returnImportInvoice.confirmedAt = new Date();
+
+            const savedReturnInvoice = await transactionalManager.save(ReturnImportInvoiceEntity, returnImportInvoice);
 
             // Create a map to look up return quantity fast.
             const returnQuantityMap = new Map<string, number>();
@@ -280,19 +292,6 @@ export class ReturnImportInvoiceRepository {
             originalImportInvoice.returnCount += 1;
 
             await transactionalManager.save(ImportInvoiceEntity, originalImportInvoice);
-
-            // Update inventory stock.
-            const stockUpdateDto = {
-                invoiceType: InvoiceType.RETURN_IMPORT,
-                invoiceId: savedReturnInvoice.id,
-                products: (returnImportInvoice.returnImportInvoiceProducts || []).map(p => ({
-                    id: p.productId,
-                    quantity: p.returnQuantity,
-                    action: StockActionType.SUBTRACT,
-                })),
-            };
-
-            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
 
             // Reload with relations.
             const invoiceWithRelations = await transactionalManager.findOne(ReturnImportInvoiceEntity, {

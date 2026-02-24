@@ -10,3 +10,7 @@ export enum ReturnImportInvoiceStatus {
     CONFIRMED = 'confirmed'
 }
 
+export enum SellingInvoiceStatus {
+    CONFIRMED = 'confirmed'
+}
+
