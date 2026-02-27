@@ -65,29 +65,19 @@ export class ReturnImportInvoiceRepository {
     async createDraftReturnImportInvoice(
         importInvoice: ImportInvoiceEntity,
         resolvedProducts: ResolvedReturnProductData[],
+        calculatedTotals: { totalProducts: number; totalQuantity: number; totalReturnPrice: number },
         notes: string | null,
         user: AccessTokenPayload
     ): Promise<ReturnImportInvoiceEntity> {
         return await this.returnImportInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Calculate totals for the return import invoice.
-            let totalProducts = resolvedProducts.length;
-            let totalQuantity = 0;
-            let totalReturnPrice = 0;
-
-            resolvedProducts.forEach(item => {
-                totalQuantity += item.returnQuantity;
-                const productTotal = item.returnQuantity * item.importInvoiceProduct.importPrice;
-                totalReturnPrice += productTotal;
-            });
-
             // Create return import invoice. 
             // It is a draft invoice, so it doesn't have a return invoice ID yet.
             const returnImportInvoice = this.returnImportInvoiceRepository.create({
                 importInvoice: importInvoice,
-                totalProducts,
-                totalQuantity,
-                totalReturnPrice,
+                totalProducts: calculatedTotals.totalProducts,
+                totalQuantity: calculatedTotals.totalQuantity,
+                totalReturnPrice: calculatedTotals.totalReturnPrice,
                 notes: notes,
                 status: ReturnImportInvoiceStatus.DRAFT,
                 draftBy: user.id,
@@ -128,25 +118,15 @@ export class ReturnImportInvoiceRepository {
     async editDraftReturnImportInvoice(
         returnImportInvoice: ReturnImportInvoiceEntity,
         resolvedProducts: ResolvedReturnProductData[],
+        calculatedTotals: { totalProducts: number; totalQuantity: number; totalReturnPrice: number },
         notes: string | null,
         user: AccessTokenPayload
     ): Promise<ReturnImportInvoiceEntity> {
         return await this.returnImportInvoiceRepository.manager.transaction(async (transactionalManager) => {
-            // Calculate totals for the return import invoice.
-            let totalProducts = resolvedProducts.length;
-            let totalQuantity = 0;
-            let totalReturnPrice = 0;
-
-            resolvedProducts.forEach(item => {
-                totalQuantity += item.returnQuantity;
-                const productTotal = item.returnQuantity * item.importInvoiceProduct.importPrice;
-                totalReturnPrice += productTotal;
-            });
-
             // Update return import invoice.
-            returnImportInvoice.totalProducts = totalProducts;
-            returnImportInvoice.totalQuantity = totalQuantity;
-            returnImportInvoice.totalReturnPrice = totalReturnPrice;
+            returnImportInvoice.totalProducts = calculatedTotals.totalProducts;
+            returnImportInvoice.totalQuantity = calculatedTotals.totalQuantity;
+            returnImportInvoice.totalReturnPrice = calculatedTotals.totalReturnPrice;
             returnImportInvoice.notes = notes;
             returnImportInvoice.draftBy = user.id;
             returnImportInvoice.draftAt = new Date();

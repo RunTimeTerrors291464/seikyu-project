@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "../../../dist/apps/platform"
+  },
+  "include": [
+    "../src/**/*",
+    "./integration/*.integration-spec.ts",
+    "./integration/integration-state.ts",
+    "./*.e2e-spec.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

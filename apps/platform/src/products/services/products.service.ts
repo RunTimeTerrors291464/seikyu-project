@@ -168,29 +168,29 @@ export class ProductsService {
     @HandleServiceError(ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE)
     async updateProductInventoryBulk(dto: UpdateProductInventoryBulkRequestDto): Promise<ProductResponseDto[]> {
 
-        // Validate all products before touching the DB.
-        const validatedProducts: { product: ProductsEntity, update: (typeof dto.products)[number] }[] = [];
-        const negativeStockProductIds: string[] = [];
-
-        for (const productUpdate of dto.products) {
-
-            // Check if the product already exists.
-            const product = await this.getProductById(productUpdate.id);
-            if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `The product with ID ${productUpdate.id} is not found.`);
-
-            // Validate quantity is not negative after the operation.
-            if (productUpdate.action === StockActionType.SUBTRACT && product.inventoryStock < productUpdate.quantity) negativeStockProductIds.push(productUpdate.id);
-            validatedProducts.push({ product, update: productUpdate });
-        }
-
-        if (negativeStockProductIds.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, 'One or more products would have negative stock when subtracted.', { productIds: negativeStockProductIds });
-
-        // Run all updates inside a single transaction.
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
+            const negativeStockProductIds: string[] = [];
+            const validatedProducts: { product: ProductsEntity, update: (typeof dto.products)[number] }[] = [];
+
+            for (const productUpdate of dto.products) {
+
+                // Use SELECT FOR UPDATE to lock the row inside the transaction. Pessimistic locking.
+                const product = await queryRunner.manager.findOne(ProductsEntity, {
+                    where: { id: productUpdate.id },
+                    lock: { mode: 'pessimistic_write' },
+                });
+                if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `The product with ID ${productUpdate.id} is not found.`);
+
+                // Validate quantity is not negative after the operation.
+                if (productUpdate.action === StockActionType.SUBTRACT && product.inventoryStock < productUpdate.quantity) negativeStockProductIds.push(productUpdate.id);
+                validatedProducts.push({ product, update: productUpdate });
+            }
+            if (negativeStockProductIds.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, 'One or more products would have negative stock when subtracted.', { productIds: negativeStockProductIds });
+
             const results: ProductResponseDto[] = [];
 
             for (const { product, update } of validatedProducts) {
@@ -210,6 +210,7 @@ export class ProductsService {
 
         } catch (error) {
             await queryRunner.rollbackTransaction();
+            if (error instanceof CustomException) throw error;
             throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE, 'Failed to update product inventory stock.');
         } finally {
             await queryRunner.release();

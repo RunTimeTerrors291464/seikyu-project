@@ -11,6 +11,8 @@ export enum ReturnImportInvoiceStatus {
 }
 
 export enum SellingInvoiceStatus {
-    CONFIRMED = 'confirmed'
+    CONFIRMED = 'confirmed',
+    PARTIALLY_RETURNED = 'partially_returned',
+    RETURNED = 'returned'
 }
 

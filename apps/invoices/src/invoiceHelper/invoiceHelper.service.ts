@@ -80,7 +80,7 @@ export class InvoiceHelperService {
 
 
     // Check whether the product SKU exists and is active.
-    async checkProductSkuExistsAndActive(skus: string[]): Promise<{ success: boolean, notFound: string[], notActive: string[] }> {
+    async checkProductSkuExistsAndActive(skus: string[]): Promise<{ success: boolean, notFound: string[], notActive: string[], products: ProductResponseDto[] }> {
         const notFound: string[] = [];
         const notActive: string[] = [];
 
@@ -94,8 +94,8 @@ export class InvoiceHelperService {
             else if (!product.active) notActive.push(sku);
         });
 
-        if (!notFound.length && !notActive.length) return { success: true, notFound, notActive };
-        return { success: false, notFound, notActive };
+        if (!notFound.length && !notActive.length) return { success: true, notFound, notActive, products: products as ProductResponseDto[] };
+        return { success: false, notFound, notActive, products: [] };
     }
 
     // Get a product by ID.

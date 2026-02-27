@@ -48,6 +48,20 @@ export class ReturnImportInvoiceService {
     private readonly _maxProductsPerReturnImportInvoice = 64;
 
     // --- DRY methods ---
+    // Calculate invoice totals from resolved return products.
+    private calculateInvoiceTotals(resolvedProducts: ResolvedReturnProductData[]) {
+        let totalProducts = resolvedProducts.length;
+        let totalQuantity = 0;
+        let totalReturnPrice = 0;
+
+        resolvedProducts.forEach(item => {
+            totalQuantity += item.returnQuantity;
+            totalReturnPrice += item.returnQuantity * item.importInvoiceProduct.importPrice;
+        });
+
+        return { totalProducts, totalQuantity, totalReturnPrice };
+    }
+
     // Validate products to check if they are valid for return.
     private async checkProductInImportInvoice(
         productsToReturn: ReturnImportInvoiceProductRequestDto[],
@@ -169,10 +183,14 @@ export class ReturnImportInvoiceService {
         // Validate products and resolve their details from the original invoice.
         const resolvedProducts: ResolvedReturnProductData[] = await this.checkProductInImportInvoice(dto.products, importInvoice);
 
+        // Calculate invoice totals.
+        const calculatedTotals = this.calculateInvoiceTotals(resolvedProducts);
+
         // Create the draft return invoice through the repository
         const savedInvoice = await this.returnImportInvoiceRepository.createDraftReturnImportInvoice(
             importInvoice,
             resolvedProducts,
+            calculatedTotals,
             dto.notes ?? null,
             user
         );
@@ -210,10 +228,14 @@ export class ReturnImportInvoiceService {
         // Validate products and resolve their details from the original invoice.
         const resolvedProducts: ResolvedReturnProductData[] = await this.checkProductInImportInvoice(dto.products, importInvoice);
 
+        // Calculate invoice totals.
+        const calculatedTotals = this.calculateInvoiceTotals(resolvedProducts);
+
         // Edit the draft return invoice through the repository
         const savedInvoice = await this.returnImportInvoiceRepository.editDraftReturnImportInvoice(
             returnImportInvoice,
             resolvedProducts,
+            calculatedTotals,
             dto.notes ?? null,
             user
         );

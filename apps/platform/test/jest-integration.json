@@ -1,0 +1,18 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": "integration/.+\\.integration-spec\\.ts$",
+  "testSequencer": "./test/jest-integration-sequencer.js",
+  "globalTeardown": "./test/global-teardown.js",
+  "transform": {
+    "^.+\\.(t|j)s$": ["ts-jest", {
+      "tsconfig": "<rootDir>/tsconfig.integration.json"
+    }]
+  },
+  "moduleNameMapper": {
+    "^@app/common(|/.*)$": "<rootDir>/../../libs/common/src/$1",
+    "^@app/migrations(|/.*)$": "<rootDir>/../../libs/migrations/src/$1",
+    "^@app/services(|/.*)$": "<rootDir>/../../libs/services/src/$1"
+  }
+}

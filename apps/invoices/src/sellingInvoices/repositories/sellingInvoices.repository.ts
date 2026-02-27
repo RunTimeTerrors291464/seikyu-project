@@ -23,6 +23,19 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 // Import helper service.
 import { InvoiceHelperService } from '../../invoiceHelper/invoiceHelper.service';
 
+// Interface for resolved products from service.
+export interface ResolvedSellingProductData {
+    productSku: string;
+    productId: string;
+    productName: string;
+    productUnit: string;
+    quantity: number;
+    sellingPrice: number;
+    appliedDiscount: number;
+    totalProductPrice: number;
+    notes: string | null;
+}
+
 @Injectable()
 export class SellingInvoiceRepository {
     constructor(
@@ -55,58 +68,34 @@ export class SellingInvoiceRepository {
     }
 
     // Create a new selling invoice.
-    async createSellingInvoice(dto: CreateSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<SellingInvoiceEntity> {
+    async createSellingInvoice(
+        dto: CreateSellingInvoiceRequestDto,
+        user: AccessTokenPayload,
+        calculatedTotals: {
+            totalProducts: number;
+            totalQuantity: number;
+            totalSellingPrice: number;
+            invoiceDiscount: number;
+            resolvedProducts: ResolvedSellingProductData[];
+        }
+    ): Promise<SellingInvoiceEntity> {
         return await this.sellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
             // Generate invoice ID.
             const invoiceId = await this.generateInvoiceId();
 
-            // Fetch product details from the platform service.
-            const productSkus = dto.products.map(p => p.productSku);
-            const productDetails = await Promise.all(
-                productSkus.map(sku => this.invoiceHelperService.getProductBySku(sku))
-            );
-
-            // Build a lookup map: productSku -> product details.
-            const productMap = new Map(
-                productDetails.map(p => [p.sku, p])
-            );
-
-            // Calculate totals.
-            const totalProducts = dto.products.length;
-            let totalQuantity = 0;
-            let totalSellingPrice = 0;
-            const invoiceDiscount = dto.invoiceDiscount ?? 0;
-
-            // If the product has its own discount, it overrides the invoice-level discount.
-            const resolveDiscountRate = (productDiscount: number | null | undefined): number => {
-                return (productDiscount != null && productDiscount > 0)
-                    ? productDiscount
-                    : invoiceDiscount;
-            };
-
-            dto.products.forEach(product => {
-                totalQuantity += product.quantity;
-                const detail = productMap.get(product.productSku);
-                const unitPrice = detail?.sellingPrice ?? 0;
-                const discountRate = resolveDiscountRate(product.productDiscount);
-                const subtotal = product.quantity * unitPrice;
-                totalSellingPrice += subtotal * (1 - discountRate / 100);
-            });
-
             // Create and save the selling invoice.
             const sellingInvoice = this.sellingInvoiceRepository.create({
                 invoiceId,
-                totalProducts,
-                totalQuantity,
-                invoiceDiscount,
-                totalSellingPrice,
+                totalProducts: calculatedTotals.totalProducts,
+                totalQuantity: calculatedTotals.totalQuantity,
+                invoiceDiscount: calculatedTotals.invoiceDiscount,
+                totalSellingPrice: calculatedTotals.totalSellingPrice,
                 notes: dto.notes ?? null,
                 status: SellingInvoiceStatus.CONFIRMED,
                 confirmedBy: user.id,
                 confirmedAt: new Date(),
             });
-
             const savedInvoice = await transactionalManager.save(SellingInvoiceEntity, sellingInvoice);
 
             // Update inventory stock AFTER saving to DB so we have the UUID.
@@ -114,8 +103,8 @@ export class SellingInvoiceRepository {
             const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
                 invoiceType: InvoiceType.SELLING,
                 invoiceId: savedInvoice.id,
-                products: dto.products.map(p => ({
-                    id: productMap.get(p.productSku)?.id ?? '',
+                products: calculatedTotals.resolvedProducts.map(p => ({
+                    id: p.productId,
                     quantity: p.quantity,
                     action: StockActionType.SUBTRACT,
                 })),
@@ -123,23 +112,18 @@ export class SellingInvoiceRepository {
             await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
 
             // Create selling invoice products.
-            const products = dto.products.map(product => {
-                const detail = productMap.get(product.productSku);
-                const unitPrice = detail?.sellingPrice ?? 0;
-                const discountRate = resolveDiscountRate(product.productDiscount);
-                const subtotal = product.quantity * unitPrice;
-                const totalProductPrice = subtotal * (1 - discountRate / 100);
+            const products = calculatedTotals.resolvedProducts.map(item => {
                 return this.sellingInvoiceProductsRepository.create({
                     sellingInvoice: savedInvoice,
-                    productId: detail?.id ?? '',
-                    productSku: detail?.sku ?? '',
-                    productName: detail?.productNames?.[0] ?? '',
-                    productUnit: detail?.productUnitName ?? '',
-                    quantity: product.quantity,
-                    sellingPrice: unitPrice,
-                    productDiscount: discountRate,
-                    totalSellingPrice: totalProductPrice,
-                    notes: product.notes ?? null,
+                    productId: item.productId,
+                    productSku: item.productSku,
+                    productName: item.productName,
+                    productUnit: item.productUnit,
+                    quantity: item.quantity,
+                    sellingPrice: item.sellingPrice,
+                    productDiscount: item.appliedDiscount,
+                    totalSellingPrice: item.totalProductPrice,
+                    notes: item.notes,
                 });
             });
 

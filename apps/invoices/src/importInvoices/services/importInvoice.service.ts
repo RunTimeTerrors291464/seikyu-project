@@ -44,6 +44,24 @@ export class ImportInvoiceService {
     private readonly _maxProductsPerImportInvoice = 64;
 
     // --- DRY methods ---
+    // Calculate invoice totals from products.
+    private calculateInvoiceTotals(products: Array<{ quantity: number; importPrice: number }>) {
+        let totalProducts = products.length;
+        let totalQuantity = 0;
+        let totalImportPrice = 0;
+
+        products.forEach(product => {
+            totalQuantity += product.quantity;
+            totalImportPrice += product.quantity * product.importPrice;
+        });
+
+        return {
+            totalProducts,
+            totalQuantity,
+            totalImportPrice,
+        };
+    }
+
     // Get an invoice by ID.
     private async getInvoiceById(id: string): Promise<ImportInvoiceEntity> {
         const invoice = await this.importInvoiceRepository.getImportInvoiceById(id);
@@ -113,8 +131,11 @@ export class ImportInvoiceService {
             if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
         }
 
+        // Calculate invoice totals.
+        const calculatedTotals = this.calculateInvoiceTotals(dto.products);
+
         // Save a draft invoice.
-        const savedInvoice = await this.importInvoiceRepository.createDraftImportInvoice(dto, user);
+        const savedInvoice = await this.importInvoiceRepository.createDraftImportInvoice(dto, user, calculatedTotals);
         return await this.mapToResponseDto(savedInvoice);
     }
 
@@ -140,8 +161,11 @@ export class ImportInvoiceService {
             if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
         }
 
+        // Calculate invoice totals.
+        const calculatedTotals = this.calculateInvoiceTotals(dto.products);
+
         // Edit a draft invoice.
-        const savedInvoice = await this.importInvoiceRepository.editDraftImportInvoice(dto, invoice, user);
+        const savedInvoice = await this.importInvoiceRepository.editDraftImportInvoice(dto, invoice, calculatedTotals, user);
         return await this.mapToResponseDto(savedInvoice);
     }
 

@@ -16,6 +16,8 @@ import {
 } from '@app/common/dtos/invoices/sellingInvoices/crudSellingInvoicesResponse.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 import { UserResponseDto } from '@app/common/dtos/platform/users/crudUsersReponse.dto';
+import { ProductResponseDto } from '@app/common/dtos/platform/products/crudProductResponse.dto';
+import { ResolvedSellingProductData } from '../repositories/sellingInvoices.repository';
 
 // Import entities.
 import { SellingInvoiceEntity } from '../entities/sellingInvoices.entity';
@@ -40,6 +42,61 @@ export class SellingInvoiceService {
     private readonly _maxProductsPerSellingInvoice = 64;
 
     // --- DRY methods ---
+    // Calculate invoice totals from products.
+    private calculateInvoiceTotals(
+        products: Array<{ productSku: string; quantity: number; productDiscount?: number; notes?: string }>,
+        productDetails: ProductResponseDto[],
+        invoiceDiscount: number = 0
+    ) {
+        let totalProducts = products.length;
+        let totalQuantity = 0;
+        let totalSellingPrice = 0;
+
+        // Build a lookup map: productSku -> product details.
+        const productMap = new Map(
+            productDetails.map(p => [p.sku, p])
+        );
+
+        // If the product has its own discount, it overrides the invoice-level discount.
+        const resolveDiscountRate = (productDiscount: number | null | undefined): number => {
+            return (productDiscount != null && productDiscount > 0)
+                ? productDiscount
+                : invoiceDiscount;
+        };
+
+        const resolvedProducts: ResolvedSellingProductData[] = [];
+
+        products.forEach(product => {
+            totalQuantity += product.quantity;
+            const detail = productMap.get(product.productSku);
+            const unitPrice = detail?.sellingPrice ?? 0;
+            const appliedDiscount = resolveDiscountRate(product.productDiscount);
+            const subtotal = product.quantity * unitPrice;
+            const totalProductPrice = subtotal * (1 - appliedDiscount / 100);
+            totalSellingPrice += totalProductPrice;
+
+            resolvedProducts.push({
+                productSku: detail?.sku ?? product.productSku,
+                productId: detail?.id ?? '',
+                productName: detail?.productNames?.[0] ?? '',
+                productUnit: detail?.productUnitName ?? '',
+                quantity: product.quantity,
+                sellingPrice: unitPrice,
+                appliedDiscount,
+                totalProductPrice,
+                notes: product.notes ?? null,
+            });
+        });
+
+        return {
+            totalProducts,
+            totalQuantity,
+            totalSellingPrice,
+            invoiceDiscount,
+            resolvedProducts,
+        };
+    }
+
     // Get an invoice by ID.
     private async getInvoiceById(id: string): Promise<SellingInvoiceEntity> {
         const invoice = await this.sellingInvoiceRepository.getSellingInvoiceById(id);
@@ -87,15 +144,17 @@ export class SellingInvoiceService {
 
         // Check whether all product SKUs exist and are active.
         const productSkus: string[] = dto.products.map(product => product.productSku);
-        const { success, notFound, notActive }: { success: boolean, notFound: string[], notActive: string[] } =
-            await this.invoiceHelperService.checkProductSkuExistsAndActive(productSkus);
+        const { success, notFound, notActive, products }: { success: boolean, notFound: string[], notActive: string[], products: ProductResponseDto[] } = await this.invoiceHelperService.checkProductSkuExistsAndActive(productSkus);
         if (!success) {
             if (notFound.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `One or more products not found`, notFound);
             if (notActive.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, `One or more products is not active`, notActive);
         }
 
+        // Calculate invoice totals.
+        const calculatedTotals = this.calculateInvoiceTotals(dto.products, products, dto.invoiceDiscount ?? 0);
+
         // Create and confirm the selling invoice.
-        const savedInvoice = await this.sellingInvoiceRepository.createSellingInvoice(dto, user);
+        const savedInvoice = await this.sellingInvoiceRepository.createSellingInvoice(dto, user, calculatedTotals);
         return await this.mapToResponseDto(savedInvoice);
     }
 
@@ -117,4 +176,6 @@ export class SellingInvoiceService {
             invoices: await this.mapToWithoutProductsDtoList(data),
         };
     }
+
+    
 }
