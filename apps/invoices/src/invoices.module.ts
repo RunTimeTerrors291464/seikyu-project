@@ -12,6 +12,8 @@ import { SellingInvoiceEntity } from './sellingInvoices/entities/sellingInvoices
 import { SellingInvoiceProductsEntity } from './sellingInvoices/entities/sellingInvoiceProducts.entity';
 import { ReturnSellingInvoiceEntity } from './returnSellingInvoices/entities/returnSellingInvoices.entity';
 import { ReturnSellingInvoiceProductsEntity } from './returnSellingInvoices/entities/returnSellingInvoiceProducts.entity';
+import { StockAdjustmentInvoiceEntity } from './stockAdjustmentInvoices/entities/stockAdjustmentInvoices.entity';
+import { StockAdjustmentInvoiceProductsEntity } from './stockAdjustmentInvoices/entities/stockAdjustmentInvoiceProducts.entity';
 
 // Import modules.
 import { ImportInvoicesModule } from './importInvoices/importInvoices.module';
@@ -19,6 +21,7 @@ import { ReturnImportInvoicesModule } from './returnImportInvoices/returnImportI
 import { SellingInvoicesModule } from './sellingInvoices/sellingInvoices.module';
 import { ReturnSellingInvoicesModule } from './returnSellingInvoices/returnSellingInvoices.module';
 import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
+import { StockAdjustmentInvoicesModule } from './stockAdjustmentInvoices/stockAdjustmentInvoices.module';
 
 @Module({
   imports: [
@@ -38,6 +41,8 @@ import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
         SellingInvoiceProductsEntity,
         ReturnSellingInvoiceEntity,
         ReturnSellingInvoiceProductsEntity,
+        StockAdjustmentInvoiceEntity,
+        StockAdjustmentInvoiceProductsEntity,
       ],
     }),
 
@@ -46,6 +51,7 @@ import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
     SellingInvoicesModule,
     ReturnSellingInvoicesModule,
     InvoiceHelperModule,
+    StockAdjustmentInvoicesModule,
   ],
   controllers: [],
   providers: [],

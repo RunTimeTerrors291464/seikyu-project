@@ -5,6 +5,7 @@ import { StockAdjustmentInvoiceProductsEntity } from './stockAdjustmentInvoicePr
 
 // Import enums.
 import { StockAdjustmentInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
+import { StockActionReason } from '@app/common/enums/stockActionType.enum';
 
 @Entity('stock_adjustment_invoice')
 export class StockAdjustmentInvoiceEntity {
@@ -23,6 +24,9 @@ export class StockAdjustmentInvoiceEntity {
 
     @Column({ name: 'total_quantity', type: 'integer' })
     totalQuantity: number;
+
+    @Column({ name: 'action_reason', type: 'varchar', enum: StockActionReason })
+    actionReason: StockActionReason;
 
     @Column({ name: 'notes', type: 'text', nullable: true })
     notes: string | null;

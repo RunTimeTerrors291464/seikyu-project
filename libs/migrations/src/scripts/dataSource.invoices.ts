@@ -11,6 +11,8 @@ import { SellingInvoiceEntity } from '../../../../apps/invoices/src/sellingInvoi
 import { SellingInvoiceProductsEntity } from '../../../../apps/invoices/src/sellingInvoices/entities/sellingInvoiceProducts.entity';
 import { ReturnSellingInvoiceEntity } from '../../../../apps/invoices/src/returnSellingInvoices/entities/returnSellingInvoices.entity';
 import { ReturnSellingInvoiceProductsEntity } from '../../../../apps/invoices/src/returnSellingInvoices/entities/returnSellingInvoiceProducts.entity';
+import { StockAdjustmentInvoiceEntity } from '../../../../apps/invoices/src/stockAdjustmentInvoices/entities/stockAdjustmentInvoices.entity';
+import { StockAdjustmentInvoiceProductsEntity } from '../../../../apps/invoices/src/stockAdjustmentInvoices/entities/stockAdjustmentInvoiceProducts.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -31,6 +33,8 @@ export default new DataSource({
         SellingInvoiceProductsEntity,
         ReturnSellingInvoiceEntity,
         ReturnSellingInvoiceProductsEntity,
+        StockAdjustmentInvoiceEntity,
+        StockAdjustmentInvoiceProductsEntity,
     ],
     migrations: [path.join(__dirname, '../invoices/*.{ts,js}')],
     synchronize: false,

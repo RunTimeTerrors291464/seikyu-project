@@ -52,8 +52,9 @@ export class InvoiceHelperService {
                     const status = errorData?.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
                     const errorCode = errorData?.errorCode ?? ErrorCode.UPDATE_INVENTORY_STOCK_BULK_SERVICE;
                     const message = errorData?.message ?? 'Platform service unavailable, please try again later.';
+                    const errorDetails = errorData?.errorDetails ?? null;
                     
-                    return throwError(() => new CustomException(status, errorCode, `[updateProductInventoryStockBulk] ${message}`));
+                    return throwError(() => new CustomException(status, errorCode, `[updateProductInventoryStockBulk] ${message}`, errorDetails));
                 })
             )
         );

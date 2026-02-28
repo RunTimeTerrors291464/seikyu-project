@@ -1,5 +1,8 @@
 import { Entity, Column, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
+// Import enums.
+import { StockActionType } from '@app/common/enums/stockActionType.enum';
+
 // Import entities.
 import { StockAdjustmentInvoiceEntity } from './stockAdjustmentInvoices.entity';
 
@@ -24,6 +27,9 @@ export class StockAdjustmentInvoiceProductsEntity {
 
     @Column({ name: 'product_unit', type: 'varchar', length: 255 })
     productUnit: string;
+
+    @Column({ name: 'action', type: 'varchar', enum: StockActionType })
+    action: StockActionType;
 
     @Column({ name: 'quantity', type: 'integer' })
     quantity: number;
