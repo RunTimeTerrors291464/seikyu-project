@@ -23,7 +23,7 @@ import { GetListOfReturnImportInvoiceRequestDto } from '@app/common/dtos/invoice
 // Import helper services.
 import { InvoiceHelperService } from '../../invoiceHelper/invoiceHelper.service';
 
-// Interface for resolved products from service
+// Interface for resolved products from service.
 export interface ResolvedReturnProductData {
     importInvoiceProduct: ImportInvoiceProductsEntity;
     returnQuantity: number;
@@ -107,7 +107,7 @@ export class ReturnImportInvoiceRepository {
             // Reload with relations.
             const invoiceWithRelations = await transactionalManager.findOne(ReturnImportInvoiceEntity, {
                 where: { id: savedInvoice.id },
-                relations: ['returnImportInvoiceProducts'],
+                relations: ['importInvoice', 'returnImportInvoiceProducts'],
             });
 
             return invoiceWithRelations || savedInvoice;
@@ -159,7 +159,7 @@ export class ReturnImportInvoiceRepository {
             // Reload with relations.
             const invoiceWithRelations = await transactionalManager.findOne(ReturnImportInvoiceEntity, {
                 where: { id: savedInvoice.id },
-                relations: ['returnImportInvoiceProducts'],
+                relations: ['importInvoice', 'returnImportInvoiceProducts'],
             });
 
             return invoiceWithRelations || savedInvoice;
@@ -276,7 +276,7 @@ export class ReturnImportInvoiceRepository {
             // Reload with relations.
             const invoiceWithRelations = await transactionalManager.findOne(ReturnImportInvoiceEntity, {
                 where: { id: savedReturnInvoice.id },
-                relations: ['returnImportInvoiceProducts'],
+                relations: ['importInvoice', 'returnImportInvoiceProducts'],
             });
 
             return invoiceWithRelations || savedReturnInvoice;

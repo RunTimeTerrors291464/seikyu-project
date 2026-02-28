@@ -10,11 +10,14 @@ import { ReturnImportInvoiceEntity } from './returnImportInvoices/entities/retur
 import { ReturnImportInvoiceProductsEntity } from './returnImportInvoices/entities/returnImportInvoiceProducts.entity';
 import { SellingInvoiceEntity } from './sellingInvoices/entities/sellingInvoices.entity';
 import { SellingInvoiceProductsEntity } from './sellingInvoices/entities/sellingInvoiceProducts.entity';
+import { ReturnSellingInvoiceEntity } from './returnSellingInvoices/entities/returnSellingInvoices.entity';
+import { ReturnSellingInvoiceProductsEntity } from './returnSellingInvoices/entities/returnSellingInvoiceProducts.entity';
 
 // Import modules.
 import { ImportInvoicesModule } from './importInvoices/importInvoices.module';
 import { ReturnImportInvoicesModule } from './returnImportInvoices/returnImportInvoices.module';
 import { SellingInvoicesModule } from './sellingInvoices/sellingInvoices.module';
+import { ReturnSellingInvoicesModule } from './returnSellingInvoices/returnSellingInvoices.module';
 import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
 
 @Module({
@@ -33,12 +36,15 @@ import { InvoiceHelperModule } from './invoiceHelper/invoiceHelper.module';
         ReturnImportInvoiceProductsEntity,
         SellingInvoiceEntity,
         SellingInvoiceProductsEntity,
+        ReturnSellingInvoiceEntity,
+        ReturnSellingInvoiceProductsEntity,
       ],
     }),
 
     ImportInvoicesModule,
     ReturnImportInvoicesModule,
     SellingInvoicesModule,
+    ReturnSellingInvoicesModule,
     InvoiceHelperModule,
   ],
   controllers: [],

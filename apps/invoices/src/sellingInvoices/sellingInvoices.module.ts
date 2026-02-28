@@ -38,6 +38,7 @@ import { SellingInvoicesMapper } from '@app/common/mappers/invoices/sellingInvoi
         SellingInvoicesMapper,
     ],
     exports: [
+        SellingInvoiceRepository,
         SellingInvoiceService,
     ],
 })

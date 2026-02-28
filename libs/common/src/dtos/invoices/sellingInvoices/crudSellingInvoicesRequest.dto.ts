@@ -1,6 +1,9 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, Max } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+// Import enums.
+import { SellingInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
 
 export class SellingInvoiceProductRequestDto {
 
@@ -138,6 +141,15 @@ export class GetListOfSellingInvoiceRequestDto {
     @IsIn(['asc', 'desc'])
     @IsOptional()
     sortOrder?: 'asc' | 'desc' = 'asc';
+
+    @ApiPropertyOptional({
+        description: 'Filter by status',
+        example: SellingInvoiceStatus.CONFIRMED,
+        enum: SellingInvoiceStatus,
+    })
+    @IsOptional()
+    @IsEnum(SellingInvoiceStatus)
+    status?: SellingInvoiceStatus;
 
     @ApiPropertyOptional({
         description: 'Filter selling invoices from this date (ISO 8601 format)',

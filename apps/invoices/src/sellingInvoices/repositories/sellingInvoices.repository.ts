@@ -149,7 +149,7 @@ export class SellingInvoiceRepository {
 
     // Get a list of selling invoices.
     async getListOfSellingInvoices(dto: GetListOfSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<{ data: SellingInvoiceEntity[], total: number }> {
-        const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', fromDate, toDate } = dto;
+        const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', fromDate, toDate, status } = dto;
 
         const queryBuilder = this.sellingInvoiceRepository.createQueryBuilder('invoice');
         queryBuilder.leftJoinAndSelect('invoice.sellingInvoiceProducts', 'products');
@@ -165,6 +165,11 @@ export class SellingInvoiceRepository {
             } else {
                 queryBuilder.andWhere('invoice.invoiceId ILIKE :search', { search: `${search}%` });
             }
+        }
+
+        // Apply status filter.
+        if (status !== undefined) {
+            queryBuilder.andWhere('invoice.status = :status', { status });
         }
 
         // Apply date range filters.

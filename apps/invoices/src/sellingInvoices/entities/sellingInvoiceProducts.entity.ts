@@ -28,6 +28,9 @@ export class SellingInvoiceProductsEntity {
     @Column({ name: 'quantity', type: 'integer' })
     quantity: number;
 
+    @Column({ name: 'return_quantity', type: 'integer', default: 0 })
+    returnQuantity: number;
+
     @Column({ name: 'selling_price', type: 'decimal', precision: 10, scale: 2 })
     sellingPrice: number;
 

@@ -2,6 +2,7 @@ import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 // Import entities.
 import { SellingInvoiceProductsEntity } from './sellingInvoiceProducts.entity';
+import { ReturnSellingInvoiceEntity } from '../../returnSellingInvoices/entities/returnSellingInvoices.entity';
 
 // Import enums.
 import { SellingInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
@@ -17,6 +18,9 @@ export class SellingInvoiceEntity {
 
     @OneToMany(() => SellingInvoiceProductsEntity, (sellingInvoiceProduct) => sellingInvoiceProduct.sellingInvoice)
     sellingInvoiceProducts: SellingInvoiceProductsEntity[];
+
+    @OneToMany(() => ReturnSellingInvoiceEntity, (returnSellingInvoice) => returnSellingInvoice.sellingInvoice)
+    returnSellingInvoices: ReturnSellingInvoiceEntity[];
 
     @Column({ name: 'total_products', type: 'integer' })
     totalProducts: number;
@@ -35,6 +39,9 @@ export class SellingInvoiceEntity {
 
     @Column({ name: 'status', type: 'varchar', enum: SellingInvoiceStatus, default: SellingInvoiceStatus.CONFIRMED })
     status: SellingInvoiceStatus;
+
+    @Column({ name: 'return_count', type: 'integer', default: 0 })
+    returnCount: number;
 
     @Column({ name: 'confirmed_by', type: 'uuid', nullable: true })
     confirmedBy: string | null;
