@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Platform application entities.
 import { UserEntity } from '../../../../apps/platform/src/users/entities/user.entity';
@@ -14,6 +15,11 @@ import { ProductStockHistoryEntity } from '../../../../apps/platform/src/product
 import { ProductOverviewEntity } from '../../../../apps/platform/src/products/entities/productOverview.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+const useSSL = process.env.DB_SSL === 'true';
+const sslOptions = useSSL
+    ? { rejectUnauthorized: true, ca: fs.readFileSync(process.env.DB_SSL_CERT || '/certs/global-bundle.pem').toString() }
+    : false;
 
 // Data source for platformService.
 export default new DataSource({
@@ -37,4 +43,5 @@ export default new DataSource({
     migrations: [path.join(__dirname, '../platform/*.{ts,js}')],
     synchronize: false,
     logging: true,
+    ssl: sslOptions,
 });
