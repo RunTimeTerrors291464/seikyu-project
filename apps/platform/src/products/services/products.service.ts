@@ -37,6 +37,7 @@ import {
     GetProductStockHistoryRequestDto,
     ProductStockHistoryResponseDto,
 } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
+import { ProductOverviewResponseDto } from '@app/common/dtos/platform/products/productOverviewReponse.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 // Import enums.
@@ -336,6 +337,23 @@ export class ProductsService {
             limit: 10,
             total,
             products: historyList,
+        };
+    }
+
+    // --- Product Overview APIs ---
+    // Get the product overview.
+    @HandleServiceError(ErrorCode.GET_PRODUCT_STOCK_HISTORY_LIST_SERVICE)
+    async getProductOverview(): Promise<ProductOverviewResponseDto | null> {
+        const overview = await this.productsRepository.getProductOverview();
+        if (!overview) return null;
+        return {
+            id: overview.id,
+            totalProducts: overview.totalProducts,
+            inStock: overview.inStock,
+            lowStock: overview.lowStock,
+            outOfStock: overview.outOfStock,
+            inventoryValue: overview.inventoryValue,
+            updatedAt: overview.updatedAt,
         };
     }
 }

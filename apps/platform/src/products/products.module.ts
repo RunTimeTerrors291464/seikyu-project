@@ -11,6 +11,7 @@ import { ProductNamesEntity } from './entities/productNames.entity';
 import { ProductUnitsHistoryEntity } from './entities/history/productUnitsHistory.entity';
 import { ProductsHistoryEntity } from './entities/history/productsHistory.entity';
 import { ProductStockHistoryEntity } from './entities/history/productStockHistory.entity';
+import { ProductOverviewEntity } from './entities/productOverview.entity';
 
 // Import controllers.
 import { ProductsController } from './controllers/products.controller';
@@ -37,6 +38,7 @@ import { ProductUnitMapper } from '@app/common/mappers/platform/productUnit.mapp
             ProductUnitsHistoryEntity,
             ProductsHistoryEntity,
             ProductStockHistoryEntity,
+            ProductOverviewEntity,
         ]),
 
         UsersModule,

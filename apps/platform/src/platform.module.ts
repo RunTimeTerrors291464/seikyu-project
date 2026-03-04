@@ -14,6 +14,7 @@ import { ProductsEntity } from './products/entities/products.entity';
 import { ProductUnitsHistoryEntity } from './products/entities/history/productUnitsHistory.entity';
 import { ProductsHistoryEntity } from './products/entities/history/productsHistory.entity';
 import { ProductStockHistoryEntity } from './products/entities/history/productStockHistory.entity';
+import { ProductOverviewEntity } from './products/entities/productOverview.entity';
 
 // Import users module.
 import { UsersModule } from './users/users.module';
@@ -39,6 +40,7 @@ import { ProductsModule } from './products/products.module';
                 ProductUnitsHistoryEntity,
                 ProductsHistoryEntity,
                 ProductStockHistoryEntity,
+                ProductOverviewEntity,
             ],
         }),
 

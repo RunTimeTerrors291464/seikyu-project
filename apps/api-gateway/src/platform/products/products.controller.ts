@@ -35,6 +35,7 @@ import {
     GetListOfProductStockHistoryResponseDto,
     ProductStockHistoryResponseDto,
 } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
+import { ProductOverviewResponseDto } from '@app/common/dtos/platform/products/productOverviewReponse.dto';
 
 // Import error exceptions.
 import { CustomException } from '@app/common/error-exceptions/customException';
@@ -92,26 +93,6 @@ export class ProductsController {
         }
     }
 
-    // Get a product by ID.
-    // GET /api/v1/products/:id
-    @Get(':id')
-    @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a product by ID' })
-    @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A product has been retrieved successfully.', type: ProductResponseDto })
-    @HttpCode(HttpStatus.OK)
-    async getProductById(@Param('id') id: string): Promise<ProductResponseDto> {
-        try {
-            const result: ProductResponseDto = await firstValueFrom(
-                this.platformService.send({ cmd: 'products.getProductById' }, { id })
-            );
-            return result;
-        } catch (error: any) {
-            if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
-            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UNKNOWN_ERROR, error.message);
-        }
-    }
-
     // Get a product by SKU.
     // GET /api/v1/products/sku/:sku
     @Get('sku/:sku')
@@ -138,6 +119,25 @@ export class ProductsController {
         }
     }
 
+    // Get the product overview.
+    // GET /api/v1/products/overview
+    @Get('overview')
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get the product overview' })
+    @ApiResponse({ status: 200, description: 'The product overview has been retrieved successfully.', type: ProductOverviewResponseDto })
+    @HttpCode(HttpStatus.OK)
+    async getProductOverview(): Promise<ProductOverviewResponseDto | null> {
+        try {
+            const result: ProductOverviewResponseDto | null = await firstValueFrom(
+                this.platformService.send({ cmd: 'products.getProductOverview' }, {})
+            );
+            return result;
+        } catch (error: any) {
+            if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
+            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UNKNOWN_ERROR, error.message);
+        }
+    }
+
     // Get a list of products.
     // GET /api/v1/products
     @Get()
@@ -149,6 +149,26 @@ export class ProductsController {
         try {
             const result = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.getListOfProducts' }, dto)
+            );
+            return result;
+        } catch (error: any) {
+            if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
+            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UNKNOWN_ERROR, error.message);
+        }
+    }
+
+    // Get a product by ID.
+    // GET /api/v1/products/:id
+    @Get(':id')
+    @Roles(Role.MANAGER, Role.ADMIN)
+    @ApiOperation({ summary: '[MANAGER] Get a product by ID' })
+    @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @ApiResponse({ status: 200, description: 'A product has been retrieved successfully.', type: ProductResponseDto })
+    @HttpCode(HttpStatus.OK)
+    async getProductById(@Param('id') id: string): Promise<ProductResponseDto> {
+        try {
+            const result: ProductResponseDto = await firstValueFrom(
+                this.platformService.send({ cmd: 'products.getProductById' }, { id })
             );
             return result;
         } catch (error: any) {

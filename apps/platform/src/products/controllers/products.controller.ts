@@ -31,6 +31,7 @@ import {
     GetProductStockHistoryRequestDto,
     ProductStockHistoryResponseDto,
 } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
+import { ProductOverviewResponseDto } from '@app/common/dtos/platform/products/productOverviewReponse.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 @Controller()
@@ -111,5 +112,12 @@ export class ProductsController {
     @MessagePattern({ cmd: 'products.getProductStockHistoryList' })
     async getProductStockHistoryList(dto: GetProductStockHistoryRequestDto): Promise<GetListOfProductStockHistoryResponseDto> {
         return this.productsService.getProductStockHistoryList(dto);
+    }
+
+    // --- Product Overview APIs ---
+    // Get the product overview.
+    @MessagePattern({ cmd: 'products.getProductOverview' })
+    async getProductOverview(): Promise<ProductOverviewResponseDto | null> {
+        return this.productsService.getProductOverview();
     }
 }

@@ -7,6 +7,7 @@ import { ProductsEntity } from '../entities/products.entity';
 import { ProductNamesEntity } from '../entities/productNames.entity';
 import { ProductsHistoryEntity } from '../entities/history/productsHistory.entity';
 import { ProductStockHistoryEntity } from '../entities/history/productStockHistory.entity';
+import { ProductOverviewEntity } from '../entities/productOverview.entity';
 
 // Import DTOs.
 import {
@@ -33,6 +34,7 @@ export class ProductsRepository {
         @InjectRepository(ProductNamesEntity) private productNamesRepository: Repository<ProductNamesEntity>,
         @InjectRepository(ProductsHistoryEntity) private productsHistoryRepository: Repository<ProductsHistoryEntity>,
         @InjectRepository(ProductStockHistoryEntity) private productStockHistoryRepository: Repository<ProductStockHistoryEntity>,
+        @InjectRepository(ProductOverviewEntity) private productOverviewRepository: Repository<ProductOverviewEntity>,
         private readonly productMapper: ProductMapper,
     ) { }
 
@@ -117,6 +119,16 @@ export class ProductsRepository {
                 data: this.productMapper.toProductSnapshotDto(productToReturn),
             } as ProductsHistoryEntity);
 
+            // Update the product overview.
+            const overviewId = '00000000-0000-0000-0000-000000000001';
+            let overview = await transactionalManager.findOne(ProductOverviewEntity, {
+                where: { id: overviewId },
+            }) || this.productOverviewRepository.create({ id: overviewId });
+
+            overview.totalProducts += 1;
+            overview.outOfStock += 1;
+            await transactionalManager.save(ProductOverviewEntity, overview);
+
             return productToReturn;
         });
     }
@@ -190,6 +202,7 @@ export class ProductsRepository {
 
         // Get the iventory stock before any changes.
         const beforeInventoryStock = productEntity.inventoryStock;
+        const beforeStockStatus = productEntity.stockStatus;
 
         // Update product stock.
         if (action === StockActionType.ADD) productEntity.inventoryStock += quantity;
@@ -224,6 +237,29 @@ export class ProductsRepository {
         });
         await manager.save(ProductStockHistoryEntity, history);
         await this.cleanupOldProductStockHistory(productEntity.id, manager);
+
+        // Update the product overview.
+        const overviewId = '00000000-0000-0000-0000-000000000001';
+        let overview = await manager.findOne(ProductOverviewEntity, {
+            where: { id: overviewId },
+        }) || this.productOverviewRepository.create({ id: overviewId });
+
+        // Update stock status counts.
+        if (beforeStockStatus !== productEntity.stockStatus) {
+            if (beforeStockStatus === StockStatus.IN_STOCK) overview.inStock -= 1;
+            else if (beforeStockStatus === StockStatus.REORDER_THRESHOLD_REACHED) overview.lowStock -= 1;
+            else if (beforeStockStatus === StockStatus.OUT_OF_STOCK) overview.outOfStock -= 1;
+
+            if (productEntity.stockStatus === StockStatus.IN_STOCK) overview.inStock += 1;
+            else if (productEntity.stockStatus === StockStatus.REORDER_THRESHOLD_REACHED) overview.lowStock += 1;
+            else if (productEntity.stockStatus === StockStatus.OUT_OF_STOCK) overview.outOfStock += 1;
+        }
+
+        // Update total inventory value by adding the delta change.
+        const inventoryValueDelta = Number(productEntity.importPrice) * (afterInventoryStock - beforeInventoryStock);
+        overview.inventoryValue = Number(overview.inventoryValue) + inventoryValueDelta;
+
+        await manager.save(ProductOverviewEntity, overview);
 
         return productToReturn;
     }
@@ -453,6 +489,9 @@ export class ProductsRepository {
         return history || null;
     }
 
+    // Revert a product to a specific version.
+
+
     // --- Product Stock History APIs ---
     // Create product stock history.
     async createProductStockHistory(dto: CreateProductStockRequestDto): Promise<ProductStockHistoryEntity> {
@@ -492,6 +531,16 @@ export class ProductsRepository {
             relations: ['product'],
         });
         return history || null;
+    }
+
+    // --- Product Overview APIs ---
+    // Get the product overview.
+    async getProductOverview(): Promise<ProductOverviewEntity | null> {
+        const overviewId = '00000000-0000-0000-0000-000000000001';
+        const overview = await this.productOverviewRepository.findOne({
+            where: { id: overviewId },
+        });
+        return overview || null;
     }
 
 }

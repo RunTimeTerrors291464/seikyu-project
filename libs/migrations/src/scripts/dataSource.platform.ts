@@ -11,6 +11,7 @@ import { ProductUnitsEntity } from '../../../../apps/platform/src/products/entit
 import { ProductsHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productsHistory.entity';
 import { ProductUnitsHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productUnitsHistory.entity';
 import { ProductStockHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productStockHistory.entity';
+import { ProductOverviewEntity } from '../../../../apps/platform/src/products/entities/productOverview.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -31,6 +32,7 @@ export default new DataSource({
         ProductsHistoryEntity,
         ProductUnitsHistoryEntity,
         ProductStockHistoryEntity,
+        ProductOverviewEntity,
     ],
     migrations: [path.join(__dirname, '../platform/*.{ts,js}')],
     synchronize: false,
