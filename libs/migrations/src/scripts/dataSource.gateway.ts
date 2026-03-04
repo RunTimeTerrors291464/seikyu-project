@@ -1,11 +1,17 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // API Gateway application entities.
 import { RefreshTokenEntity } from '../../../../apps/api-gateway/src/auth/entities/refreshToken.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+const useSSL = process.env.DB_SSL === 'true';
+const sslOptions = useSSL
+    ? { rejectUnauthorized: true, ca: fs.readFileSync(process.env.DB_SSL_CERT || '/certs/global-bundle.pem').toString() }
+    : false;
 
 // Data source for apiGateway.
 export default new DataSource({
@@ -21,4 +27,5 @@ export default new DataSource({
     migrations: [path.join(__dirname, '../api-gateway/*.{ts,js}')],
     synchronize: false,
     logging: true,
+    ssl: sslOptions,
 });

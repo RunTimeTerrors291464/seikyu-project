@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { DynamicModule, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -32,6 +33,14 @@ export class PostgresModule {
                         const password = configService.getOrThrow(`DB_PASSWORD_${databasePrefix}`);
                         const database = configService.getOrThrow(`DB_DATABASE_${databasePrefix}`);
 
+                        const useSSL = configService.get('DB_SSL') === 'true';
+                        const sslOptions = useSSL
+                            ? {
+                                rejectUnauthorized: true,
+                                ca: fs.readFileSync(configService.get('DB_SSL_CERT') || '/certs/global-bundle.pem').toString(),
+                            }
+                            : false;
+
                         return {
                             type: 'postgres',
                             host,
@@ -43,6 +52,7 @@ export class PostgresModule {
                             synchronize: false, // By default, the database will not be synchronized.
                             logging: true,
                             autoLoadEntities: false,
+                            ssl: sslOptions,
                         };
                     },
                     inject: [ConfigService],

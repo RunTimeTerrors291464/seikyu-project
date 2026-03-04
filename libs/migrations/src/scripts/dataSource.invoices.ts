@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Invoices application entities.
 import { ImportInvoiceEntity } from '../../../../apps/invoices/src/importInvoices/entities/importInvoices.entity';
@@ -15,6 +16,11 @@ import { StockAdjustmentInvoiceEntity } from '../../../../apps/invoices/src/stoc
 import { StockAdjustmentInvoiceProductsEntity } from '../../../../apps/invoices/src/stockAdjustmentInvoices/entities/stockAdjustmentInvoiceProducts.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+const useSSL = process.env.DB_SSL === 'true';
+const sslOptions = useSSL
+    ? { rejectUnauthorized: true, ca: fs.readFileSync(process.env.DB_SSL_CERT || '/certs/global-bundle.pem').toString() }
+    : false;
 
 // Data source for invoicesService.
 export default new DataSource({
@@ -39,4 +45,5 @@ export default new DataSource({
     migrations: [path.join(__dirname, '../invoices/*.{ts,js}')],
     synchronize: false,
     logging: true,
+    ssl: sslOptions,
 });
