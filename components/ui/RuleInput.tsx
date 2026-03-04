@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 // Type for each dropdown option
 type RuleOption = {
@@ -68,47 +68,47 @@ export default function RuleInput({
       ref={containerRef}
       className="relative inline-flex items-stretch"
     >
-        <div className="inline-flex items-stretch overflow-hidden rounded-md border bg-white text-xs shadow-sm dark:bg-neutral-900">
-            {/* ----- Left: Dropdown button ----- */}
-            <button
-                type="button"
-                onClick={() => setOpen(!open)} // Toggle dropdown
-                className="inline-flex items-center gap-2 px-2.5 py-1.5 text-left text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            >
-                {/* Show icon of selected rule if available */}
-                {mounted && options.find(o => o.label === selectedRule)?.icon}
-                <span>{mounted ? selectedRule : "\u00A0"}</span>
-                <ChevronDown className="h-3 w-3 text-neutral-500" />
-            </button>
-            
-            <span className="w-px self-stretch bg-neutral-200 dark:bg-neutral-800" />
+      <div className="inline-flex items-stretch overflow-hidden rounded-md border bg-white text-xs shadow-sm dark:bg-neutral-900">
+        {/* ----- Left: Dropdown button ----- */}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)} // Toggle dropdown
+          className="inline-flex items-center gap-2 px-2.5 py-1.5 text-left text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
+        >
+          {/* Show icon of selected rule if available */}
+          {mounted && options.find(o => o.label === selectedRule)?.icon}
+          <span>{mounted ? selectedRule : "\u00A0"}</span>
+          <ChevronDown className="h-3 w-3 text-neutral-500" />
+        </button>
 
-            {/* ----- Dropdown list ----- */}
-            {open && (
-                <ul className="absolute mt-10 z-20 w-44 rounded-md border bg-white shadow-md dark:bg-neutral-900 dark:border-neutral-700">
-                {options.map((option) => (
-                    <li
-                    key={option.label}
-                    onClick={() => handleSelect(option)} // Select rule on click
-                    className="cursor-pointer flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                    >
-                    {/* Icon on the left if exists */}
-                    {option.icon && <span className="w-4 h-4">{option.icon}</span>}
-                    {option.label}
-                    </li>
-                ))}
-                </ul>
-            )}
+        <span className="w-px self-stretch bg-neutral-200 dark:bg-neutral-800" />
 
-            {/* ----- Right: Input field ----- */}
-            <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => handleInput(e.target.value)} // Update input value
-                placeholder={placeholder}
-                className="flex-1 px-3 py-2 text-xs outline-none text-neutral-700 dark:text-neutral-200 dark:bg-neutral-900"
-            />
-        </div>
+        {/* ----- Dropdown list ----- */}
+        {open && (
+          <ul className="absolute mt-10 z-20 w-44 rounded-md border bg-white shadow-md dark:bg-neutral-900 dark:border-neutral-700">
+            {options.map((option) => (
+              <li
+                key={option.label}
+                onClick={() => handleSelect(option)} // Select rule on click
+                className="cursor-pointer flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              >
+                {/* Icon on the left if exists */}
+                {option.icon && <span className="w-4 h-4">{option.icon}</span>}
+                {option.label}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* ----- Right: Input field ----- */}
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => handleInput(e.target.value)} // Update input value
+          placeholder={placeholder}
+          className="flex-1 px-3 py-2 text-xs outline-none text-neutral-700 dark:text-neutral-200 dark:bg-neutral-900"
+        />
+      </div>
     </div>
   );
 }
