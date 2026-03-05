@@ -5,7 +5,7 @@ import { ProductUnitsEntity } from 'apps/platform/src/products/entities/productU
 
 // Import DTOs.
 import { ProductUnitResponseDto } from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
-import { ProductUnitSnapshotDto } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
+import { ProductUnitSnapshotDto, ProductUnitChangeEventDto, ProductUnitChangedField } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
 
 @Injectable()
 export class ProductUnitMapper {
@@ -27,6 +27,35 @@ export class ProductUnitMapper {
     // TO: ProductUnitResponseDto[]
     toProductUnitResponseDtoArray(productUnitEntities: ProductUnitsEntity[]): ProductUnitResponseDto[] {
         return productUnitEntities.map(entity => this.toProductUnitResponseDto(entity));
+    }
+
+    // FROM: 2 ProductUnitSnapshotDto (previous vs current)
+    // TO: ProductUnitChangeEventDto[]
+    toProductUnitChangeEventDtos(
+        previous: ProductUnitSnapshotDto | null,
+        current: ProductUnitSnapshotDto,
+    ): ProductUnitChangeEventDto[] {
+        const events: ProductUnitChangeEventDto[] = [];
+
+        if (!previous) {
+            events.push({ fieldName: ProductUnitChangedField.NEW_PRODUCT_UNIT, previousValue: null, newValue: null });
+            return events;
+        }
+
+        const primitiveFields: Array<{ key: keyof ProductUnitSnapshotDto; fieldName: ProductUnitChangedField }> = [
+            { key: 'unitName', fieldName: ProductUnitChangedField.UNIT_NAME },
+            { key: 'unitDescription', fieldName: ProductUnitChangedField.UNIT_DESCRIPTION },
+        ];
+
+        for (const { key, fieldName } of primitiveFields) {
+            const prev = previous[key] ?? null;
+            const curr = current[key] ?? null;
+            if (prev !== curr) {
+                events.push({ fieldName, previousValue: prev as string | null, newValue: curr as string | null });
+            }
+        }
+
+        return events;
     }
 
     // FROM: ProductUnitsEntity

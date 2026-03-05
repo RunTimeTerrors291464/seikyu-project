@@ -2,7 +2,7 @@ import { IsNotEmpty, IsNumber, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 // Import snapshots.
-import { ProductUnitSnapshotDto } from './snapshot/productUnitSnapshot.dto';
+import { ProductUnitSnapshotDto, ProductUnitChangeEventDto } from './snapshot/productUnitSnapshot.dto';
 
 export class GetProductUnitHistoryListRequestDto {
     @ApiProperty({
@@ -63,6 +63,12 @@ export class ProductUnitHistoryItemResponseDto {
     })
     createdAt: Date;
 
+    @ApiProperty({
+        description: 'Quick-access list of changed field names',
+        example: ['unit_name'],
+        type: [String],
+    })
+    eventSummary: string[];
 }
 
 
@@ -98,8 +104,28 @@ export class GetProductUnitHistoryByVersionResponseDto {
     createdAt: Date;
 
     @ApiProperty({
-        description: 'The snapshot data of the product unit at this version',
-        type: ProductUnitSnapshotDto,
+        description: 'List of change events recording what fields were changed and their old/new values',
+        type: [ProductUnitChangeEventDto],
     })
-    data: ProductUnitSnapshotDto;
+    events: ProductUnitChangeEventDto[];
+
+    @ApiProperty({
+        description: 'Quick-access list of changed field names',
+        example: ['unit_name'],
+        type: [String],
+    })
+    eventSummary: string[];
+
+    @ApiProperty({
+        description: 'Whether this version stores a full product unit snapshot (every 5 versions)',
+        example: false,
+    })
+    isSnapshot: boolean;
+
+    @ApiProperty({
+        description: 'Full product unit snapshot — only present when isSnapshot is true',
+        type: ProductUnitSnapshotDto,
+        nullable: true,
+    })
+    data: ProductUnitSnapshotDto | null;
 }

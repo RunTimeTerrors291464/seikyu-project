@@ -18,7 +18,7 @@ import {
 import {
     CreateProductStockRequestDto,
 } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
-import { ProductChangeEventDto, ProductChangedField } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
+import { ProductChangedField } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 // Import enums.
@@ -427,15 +427,22 @@ export class ProductsRepository {
             const currentVersion = await this.getLatestHistoryVersion(productEntity.id, transactionalManager);
             const nextVersion = currentVersion + 1;
 
+            const events = [{ fieldName: ProductChangedField.ACTIVE, previousValue: 'false', newValue: 'true' }];
+            const eventSummary = [ProductChangedField.ACTIVE];
+            const isSnapshot = nextVersion % 5 === 0;
+
             // Create a new product history entry.
             await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: nextVersion,
                 createdBy: user.id,
-                data: this.productMapper.toProductSnapshotDto(productToReturn),
+                events,
+                eventSummary,
+                isSnapshot,
+                data: isSnapshot ? this.productMapper.toProductSnapshotDto(productToReturn) : null,
             } as ProductsHistoryEntity);
 
-            // Clean up old product history versions if exceeding 10.
+            // Clean up old product history versions if exceeding 16.
             await this.cleanupOldProductHistoryVersions(productEntity.id, transactionalManager);
 
             return productToReturn;
@@ -460,15 +467,22 @@ export class ProductsRepository {
             const currentVersion = await this.getLatestHistoryVersion(productEntity.id, transactionalManager);
             const nextVersion = currentVersion + 1;
 
+            const events = [{ fieldName: ProductChangedField.ACTIVE, previousValue: 'true', newValue: 'false' }];
+            const eventSummary = [ProductChangedField.ACTIVE];
+            const isSnapshot = nextVersion % 5 === 0;
+
             // Create a new product history entry.
             await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: nextVersion,
                 createdBy: user.id,
-                data: this.productMapper.toProductSnapshotDto(productToReturn),
+                events,
+                eventSummary,
+                isSnapshot,
+                data: isSnapshot ? this.productMapper.toProductSnapshotDto(productToReturn) : null,
             } as ProductsHistoryEntity);
 
-            // Clean up old product history versions if exceeding 10.
+            // Clean up old product history versions if exceeding 16.
             await this.cleanupOldProductHistoryVersions(productEntity.id, transactionalManager);
 
             return productToReturn;

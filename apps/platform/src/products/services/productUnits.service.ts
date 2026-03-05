@@ -162,8 +162,9 @@ export class ProductUnitsService {
                     id: history.id,
                     version: history.version,
                     createdBy: history.createdBy,
-                    createdByUsername: createdByUsername,
+                    createdByUsername,
                     createdAt: history.createdAt,
+                    eventSummary: history.eventSummary,
                 };
             })
         );
@@ -192,9 +193,12 @@ export class ProductUnitsService {
             id: history.id,
             version: history.version,
             createdBy: history.createdBy,
-            createdByUsername: createdByUsername,
-            data: history.data,
+            createdByUsername,
             createdAt: history.createdAt,
+            events: history.events,
+            eventSummary: history.eventSummary,
+            isSnapshot: history.isSnapshot,
+            data: history.data,
         };
     }
 

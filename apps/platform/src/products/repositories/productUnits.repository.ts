@@ -12,6 +12,7 @@ import {
     EditProductUnitRequestDto,
     GetListOfProductUnitRequestDto,
 } from '@app/common/dtos/platform/products/crudProductUnitRequest.dto';
+import { ProductUnitChangedField } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 // Import mappers.
@@ -36,7 +37,7 @@ export class ProductUnitsRepository {
         return latestHistory?.version ?? 0;
     }
 
-    // Clean up old product unit history versions if exceeding 10 versions.
+    // Clean up old product unit history versions if exceeding 16 versions.
     private async cleanupOldProductUnitHistoryVersions(productUnitId: string, transactionalManager?: any): Promise<void> {
         const manager = transactionalManager || this.productUnitsHistoryRepository;
         const histories = await manager.find(ProductUnitsHistoryEntity, {
@@ -44,9 +45,8 @@ export class ProductUnitsRepository {
             order: { version: 'ASC' },
         });
 
-        // If more than 10 versions, delete the oldest ones.
-        if (histories.length > 10) {
-            const toDelete = histories.slice(0, histories.length - 10);
+        if (histories.length > 16) {
+            const toDelete = histories.slice(0, histories.length - 16);
             await manager.remove(toDelete);
         }
     }
@@ -57,12 +57,18 @@ export class ProductUnitsRepository {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
             const productUnit: ProductUnitsEntity = await transactionalManager.save(ProductUnitsEntity, dto);
 
+            // Create a new product unit snapshot.
+            const newSnapshot = this.productUnitMapper.toProductUnitSnapshotDto(productUnit);
+
             // Create a new product unit history.
             await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: productUnit,
                 version: 1,
                 createdBy: user.id,
-                data: this.productUnitMapper.toProductUnitSnapshotDto(productUnit),
+                events: [{ fieldName: ProductUnitChangedField.NEW_PRODUCT_UNIT, previousValue: null, newValue: null }],
+                eventSummary: [ProductUnitChangedField.NEW_PRODUCT_UNIT],
+                isSnapshot: true,
+                data: newSnapshot,
             } as ProductUnitsHistoryEntity);
 
             // Return the product unit.
@@ -74,24 +80,36 @@ export class ProductUnitsRepository {
     async editProductUnit(productUnit: ProductUnitsEntity, dto: EditProductUnitRequestDto, user: AccessTokenPayload): Promise<ProductUnitsEntity> {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
 
-            // Merge and save product unit.
+            // Snapshot state BEFORE changes to compute change events later.
+            const previousSnapshot = this.productUnitMapper.toProductUnitSnapshotDto(productUnit);
+
+            // Merge product unit data.
             this.productUnitsRepository.merge(productUnit, dto);
             const updatedProductUnit = await transactionalManager.save(ProductUnitsEntity, productUnit);
 
-            // Get the latest version from history using transactionalManager.
+            // Get the next version number.
             const currentVersion = await this.getLatestHistoryVersion(productUnit.id, transactionalManager);
             const nextVersion = currentVersion + 1;
 
-            // Create a new product unit history entry.
+            // Compute change events by comparing previous vs current snapshot.
+            const currentSnapshot = this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit);
+            const events = this.productUnitMapper.toProductUnitChangeEventDtos(previousSnapshot, currentSnapshot);
+            const eventSummary = events.map(e => e.fieldName);
+
+            const isSnapshot = nextVersion % 5 === 0;
+
             await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: updatedProductUnit,
                 version: nextVersion,
                 createdBy: user.id,
-                data: this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit),
+                events,
+                eventSummary,
+                isSnapshot,
+                data: isSnapshot ? currentSnapshot : null,
             } as ProductUnitsHistoryEntity);
 
-            // Clean up old product unit history versions if exceeding 10.
-            await this.cleanupOldProductUnitHistoryVersions(productUnit.id);
+            // Clean up old product unit history versions if exceeding 16 versions.
+            await this.cleanupOldProductUnitHistoryVersions(productUnit.id, transactionalManager);
 
             // Return the updated product unit.
             return updatedProductUnit;
@@ -119,7 +137,6 @@ export class ProductUnitsRepository {
         // Create query builder.
         const queryBuilder = this.productUnitsRepository.createQueryBuilder('productUnit');
 
-        // Apply GIN index trigram search on unit name.
         if (search) {
             queryBuilder.andWhere('productUnit.unitName ILIKE :search', {
                 search: `%${search}%`,
@@ -156,26 +173,28 @@ export class ProductUnitsRepository {
     async deactivateProductUnit(productUnit: ProductUnitsEntity, user: AccessTokenPayload): Promise<ProductUnitsEntity> {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
 
-            // Update the product unit's active status.
             productUnit.active = false;
             const updatedProductUnit = await transactionalManager.save(ProductUnitsEntity, productUnit);
 
-            // Update the product unit's history.
             const currentVersion = await this.getLatestHistoryVersion(productUnit.id, transactionalManager);
             const nextVersion = currentVersion + 1;
 
-            // Create a new product unit history entry.
+            const events = [{ fieldName: ProductUnitChangedField.ACTIVE, previousValue: 'true', newValue: 'false' }];
+            const eventSummary = [ProductUnitChangedField.ACTIVE];
+            const isSnapshot = nextVersion % 5 === 0;
+
             await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: updatedProductUnit,
                 version: nextVersion,
                 createdBy: user.id,
-                data: this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit),
+                events,
+                eventSummary,
+                isSnapshot,
+                data: isSnapshot ? this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit) : null,
             } as ProductUnitsHistoryEntity);
 
-            // Clean up old product unit history versions if exceeding 10.
             await this.cleanupOldProductUnitHistoryVersions(productUnit.id, transactionalManager);
 
-            // Return the updated product unit.
             return updatedProductUnit;
         });
     }
@@ -184,36 +203,37 @@ export class ProductUnitsRepository {
     async activateProductUnit(productUnit: ProductUnitsEntity, user: AccessTokenPayload): Promise<ProductUnitsEntity> {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
 
-            // Update the product unit's active status.
             productUnit.active = true;
             const updatedProductUnit = await transactionalManager.save(ProductUnitsEntity, productUnit);
 
-            // Update the product unit's history.
             const currentVersion = await this.getLatestHistoryVersion(productUnit.id, transactionalManager);
             const nextVersion = currentVersion + 1;
 
-            // Create a new product unit history entry.
+            const events = [{ fieldName: ProductUnitChangedField.ACTIVE, previousValue: 'false', newValue: 'true' }];
+            const eventSummary = [ProductUnitChangedField.ACTIVE];
+            const isSnapshot = nextVersion % 5 === 0;
+
             await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: updatedProductUnit,
                 version: nextVersion,
                 createdBy: user.id,
-                data: this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit),
+                events,
+                eventSummary,
+                isSnapshot,
+                data: isSnapshot ? this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit) : null,
             } as ProductUnitsHistoryEntity);
 
-            // Clean up old product unit history versions if exceeding 10.
             await this.cleanupOldProductUnitHistoryVersions(productUnit.id, transactionalManager);
 
-            // Return the updated product unit.
             return updatedProductUnit;
         });
     }
 
     // --- History APIs ---
     // Get a list of history versions for a product unit.
-    async getProductUnitHistoryList(productUnitId: string): Promise<Omit<ProductUnitsHistoryEntity, 'data'>[]> {
+    async getProductUnitHistoryList(productUnitId: string): Promise<Omit<ProductUnitsHistoryEntity, 'data' | 'events'>[]> {
         const queryBuilder = this.productUnitsHistoryRepository.createQueryBuilder('history');
 
-        // Filter by product unit id.
         queryBuilder.where('history.productUnit.id = :productUnitId', { productUnitId });
 
         // Sort by version descending.
@@ -226,11 +246,11 @@ export class ProductUnitsRepository {
                 'history.version',
                 'history.createdBy',
                 'history.createdAt',
+                'history.eventSummary',
             ])
             .getMany();
 
-        // Return history list.
-        return histories as Omit<ProductUnitsHistoryEntity, 'data'>[];
+        return histories as Omit<ProductUnitsHistoryEntity, 'data' | 'events'>[];
     }
 
     // Get a specific history version's data for a product unit.

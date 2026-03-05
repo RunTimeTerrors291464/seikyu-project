@@ -13,3 +13,38 @@ export class ProductUnitSnapshotDto {
     @ApiProperty({ example: '2024-01-15T10:30:00Z' })
     createdAt: Date;
 }
+
+export enum ProductUnitChangedField {
+    NEW_PRODUCT_UNIT = 'new_product_unit',
+    UNIT_NAME = 'unit_name',
+    UNIT_DESCRIPTION = 'unit_description',
+    ACTIVE = 'active',
+}
+
+export class ProductUnitChangeEventDto {
+
+    @ApiProperty({
+        example: 'unitName',
+        description: 'The field name that was changed',
+        enum: ProductUnitChangedField,
+    })
+    fieldName: ProductUnitChangedField;
+
+    @ApiProperty({
+        description: 'The previous value before the change.',
+        oneOf: [
+            { type: 'string', example: 'kg' },
+        ],
+        nullable: true,
+    })
+    previousValue: string | null;
+
+    @ApiProperty({
+        description: 'The new value after the change.',
+        oneOf: [
+            { type: 'string', example: 'kilogram' },
+        ],
+        nullable: true,
+    })
+    newValue: string | null;
+}

@@ -86,6 +86,9 @@ export class ProductsService {
         if (!productUnit) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_UNIT_NOT_FOUND, 'The product unit is not found.');
         if (!productUnit.active) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_UNIT_NOT_ACTIVE, 'The product unit is not active.');
 
+        // Check if the product names has maximum 8 names.
+        if (dto.productNames.length > 8) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_PRODUCT_NAMES, 'The product names has maximum 8 names.');
+
         // By default, the product is out of stock.
         const stockStatus: StockStatus = StockStatus.OUT_OF_STOCK;
 
@@ -107,6 +110,11 @@ export class ProductsService {
         if (dto.sku) {
             const product = await this.getProductBySku(dto.sku);
             if (product) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_SKU_ALREADY_EXISTS, 'The product SKU is already taken.');
+        }
+
+        // If edit the product names, check if the product names has maximum 8 names.
+        if (dto.productName) {
+            if (dto.productName.length > 8) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_PRODUCT_NAMES, 'The product names has maximum 8 names.');
         }
 
         // Check if the product unit exists and active.

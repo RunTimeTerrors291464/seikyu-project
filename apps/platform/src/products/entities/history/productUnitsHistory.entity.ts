@@ -3,8 +3,8 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDa
 // Import entities.
 import { ProductUnitsEntity } from '../productUnits.entity';
 
-// Import snapshots.
-import { ProductUnitSnapshotDto } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
+// Import DTOs.
+import { ProductUnitSnapshotDto, ProductUnitChangeEventDto } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
 
 @Entity('product_units_history')
 export class ProductUnitsHistoryEntity {
@@ -25,6 +25,15 @@ export class ProductUnitsHistoryEntity {
     @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;
 
-    @Column({ name: 'data', type: 'jsonb' })
-    data: ProductUnitSnapshotDto;
+    @Column({ name: 'events', type: 'jsonb', array: false })
+    events: ProductUnitChangeEventDto[];
+
+    @Column({ name: 'events_summary', type: 'varchar', array: true, comment: 'Quick-access list of changed field names for audit display' })
+    eventSummary: string[];
+
+    @Column({ name: 'is_snapshot', type: 'boolean', default: false, comment: 'Indicates if this version contains a full snapshot (every N versions)' })
+    isSnapshot: boolean;
+
+    @Column({ name: 'data', type: 'jsonb', nullable: true, comment: 'Full product unit snapshot' })
+    data: ProductUnitSnapshotDto | null;
 }
