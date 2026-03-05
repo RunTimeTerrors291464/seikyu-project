@@ -2,7 +2,7 @@ import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 // Import snapshots.
-import { ProductSnapshotDto } from './snapshot/productSnapshot.dto';
+import { ProductSnapshotDto, ProductChangeEventDto } from './snapshot/productSnapshot.dto';
 
 export class GetProductHistoryListRequestDto {
     @ApiProperty({
@@ -61,6 +61,13 @@ export class ProductHistoryItemResponseDto {
         example: '2024-01-15T10:30:00Z',
     })
     createdAt: Date;
+
+    @ApiProperty({
+        description: 'Quick-access list of changed field names',
+        example: ['selling_price', 'product_names'],
+        type: [String],
+    })
+    eventSummary: string[];
 }
 
 
@@ -96,8 +103,28 @@ export class GetProductHistoryByVersionResponseDto {
     createdAt: Date;
 
     @ApiProperty({
-        description: 'The snapshot data of the product at this version',
-        type: ProductSnapshotDto,
+        description: 'List of change events recording what fields were changed and their old/new values',
+        type: [ProductChangeEventDto],
     })
-    data: ProductSnapshotDto;
+    events: ProductChangeEventDto[];
+
+    @ApiProperty({
+        description: 'Quick-access list of changed field names',
+        example: ['selling_price', 'product_names'],
+        type: [String],
+    })
+    eventSummary: string[];
+
+    @ApiProperty({
+        description: 'Whether this version stores a full product snapshot (every 5 versions)',
+        example: false,
+    })
+    isSnapshot: boolean;
+
+    @ApiProperty({
+        description: 'Full product snapshot — only present when isSnapshot is true',
+        type: ProductSnapshotDto,
+        nullable: true,
+    })
+    data: ProductSnapshotDto | null;
 }

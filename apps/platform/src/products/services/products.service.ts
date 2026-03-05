@@ -274,6 +274,7 @@ export class ProductsService {
                     createdBy: history.createdBy,
                     createdByUsername,
                     createdAt: history.createdAt,
+                    eventSummary: history.eventSummary,
                 };
             })
         );
@@ -303,8 +304,11 @@ export class ProductsService {
             version: history.version,
             createdBy: history.createdBy,
             createdByUsername,
-            data: history.data,
             createdAt: history.createdAt,
+            events: history.events,
+            eventSummary: history.eventSummary,
+            isSnapshot: history.isSnapshot,
+            data: history.data,
         };
     }
 

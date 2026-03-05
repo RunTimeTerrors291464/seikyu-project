@@ -8,7 +8,7 @@ import {
     ProductResponseDto,
     ProductCashierResponseDto,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
-import { ProductSnapshotDto } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
+import { ProductSnapshotDto, ProductChangeEventDto, ProductChangedField } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
 
 @Injectable()
 export class ProductMapper {
@@ -54,6 +54,55 @@ export class ProductMapper {
     // TO: ProductResponseDto[]
     toProductResponseDtoArray(productEntities: ProductsEntity[]): ProductResponseDto[] {
         return productEntities.map(entity => this.toProductResponseDto(entity));
+    }
+
+    // FROM: 2 ProductSnapshotDto (previous vs current)
+    // TO: ProductChangeEventDto[]
+    toProductChangeEventDtos(
+        previous: ProductSnapshotDto | null,
+        current: ProductSnapshotDto,
+    ): ProductChangeEventDto[] {
+        const events: ProductChangeEventDto[] = [];
+
+        const primitiveFields: Array<{ key: keyof ProductSnapshotDto; fieldName: ProductChangedField }> = [
+            { key: 'sku', fieldName: ProductChangedField.SKU },
+            { key: 'productDescription', fieldName: ProductChangedField.PRODUCT_DESCRIPTION },
+            { key: 'importPrice', fieldName: ProductChangedField.IMPORT_PRICE },
+            { key: 'sellingPrice', fieldName: ProductChangedField.SELLING_PRICE },
+            { key: 'reorderThreshold', fieldName: ProductChangedField.REORDER_THRESHOLD },
+        ];
+
+        for (const { key, fieldName } of primitiveFields) {
+            const prev = previous ? (previous[key] ?? null) : null;
+            const curr = current[key] ?? null;
+            if (prev !== curr) {
+                events.push({ fieldName, previousValue: prev as number | string | null, newValue: curr as number | string | null });
+            }
+        }
+
+        // productUnit: compare by id
+        const prevUnitId = previous?.productUnit?.id ?? null;
+        const currUnitId = current.productUnit?.id ?? null;
+        if (prevUnitId !== currUnitId) {
+            events.push({
+                fieldName: ProductChangedField.PRODUCT_UNIT,
+                previousValue: previous?.productUnit ?? null,
+                newValue: current.productUnit,
+            });
+        }
+
+        // productNames: compare by sorted name strings
+        const prevNames = previous?.productNames?.map(n => n.name).sort().join('|') ?? '';
+        const currNames = current.productNames?.map(n => n.name).sort().join('|') ?? '';
+        if (prevNames !== currNames) {
+            events.push({
+                fieldName: ProductChangedField.PRODUCT_NAMES,
+                previousValue: previous?.productNames ?? null,
+                newValue: current.productNames,
+            });
+        }
+
+        return events;
     }
 
     // FROM: ProductsEntity

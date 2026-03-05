@@ -18,6 +18,7 @@ import {
 import {
     CreateProductStockRequestDto,
 } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
+import { ProductChangeEventDto, ProductChangedField } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 // Import enums.
@@ -49,7 +50,7 @@ export class ProductsRepository {
         return latestHistory?.version ?? 0;
     }
 
-    // Clean up old product history versions if exceeding 10 versions.
+    // Clean up old product history versions if exceeding 16 versions.
     private async cleanupOldProductHistoryVersions(id: string, transactionalManager?: any): Promise<void> {
         const manager = transactionalManager || this.productsHistoryRepository;
         const histories = await manager.find(ProductsHistoryEntity, {
@@ -57,21 +58,21 @@ export class ProductsRepository {
             order: { version: 'ASC' },
         });
 
-        // If more than 10 versions, delete the oldest ones.
-        if (histories.length > 10) {
-            const toDelete = histories.slice(0, histories.length - 10);
+        // If more than 16 versions, delete the oldest ones.
+        if (histories.length > 16) {
+            const toDelete = histories.slice(0, histories.length - 16);
             await manager.remove(toDelete);
         }
     }
-    // Clean up old product stock history if exceeding 10 records.
+    // Clean up old product stock history if exceeding 32 records.
     private async cleanupOldProductStockHistory(productId: string, transactionalManager: any): Promise<void> {
         const histories = await transactionalManager.find(ProductStockHistoryEntity, {
             where: { product: { id: productId } },
             order: { createdAt: 'ASC' },
         });
 
-        if (histories.length > 10) {
-            const toDelete = histories.slice(0, histories.length - 10);
+        if (histories.length > 32) {
+            const toDelete = histories.slice(0, histories.length - 32);
             await transactionalManager.remove(ProductStockHistoryEntity, toDelete);
         }
     }
@@ -112,11 +113,15 @@ export class ProductsRepository {
             const productToReturn = productWithRelations || savedProductEntity;
 
             // Create a new product history.
+            const newProductSnapshot = this.productMapper.toProductSnapshotDto(productToReturn);
             await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: 1,
                 createdBy: user.id,
-                data: this.productMapper.toProductSnapshotDto(productToReturn),
+                events: [{ fieldName: ProductChangedField.NEW_PRODUCT, previousValue: null, newValue: null }],
+                eventSummary: [ProductChangedField.NEW_PRODUCT],
+                isSnapshot: true,
+                data: newProductSnapshot,
             } as ProductsHistoryEntity);
 
             // Update the product overview.
@@ -142,6 +147,13 @@ export class ProductsRepository {
                 productData['productUnit'] = { id: productUnitId };
             }
 
+            // Snapshot the product state BEFORE any changes to compute change events later.
+            const previousProductState = await transactionalManager.findOne(ProductsEntity, {
+                where: { id: productEntity.id },
+                relations: ['productUnit', 'productNames'],
+            });
+            const previousSnapshot = previousProductState ? this.productMapper.toProductSnapshotDto(previousProductState) : null;
+
             // Merge product data without productName.
             this.productsRepository.merge(productEntity, productData);
             const updatedProductEntity: ProductsEntity = await transactionalManager.save(ProductsEntity, productEntity);
@@ -153,9 +165,7 @@ export class ProductsRepository {
 
                 // Create and save new product names if array is not empty.
                 if (productName.length > 0) {
-                    const productNameEntities = productName.map(name =>
-                        this.productNamesRepository.create({ name, product: updatedProductEntity })
-                    );
+                    const productNameEntities = productName.map(name => this.productNamesRepository.create({ name, product: updatedProductEntity }));
                     const savedProductNames = await transactionalManager.save(ProductNamesEntity, productNameEntities);
                     updatedProductEntity.productNames = savedProductNames;
                 } else {
@@ -171,16 +181,28 @@ export class ProductsRepository {
 
             const productToReturn = productWithRelations || updatedProductEntity;
 
+            // --- History operations ---
             // Get the latest version from history using transactionalManager.
             const currentVersion = await this.getLatestHistoryVersion(productEntity.id, transactionalManager);
             const nextVersion = currentVersion + 1;
+
+            // Compute change events by comparing previous vs current snapshot.
+            const currentSnapshot = this.productMapper.toProductSnapshotDto(productToReturn);
+            const events = this.productMapper.toProductChangeEventDtos(previousSnapshot, currentSnapshot);
+            const eventSummary = events.map(e => e.fieldName);
+
+            // Every 5th version is a full snapshot; others only store events.
+            const isSnapshot = nextVersion % 5 === 0;
 
             // Create a new product history entry.
             await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: nextVersion,
                 createdBy: user.id,
-                data: this.productMapper.toProductSnapshotDto(productToReturn),
+                events,
+                eventSummary,
+                isSnapshot,
+                data: isSnapshot ? currentSnapshot : null,
             } as ProductsHistoryEntity);
 
             // Clean up old product history versions if exceeding 10.
@@ -471,6 +493,7 @@ export class ProductsRepository {
                 'history.version',
                 'history.createdBy',
                 'history.createdAt',
+                'history.eventSummary',
             ])
             .getMany();
 
