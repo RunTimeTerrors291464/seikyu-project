@@ -9,7 +9,6 @@ import { JwtAuthGuard, CurrentUser, Roles } from '../../auth/guards';
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
 
-// Import services.
 // Import microservices client proxy.
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';

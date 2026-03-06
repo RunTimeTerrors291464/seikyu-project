@@ -96,6 +96,8 @@ export class GetListOfSellingInvoiceRequestDto {
     @Type(() => Number)
     @IsNumber()
     @IsOptional()
+    @Min(1)
+    @Max(2147483647)
     page?: number = 1;
 
     @ApiPropertyOptional({
@@ -105,6 +107,8 @@ export class GetListOfSellingInvoiceRequestDto {
     @Type(() => Number)
     @IsNumber()
     @IsOptional()
+    @Min(1)
+    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({

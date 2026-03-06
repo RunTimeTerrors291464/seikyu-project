@@ -5,11 +5,13 @@ import { ConfigModule } from '@nestjs/config';
 // Import the postgres module and the application's entities.
 import { PostgresModule } from '@app/services';
 import { RefreshTokenEntity } from './auth/entities/refreshToken.entity';
+import { LogsEntity } from './logs/entities/logs.entity';
 
 // Import modules.
 import { AuthModule } from './auth/auth.module';
 import { PlatformModule } from './platform/platform.module';
 import { InvoicesModule } from './invoices/invoices.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -20,12 +22,16 @@ import { InvoicesModule } from './invoices/invoices.module';
 
     PostgresModule.forRoot({
       databaseApplication: 'api_gateway',
-      entities: [RefreshTokenEntity],
+      entities: [
+        RefreshTokenEntity,
+        LogsEntity,
+      ],
     }),
 
     AuthModule,
     PlatformModule,
     InvoicesModule,
+    LogsModule,
   ],
   controllers: [],
   providers: [],

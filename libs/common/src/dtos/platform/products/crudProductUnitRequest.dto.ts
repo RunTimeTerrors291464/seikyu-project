@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -59,6 +59,8 @@ export class GetListOfProductUnitRequestDto {
     @IsNumber()
     @IsOptional()
     @Type(() => Number)
+    @Min(1)
+    @Max(2147483647)
     page?: number = 1;
 
     @ApiPropertyOptional({
@@ -68,6 +70,8 @@ export class GetListOfProductUnitRequestDto {
     @IsNumber()
     @IsOptional()
     @Type(() => Number)
+    @Min(1)
+    @Max(100)
     limit?: number = 10;
 
     // Only search by unit name.

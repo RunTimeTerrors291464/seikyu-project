@@ -5,6 +5,7 @@ import * as fs from 'fs';
 
 // API Gateway application entities.
 import { RefreshTokenEntity } from '../../../../apps/api-gateway/src/auth/entities/refreshToken.entity';
+import { LogsEntity } from '../../../../apps/api-gateway/src/logs/entities/logs.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -22,7 +23,8 @@ export default new DataSource({
     password: process.env.DB_PASSWORD_API_GATEWAY,
     database: process.env.DB_DATABASE_API_GATEWAY,
     entities: [
-        RefreshTokenEntity
+        RefreshTokenEntity,
+        LogsEntity,
     ],
     migrations: [path.join(__dirname, '../api-gateway/*.{ts,js}')],
     synchronize: false,

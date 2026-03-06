@@ -8,9 +8,11 @@ import { JwtAuthGuard, RolesGuard, Roles, CurrentUser } from '../../auth/guards'
 
 // Import services.
 import { AccessTokenService } from '../../auth/services/accessToken.service';
+import { LogsService } from '../../logs/services/logs.service';
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
+import { LogCode, ReferenceType } from '@app/common/enums/logEnums.enum';
 
 // Import microservices client proxy.
 import { ClientProxy } from '@nestjs/microservices';
@@ -42,6 +44,7 @@ export class AdminController {
     constructor(
         @Inject('PLATFORM_SERVICE') private readonly platformService: ClientProxy,
         private readonly accessTokenService: AccessTokenService,
+        private readonly logsService: LogsService
     ) { }
 
     // Create a new user.
@@ -51,11 +54,21 @@ export class AdminController {
     @ApiBody({ type: CreateNewUserRequestDto })
     @ApiResponse({ status: 201, description: 'A user has been created successfully.', type: UserResponseDto })
     @HttpCode(HttpStatus.CREATED)
-    async createNewUser(@Body() dto: CreateNewUserRequestDto): Promise<UserResponseDto> {
+    async createNewUser(@Body() dto: CreateNewUserRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<UserResponseDto> {
         try {
             const result: UserResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'admin.createNewUser' }, dto)
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.ADMIN,
+                actionUserId: user.id,
+                action: LogCode.CREATE_NEW_USER,
+                referenceType: ReferenceType.USER,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -70,11 +83,21 @@ export class AdminController {
     @ApiBody({ type: EditUserRequestDto })
     @ApiResponse({ status: 200, description: 'The user information has been updated successfully.', type: UserResponseDto })
     @HttpCode(HttpStatus.OK)
-    async editUserInformation(@Body() dto: EditUserRequestDto): Promise<UserResponseDto> {
+    async editUserInformation(@Body() dto: EditUserRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<UserResponseDto> {
         try {
             const result: UserResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'admin.editUserInformation' }, dto)
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.ADMIN,
+                actionUserId: user.id,
+                action: LogCode.EDIT_USER_INFORMATION,
+                referenceType: ReferenceType.USER,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -139,7 +162,16 @@ export class AdminController {
 
             // Revoke all refresh tokens of the user.
             await this.accessTokenService.revokeAllRefreshTokens(id);
-            
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.ADMIN,
+                actionUserId: user.id,
+                action: LogCode.DEACTIVATE_USER,
+                referenceType: ReferenceType.USER,
+                referenceId: result.id,
+            });
+
             return result;
         }
         catch (error: any) {
@@ -155,11 +187,21 @@ export class AdminController {
     @ApiParam({ name: 'id', type: String, description: 'ID of the user', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
     @ApiResponse({ status: 200, description: 'The user has been activated successfully.', type: UserResponseDto })
     @HttpCode(HttpStatus.OK)
-    async activateUser(@Param('id') id: string): Promise<UserResponseDto> {
+    async activateUser(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<UserResponseDto> {
         try {
             const result: UserResponseDto = await firstValueFrom(
-                this.platformService.send({ cmd: 'admin.activateUser' }, id)
+                this.platformService.send({ cmd: 'admin.activateUser' }, { id, actionUserId: user.id })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.ADMIN,
+                actionUserId: user.id,
+                action: LogCode.ACTIVATE_USER,
+                referenceType: ReferenceType.USER,
+                referenceId: result.id,
+            });
+
             return result;
         }
         catch (error: any) {
@@ -175,11 +217,21 @@ export class AdminController {
     @ApiBody({ type: ForgotPasswordRequestDto })
     @ApiResponse({ status: 200, description: 'The password has been reset successfully.', type: UserResponseDto })
     @HttpCode(HttpStatus.OK)
-    async resetPassword(@Body() dto: ForgotPasswordRequestDto): Promise<UserResponseDto> {
+    async resetPassword(@Body() dto: ForgotPasswordRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<UserResponseDto> {
         try {
             const result: UserResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'admin.forgotPassword' }, dto)
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.ADMIN,
+                actionUserId: user.id,
+                action: LogCode.ADMIN_RESET_PASSWORD,
+                referenceType: ReferenceType.USER,
+                referenceId: result.id,
+            });
+
             return result;
         }
         catch (error: any) {

@@ -26,7 +26,7 @@ import { ErrorCode } from '@app/common/enums/errorCode.enum';
 @UseGuards(JwtAuthGuard)
 export class FirstAdminAccountController {
     constructor(
-        @Inject('PLATFORM_SERVICE') private readonly platformService: ClientProxy
+        @Inject('PLATFORM_SERVICE') private readonly platformService: ClientProxy,
     ) { }
 
     // Create a new user.

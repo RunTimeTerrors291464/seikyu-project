@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '../../../enums/role.enum';
 import { Transform, Type } from 'class-transformer';
@@ -195,6 +195,7 @@ export class GetListOfUsersRequestDto {
     @Type(() => Number)
     @IsNumber()
     @Min(1)
+    @Max(2147483647)
     page?: number = 1;
 
     @ApiPropertyOptional({
@@ -206,6 +207,7 @@ export class GetListOfUsersRequestDto {
     @Type(() => Number)
     @IsNumber()
     @Min(1)
+    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({
@@ -279,6 +281,7 @@ export class GetListOfUsersForSearchRequestDto {
     @Type(() => Number)
     @IsNumber()
     @Min(1)
+    @Max(2147483647)
     page?: number = 1;
 
     @ApiPropertyOptional({
@@ -290,6 +293,7 @@ export class GetListOfUsersForSearchRequestDto {
     @Type(() => Number)
     @IsNumber()
     @Min(1)
+    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({

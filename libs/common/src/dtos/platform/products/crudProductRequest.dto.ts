@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength, IsArray, IsUUID, Min, IsNumber, IsBoolean, ValidateIf, IsIn, ValidateNested, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength, IsArray, IsUUID, Min, IsNumber, IsBoolean, ValidateIf, IsIn, ValidateNested, IsEnum, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -180,6 +180,8 @@ export class GetListOfProductRequestDto {
     @IsNumber()
     @IsOptional()
     @Type(() => Number)
+    @Min(1)
+    @Max(2147483647)
     page?: number = 1;
 
     @ApiPropertyOptional({
@@ -189,6 +191,8 @@ export class GetListOfProductRequestDto {
     @IsNumber()
     @IsOptional()
     @Type(() => Number)
+    @Min(1)
+    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({

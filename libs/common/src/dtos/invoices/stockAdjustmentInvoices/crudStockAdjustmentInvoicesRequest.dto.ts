@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -167,6 +167,8 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
     @Type(() => Number)
     @IsNumber()
     @IsOptional()
+    @Min(1)
+    @Max(2147483647)
     page?: number = 1;
 
     @ApiPropertyOptional({
@@ -176,6 +178,8 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
     @Type(() => Number)
     @IsNumber()
     @IsOptional()
+    @Min(1)
+    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({
