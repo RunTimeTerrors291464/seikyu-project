@@ -2,14 +2,27 @@
 
 import AreaLineChart, { Point } from "@/components/charts/AreaLineChart";
 import { Period } from "@/components/dashboard/DatePeriodControls";
+import DeactivateModal from "@/components/products/DeactivateModal";
+import UnitPickerModal from "@/components/products/UnitPickerModal";
+import DataTable from "@/components/ui/DataTable";
 import { PeriodSelect } from "@/components/ui/PeriodSelect";
 import Tooltip from "@/components/ui/Tooltip";
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
-import { addDays, addMonths, addWeeks, differenceInDays, format, isBefore, startOfDay, subDays } from "date-fns";
+import {
+  addDays, addMonths, addWeeks,
+  endOfDay,
+  isBefore,
+  startOfDay,
+  startOfMonth,
+  startOfQuarter,
+  startOfWeek,
+  startOfYear
+} from "date-fns";
 import {
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
+  ArrowLeftRight,
   Barcode,
   ChevronDown,
   ChevronRight,
@@ -23,10 +36,12 @@ import {
   History,
   Info,
   LineChart,
+  Minus,
   Plus,
   Ruler,
   Save,
   Settings,
+  Star,
   Tag,
   ToggleRight,
   Trash2,
@@ -35,7 +50,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -76,8 +91,6 @@ type Product = {
 };
 
 // ── Mock Data ──────────────────────────────────────────────────────────────────
-
-const UNITS = ["db", "cs", "cs/100db", "kg", "l", "100 cs/db"];
 
 const MOCK_PRODUCT: Product = {
   id: "6",
@@ -257,39 +270,45 @@ function ReadonlyField({ value }: { value: string | number }) {
   );
 }
 
-function EditableField({ value, onChange, type = "text", placeholder }: {
-  value: string | number; onChange: (v: string) => void; type?: string; placeholder?: string;
+function EditableField({ value, onChange, type = "text", placeholder, maxLength, max }: {
+  value: string | number;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  maxLength?: number;
+  max?: number;
 }) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    if (type === "number") {
+      const digits = raw.replace(/[^0-9]/g, "");
+      if (maxLength !== undefined && digits.length > maxLength) return;
+      if (max !== undefined && Number(digits) > max) return;
+      onChange(digits);
+    } else {
+      if (maxLength !== undefined && raw.length > maxLength) return;
+      onChange(raw);
+    }
+  }
   return (
-    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+    <input
+      type="text"
+      inputMode={type === "number" ? "numeric" : undefined}
+      value={value}
+      onChange={handleChange}
+      placeholder={placeholder}
       className="flex h-9 w-full items-center rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
     />
   );
 }
 
-function UnitSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
+function UnitTrigger({ value, onClick }: { value: string; onClick: () => void }) {
   return (
-    <div className="relative">
-      <button type="button" onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
-        <span>{value}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-40 mt-1 w-full overflow-hidden rounded-md border bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-            {UNITS.map((u) => (
-              <button key={u} type="button" onClick={() => { onChange(u); setOpen(false); }}
-                className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 ${value === u ? "font-medium text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-300"}`}>
-                {u}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    <button type="button" onClick={onClick}
+      className="flex h-9 w-full items-center justify-between rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none hover:bg-neutral-50 focus:ring-2 focus:ring-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800">
+      <span className={value ? "font-mono" : "text-neutral-400"}>{value || "Select unit…"}</span>
+      <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+    </button>
   );
 }
 
@@ -322,7 +341,6 @@ function ChangeIcon({ type }: { type: HistoryChange["icon"] }) {
 
 function HistoryGroupRow({ group }: { group: HistoryGroup }) {
   const [open, setOpen] = useState(false);
-  const isMulti = group.changes.length > 1;
 
   return (
     <div className="relative flex gap-3 pb-3">
@@ -332,11 +350,11 @@ function HistoryGroupRow({ group }: { group: HistoryGroup }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        {/* Header row — clickable if multiple changes */}
+        {/* Header row — always collapsible */}
         <button
           type="button"
-          onClick={() => isMulti && setOpen((v) => !v)}
-          className={`flex w-full items-start justify-between gap-1 text-left ${isMulti ? "cursor-pointer" : "cursor-default"}`}
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-start justify-between gap-1 text-left cursor-pointer"
         >
           <div className="min-w-0">
             <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 leading-snug">
@@ -344,36 +362,26 @@ function HistoryGroupRow({ group }: { group: HistoryGroup }) {
             </p>
             <p className="mt-0.5 text-xs text-neutral-400">{group.user} · {group.timestamp}</p>
           </div>
-          {isMulti && (
-            <span className="mt-0.5 flex shrink-0 items-center gap-0.5 text-xs text-neutral-400">
-              <span>{group.changes.length}</span>
-              <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
-            </span>
-          )}
+          <span className="mt-0.5 flex shrink-0 items-center gap-0.5 text-xs text-neutral-400">
+            <span>{group.changes.length}</span>
+            <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
+          </span>
         </button>
 
-        {/* Single change — always visible inline */}
-        {!isMulti && (
-          <p className="mt-0.5 text-xs text-neutral-400">
-            {group.changes[0].oldValue ? (
-              <>
-                <span className="line-through">{group.changes[0].oldValue}</span>
-                <span className="mx-1 text-neutral-300 dark:text-neutral-600">→</span>
-                <span className="font-medium text-neutral-600 dark:text-neutral-300">{group.changes[0].newValue}</span>
-              </>
-            ) : (
-              <span className="font-medium text-emerald-600 dark:text-emerald-400">{group.changes[0].newValue}</span>
-            )}
-          </p>
-        )}
-
-        {/* Expanded multi-change list */}
-        {isMulti && open && (
+        {/* Expanded change list — shown for all groups */}
+        {open && (
           <ul className="mt-2 space-y-1.5 rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-800/40">
             {group.changes.map((c, i) => (
-              <li key={i} className="flex items-center gap-2 text-xs">
-                <ChangeIcon type={c.icon} />
-                <span className="w-32 shrink-0 font-medium text-neutral-600 dark:text-neutral-300">{c.field}</span>
+              <li key={i} className="flex items-start gap-2 text-xs">
+                {/* +/edit/- icon: new=plus, changed=pencil, removed=minus */}
+                {c.oldValue && c.newValue ? (
+                  <ArrowLeftRight className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+                ) : c.newValue ? (
+                  <Plus className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />
+                ) : (
+                  <Minus className="mt-0.5 h-3 w-3 shrink-0 text-red-400" />
+                )}
+                <span className="w-28 shrink-0 font-medium text-neutral-600 dark:text-neutral-300">{c.field}</span>
                 {c.oldValue ? (
                   <span className="text-neutral-400">
                     <span className="line-through">{c.oldValue}</span>
@@ -431,14 +439,29 @@ function generateProductSeries({
   return pts;
 }
 
-// Preset date ranges for the local picker
-const DATE_PRESETS = [
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 30 days", days: 30 },
-  { label: "Last 90 days", days: 90 },
-  { label: "Last 180 days", days: 180 },
-  { label: "Last 365 days", days: 365 },
-] as const;
+// ── Date preset helpers (mirrors DashboardDateContext logic, no provider needed) ──
+
+type DatePreset = "today" | "this_week" | "this_month" | "this_quarter" | "this_year";
+
+const DATE_PRESETS: { label: string; value: DatePreset }[] = [
+  { label: "Today", value: "today" },
+  { label: "This week", value: "this_week" },
+  { label: "This month", value: "this_month" },
+  { label: "This quarter", value: "this_quarter" },
+  { label: "This year", value: "this_year" },
+];
+
+function computePresetRange(preset: DatePreset, base = new Date()) {
+  const opts = { weekStartsOn: 1 as const };
+  const end = endOfDay(base);
+  switch (preset) {
+    case "today": return { startDate: startOfDay(base), endDate: end };
+    case "this_week": return { startDate: startOfWeek(base, opts), endDate: end };
+    case "this_month": return { startDate: startOfMonth(base), endDate: end };
+    case "this_quarter": return { startDate: startOfQuarter(base), endDate: end };
+    case "this_year": return { startDate: startOfYear(base), endDate: end };
+  }
+}
 
 function ChartCard() {
   const [openMenu, setOpenMenu] = useState(false);
@@ -446,31 +469,17 @@ function ChartCard() {
   const menuRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(menuRef, () => setOpenMenu(false));
 
-  const [presetDays, setPresetDays] = useState(30);
-  const [presetOpen, setPresetOpen] = useState(false);
-  const presetRef = useRef<HTMLDivElement>(null);
-  useOnClickOutside(presetRef, () => setPresetOpen(false));
-
-  const endDate = new Date();
-  const startDate = subDays(endDate, presetDays);
+  const { startDate, endDate } = useMemo(() => computePresetRange("this_month"), []);
 
   const [period, setPeriod] = useState<Period>("Weekly");
 
-  const allowedOptions = (() => {
-    const spanDays = Math.max(1, differenceInDays(endDate, startDate));
-    if (spanDays <= 45) return ["Daily", "Weekly", "Monthly"] as Period[];
-    if (spanDays <= 120) return ["Weekly", "Monthly", "Quarterly"] as Period[];
-    if (spanDays <= 540) return ["Monthly", "Quarterly", "Yearly"] as Period[];
-    return ["Quarterly", "Yearly"] as Period[];
-  })();
+  const allowedOptions: Period[] = ["Daily", "Weekly", "Monthly"];
+  const validPeriod = allowedOptions.includes(period) ? period : "Weekly";
 
-  if (!allowedOptions.includes(period)) {
-    const next = allowedOptions[0];
-    if (period !== next) setPeriod(next);
-  }
-
-  const series = generateProductSeries({ startDate, endDate, period, metric });
-  const presetLabel = DATE_PRESETS.find((p) => p.days === presetDays)?.label ?? "Custom";
+  const series = useMemo(
+    () => generateProductSeries({ startDate, endDate, period: validPeriod, metric }),
+    [startDate.getTime(), endDate.getTime(), validPeriod, metric]
+  );
 
   return (
     <div className="rounded-lg border bg-white p-4 shadow-sm dark:bg-neutral-900">
@@ -480,6 +489,7 @@ function ChartCard() {
             <LineChart className="h-4 w-4 text-neutral-500" />
             <span>Charts</span>
           </div>
+          {/* Metric selector */}
           <div ref={menuRef} className="relative">
             <button
               type="button"
@@ -503,28 +513,10 @@ function ChartCard() {
             )}
           </div>
         </div>
+
         <div className="flex items-center gap-2">
-          {/* Local date range preset picker */}
-          <div ref={presetRef} className="relative">
-            <button type="button" onClick={() => setPresetOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-md border bg-white px-2 py-1 text-xs shadow-sm dark:bg-neutral-900 text-neutral-500">
-              <span>{format(startDate, "MMM d")} – {format(endDate, "MMM d")}</span>
-              <ChevronDown className="h-3 w-3 text-neutral-400" />
-            </button>
-            {presetOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-md border bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-                {DATE_PRESETS.map((p) => (
-                  <button key={p.days} type="button"
-                    onClick={() => { setPresetDays(p.days); setPresetOpen(false); }}
-                    className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800 ${presetDays === p.days ? "font-medium text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-300"}`}>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           <PeriodSelect
-            value={period}
+            value={validPeriod}
             options={allowedOptions}
             onChange={(v) => setPeriod(v as Period)}
             ariaLabel="Change chart granularity"
@@ -537,7 +529,7 @@ function ChartCard() {
           </Tooltip>
         </div>
       </div>
-      <AreaLineChart data={series} height={220} period={period} />
+      <AreaLineChart data={series} height={220} period={validPeriod} />
     </div>
   );
 }
@@ -549,6 +541,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const [newName, setNewName] = useState("");
   const [addingName, setAddingName] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const leftColRef = useRef<HTMLDivElement>(null);
   const middleColRef = useRef<HTMLDivElement>(null);
   const rightColRef = useRef<HTMLDivElement>(null);
@@ -592,15 +585,32 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     setConfirmDeactivate(false);
   }
 
+  const MAX_NAMES = 8;
+
   function addName() {
-    if (!newName.trim()) return;
-    setProduct((p) => ({ ...p, names: [...p.names, { id: Date.now().toString(), name: newName.trim() }] }));
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    if (product.names.length >= MAX_NAMES) return;
+    const isDuplicate = product.names.some((n) => n.name.toLowerCase() === trimmed.toLowerCase());
+    if (isDuplicate) return;
+    setProduct((p) => ({ ...p, names: [...p.names, { id: Date.now().toString(), name: trimmed }] }));
     setNewName("");
     setAddingName(false);
   }
 
   function removeName(id: string) {
     setProduct((p) => ({ ...p, names: p.names.filter((n) => n.id !== id) }));
+  }
+
+  function makeDefault(id: string) {
+    setProduct((p) => {
+      const idx = p.names.findIndex((n) => n.id === id);
+      if (idx <= 0) return p;
+      const names = [...p.names];
+      const [target] = names.splice(idx, 1);
+      names.unshift(target);
+      return { ...p, names };
+    });
   }
 
   const primaryName = product.names[0]?.name ?? "—";
@@ -612,6 +622,23 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="flex min-h-0 grow flex-col space-y-6">
+
+      {/* ── Deactivate confirm modal ── */}
+      {/* ── Deactivate confirm modal ── */}
+      <DeactivateModal
+        isOpen={confirmDeactivate}
+        productName={primaryName}
+        onClose={() => setConfirmDeactivate(false)}
+        onConfirm={confirmDeactivateProduct}
+      />
+
+      {/* ── Unit picker modal ── */}
+      <UnitPickerModal
+        isOpen={unitPickerOpen}
+        selectedUnit={product.unit}
+        onClose={() => setUnitPickerOpen(false)}
+        onSelect={(v) => { update("unit", v); setUnitPickerOpen(false); }}
+      />
 
       {/* ── Page Header ── */}
       <div className="flex items-center justify-between">
@@ -625,11 +652,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           {/* Timestamps */}
           <div className="inline-flex items-center gap-1.5 rounded-md border bg-white px-2.5 py-1.5 text-xs text-neutral-500 shadow-sm dark:bg-neutral-900 dark:border-neutral-700">
             <Clock className="h-3.5 w-3.5" />
-            <span>Created: {product.createdAt}</span>
+            <span>Created: {product.createdAt.split(" ")[0]}</span>
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-md border bg-white px-2.5 py-1.5 text-xs text-neutral-500 shadow-sm dark:bg-neutral-900 dark:border-neutral-700">
             <Clock className="h-3.5 w-3.5" />
-            <span>Updated: {product.updatedAt}</span>
+            <span>Updated: {product.updatedAt.split(" ")[0]}</span>
           </div>
 
           {/* Active / Inactive toggle */}
@@ -661,37 +688,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      {/* ── Deactivate confirm modal ── */}
-      {confirmDeactivate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setConfirmDeactivate(false)} />
-          {/* Dialog */}
-          <div className="relative z-10 w-full max-w-sm rounded-xl border bg-white p-6 shadow-xl dark:bg-neutral-900 dark:border-neutral-700">
-            <div className="mb-1 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                <CircleOff className="h-4 w-4 text-red-500" />
-              </span>
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Deactivate product?</h3>
-            </div>
-            <p className="mb-5 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
-              <span className="font-medium text-neutral-700 dark:text-neutral-200">{primaryName}</span> will be
-              marked as inactive and hidden from active listings. You can reactivate it at any time.
-            </p>
-            <div className="flex items-center justify-end gap-2">
-              <button type="button" onClick={() => setConfirmDeactivate(false)}
-                className="rounded-md border px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800">
-                Cancel
-              </button>
-              <button type="button" onClick={confirmDeactivateProduct}
-                className="rounded-md bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">
-                Deactivate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── 3-column layout ── */}
       <div className={`grid min-h-0 items-start grid-cols-1 gap-4 lg:grid-cols-[1fr_1.4fr_1fr] transition-opacity duration-300 ${!product.active ? "opacity-50 pointer-events-none select-none" : ""}`}>
 
@@ -701,7 +697,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
           <div>
             <FieldLabel icon={<Barcode className="h-3.5 w-3.5" />} label="SKU" />
-            <EditableField value={product.sku} onChange={(v) => update("sku", v)} />
+            <EditableField value={product.sku} onChange={(v) => update("sku", v)} type="number" maxLength={13} max={9999999999999} />
           </div>
           <div>
             <FieldLabel icon={<Hash className="h-3.5 w-3.5" />} label="Barcode Format" />
@@ -722,19 +718,19 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           </div>
           <div>
             <FieldLabel icon={<Ruler className="h-3.5 w-3.5" />} label="Unit" />
-            <UnitSelect value={product.unit} onChange={(v) => update("unit", v)} />
+            <UnitTrigger value={product.unit} onClick={() => setUnitPickerOpen(true)} />
           </div>
           <div>
             <FieldLabel icon={<TrendingUp className="h-3.5 w-3.5" />} label="Sale Unit Price" />
-            <EditableField type="number" value={product.saleUnitPrice} onChange={(v) => update("saleUnitPrice", Number(v))} />
+            <EditableField type="number" value={product.saleUnitPrice} onChange={(v) => update("saleUnitPrice", Number(v))} max={4294967295} />
           </div>
           <div>
             <FieldLabel icon={<TrendingDown className="h-3.5 w-3.5" />} label="Inbound Unit Price" />
-            <EditableField type="number" value={product.inboundUnitPrice} onChange={(v) => update("inboundUnitPrice", Number(v))} />
+            <EditableField type="number" value={product.inboundUnitPrice} onChange={(v) => update("inboundUnitPrice", Number(v))} max={4294967295} />
           </div>
           <div>
             <FieldLabel icon={<AlertCircle className="h-3.5 w-3.5" />} label="Reorder Threshold" />
-            <EditableField type="number" value={product.minStock} onChange={(v) => update("minStock", Number(v))} />
+            <EditableField type="number" value={product.minStock} onChange={(v) => update("minStock", Number(v))} max={4294967295} />
           </div>
           <div>
             <FieldLabel icon={<FileText className="h-3.5 w-3.5" />} label="Note" />
@@ -767,13 +763,19 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                       if (e.key === "Escape") { setAddingName(false); setNewName(""); }
                     }}
                     placeholder="Enter name…"
-                    className="h-6 flex-1 rounded border border-neutral-200 bg-white px-2 text-xs outline-none focus:ring-1 focus:ring-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
+                    className={`h-6 flex-1 rounded border px-2 text-xs outline-none focus:ring-1 dark:bg-neutral-900 dark:text-white ${newName.trim() && product.names.some((n) => n.name.toLowerCase() === newName.trim().toLowerCase())
+                        ? "border-red-300 bg-red-50 focus:ring-red-300 dark:border-red-700 dark:bg-red-900/20"
+                        : "border-neutral-200 bg-white focus:ring-neutral-300 dark:border-neutral-700"
+                      }`}
                   />
-                  {newName.trim() && (
+                  {newName.trim() && !product.names.some((n) => n.name.toLowerCase() === newName.trim().toLowerCase()) && (
                     <button type="button" onClick={addName}
                       className="flex h-6 shrink-0 items-center rounded bg-neutral-900 px-2 text-xs font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900">
                       Add
                     </button>
+                  )}
+                  {newName.trim() && product.names.some((n) => n.name.toLowerCase() === newName.trim().toLowerCase()) && (
+                    <span className="shrink-0 text-xs text-red-500">Duplicate</span>
                   )}
                   <button type="button" onClick={() => { setAddingName(false); setNewName(""); }}
                     className="flex h-6 shrink-0 items-center rounded border px-2 text-xs text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800">
@@ -783,47 +785,72 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               ) : (
                 <button
                   type="button"
-                  onClick={() => setAddingName(true)}
-                  className="ml-auto inline-flex items-center gap-1 text-xs text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                  onClick={() => product.names.length < MAX_NAMES && setAddingName(true)}
+                  disabled={product.names.length >= MAX_NAMES}
+                  className={`ml-auto inline-flex items-center gap-1 text-xs transition-colors ${product.names.length >= MAX_NAMES
+                      ? "cursor-not-allowed text-neutral-300 dark:text-neutral-600"
+                      : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                    }`}
                 >
-                  <Plus className="h-3.5 w-3.5" />Add New Name
+                  <Plus className="h-3.5 w-3.5" />
+                  Add New Name
+                  <span className={`ml-0.5 tabular-nums ${product.names.length >= MAX_NAMES ? "text-neutral-300 dark:text-neutral-600" : "text-neutral-400"}`}>
+                    ({product.names.length}/{MAX_NAMES})
+                  </span>
                 </button>
               )}
             </div>
 
-            {/* Scrollable table — flex-1 fills remaining card height */}
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b dark:border-neutral-800">
-                    <th className="w-10 pb-2 text-left text-xs font-medium text-neutral-500">No.</th>
-                    <th className="pb-2 text-left text-xs font-medium text-neutral-500">
-                      <span className="inline-flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Name</span>
-                    </th>
-                    <th className="w-16 pb-2 text-right text-xs font-medium text-neutral-500">
-                      <span className="inline-flex items-center justify-end gap-1"><Settings className="h-3.5 w-3.5" /> Action</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {product.names.map((n, idx) => (
-                    <tr key={n.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40">
-                      <td className="py-2.5 text-xs text-neutral-400">{idx + 1}</td>
-                      <td className="py-2.5 text-sm text-neutral-800 dark:text-neutral-200">{n.name}</td>
-                      <td className="py-2.5 text-right">
-                        <button type="button" onClick={() => removeName(n.id)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-red-500 text-white transition-colors hover:bg-red-600">
-                          <Trash2 className="h-3.5 w-3.5" />
+            {/* DataTable — flex-1 fills remaining card height */}
+            <DataTable<ProductName>
+              columns={[
+                {
+                  id: "name",
+                  header: "Name",
+                  icon: <FileText className="h-3.5 w-3.5" />,
+                  accessor: (n, idx) => (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-neutral-800 dark:text-neutral-200">{n.name}</span>
+                      {idx === 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          <Star className="h-2.5 w-2.5" strokeWidth={2.5} />
+                          Default
+                        </span>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  id: "action",
+                  header: "Action",
+                  icon: <Settings className="h-3.5 w-3.5" />,
+                  accessor: (n, idx) => (
+                    <div className="flex items-center justify-end gap-1">
+                      {idx !== 0 && (
+                        <button
+                          type="button"
+                          title="Set as default"
+                          onClick={() => makeDefault(n.id)}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-amber-500 transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/20 dark:hover:bg-amber-900/40"
+                        >
+                          <Star className="h-3.5 w-3.5" strokeWidth={2.5} />
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {product.names.length === 0 && (
-                    <tr><td colSpan={3} className="py-6 text-center text-xs text-neutral-400">No names added yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      )}
+                      <button type="button" onClick={() => removeName(n.id)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-red-500 text-white transition-colors hover:bg-red-600">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ),
+                  thClassName: "text-right",
+                  tdClassName: "text-right",
+                },
+              ]}
+              data={product.names}
+              getRowId={(n) => n.id}
+              showIndex
+              maxHeight="fill"
+            />
           </div>
 
           {/* Chart — fixed height, does not grow */}
