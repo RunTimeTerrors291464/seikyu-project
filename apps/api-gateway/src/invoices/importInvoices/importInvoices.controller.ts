@@ -10,6 +10,10 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
+import { LogCode, ReferenceType } from '@app/common/enums/logEnums.enum';
+
+// Import services.
+import { LogsService } from '../../logs/services/logs.service';
 
 // Import microservices client proxy.
 import { ClientProxy } from '@nestjs/microservices';
@@ -40,6 +44,7 @@ import { ErrorCode } from '@app/common/enums/errorCode.enum';
 export class ImportInvoicesController {
     constructor(
         @Inject('INVOICES_SERVICE') private readonly invoicesService: ClientProxy,
+        private readonly logsService: LogsService,
     ) { }
 
     // Create a draft import invoice.
@@ -55,6 +60,16 @@ export class ImportInvoicesController {
             const result: ImportInvoiceResponseDto = await firstValueFrom(
                 this.invoicesService.send({ cmd: 'import-invoices.createDraft' }, { dto, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.CREATE_DRAFT_IMPORT_INVOICE,
+                referenceType: ReferenceType.IMPORT_INVOICE,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -75,6 +90,16 @@ export class ImportInvoicesController {
             const result: ImportInvoiceResponseDto = await firstValueFrom(
                 this.invoicesService.send({ cmd: 'import-invoices.editDraft' }, { dto, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.EDIT_DRAFT_IMPORT_INVOICE,
+                referenceType: ReferenceType.IMPORT_INVOICE,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -96,6 +121,20 @@ export class ImportInvoicesController {
                 this.invoicesService.send({ cmd: 'import-invoices.deleteDraft' }, { ids: body.ids, user }),
                 { defaultValue: null }
             );
+
+            // Log the result.
+            await Promise.all(
+                body.ids.map((id) =>
+                    this.logsService.createLog({
+                        role: Role.MANAGER,
+                        actionUserId: user.id,
+                        action: LogCode.DELETE_DRAFT_IMPORT_INVOICES,
+                        referenceType: ReferenceType.IMPORT_INVOICE,
+                        referenceId: id,
+                    })
+                )
+            );
+
             return true;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -116,6 +155,16 @@ export class ImportInvoicesController {
             const result: ImportInvoiceResponseDto = await firstValueFrom(
                 this.invoicesService.send({ cmd: 'import-invoices.confirm' }, { id, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.CONFIRM_IMPORT_INVOICE,
+                referenceType: ReferenceType.IMPORT_INVOICE,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);

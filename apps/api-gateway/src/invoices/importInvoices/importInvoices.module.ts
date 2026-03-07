@@ -5,12 +5,16 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 // Import auth module to provide JwtAuthGuard dependencies.
 import { AuthModule } from '../../auth/auth.module';
 
+// Import logs module.
+import { LogsModule } from '../../logs/logs.module';
+
 // Import controllers.
 import { ImportInvoicesController } from './importInvoices.controller';
 
 @Module({
     imports: [
         AuthModule,
+        LogsModule,
         ClientsModule.registerAsync([
             {
                 name: 'INVOICES_SERVICE',

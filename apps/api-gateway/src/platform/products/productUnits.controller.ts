@@ -10,6 +10,10 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
+import { LogCode, ReferenceType } from '@app/common/enums/logEnums.enum';
+
+// Import services.
+import { LogsService } from '../../logs/services/logs.service';
 
 // Import microservices client proxy.
 import { ClientProxy } from '@nestjs/microservices';
@@ -41,6 +45,7 @@ import { ErrorCode } from '@app/common/enums/errorCode.enum';
 export class ProductUnitsController {
     constructor(
         @Inject('PLATFORM_SERVICE') private readonly platformService: ClientProxy,
+        private readonly logsService: LogsService,
     ) { }
 
     // Create a new product unit.
@@ -56,6 +61,16 @@ export class ProductUnitsController {
             const result: ProductUnitResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.createProductUnit' }, { dto, user })
             );
+
+             // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.CREATE_NEW_PRODUCT_UNIT,
+                referenceType: ReferenceType.PRODUCT_UNIT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -76,6 +91,16 @@ export class ProductUnitsController {
             const result: ProductUnitResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.editProductUnit' }, { dto, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.EDIT_PRODUCT_UNIT,
+                referenceType: ReferenceType.PRODUCT_UNIT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -130,11 +155,21 @@ export class ProductUnitsController {
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A product unit has been deactivated successfully.', type: ProductUnitResponseDto })
     @HttpCode(HttpStatus.OK)
-    async deactivateProductUnit(@Param('id') id: string): Promise<ProductUnitResponseDto> {
+    async deactivateProductUnit(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
         try {
             const result: ProductUnitResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.deactivateProductUnit' }, { id })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.DEACTIVATE_PRODUCT_UNIT,
+                referenceType: ReferenceType.PRODUCT_UNIT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -150,11 +185,21 @@ export class ProductUnitsController {
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A product unit has been activated successfully.', type: ProductUnitResponseDto })
     @HttpCode(HttpStatus.OK)
-    async activateProductUnit(@Param('id') id: string): Promise<ProductUnitResponseDto> {
+    async activateProductUnit(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
         try {
             const result: ProductUnitResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.activateProductUnit' }, { id })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.ACTIVATE_PRODUCT_UNIT,
+                referenceType: ReferenceType.PRODUCT_UNIT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);

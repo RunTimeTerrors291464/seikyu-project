@@ -10,6 +10,10 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
+import { LogCode, ReferenceType } from '@app/common/enums/logEnums.enum';
+
+// Import services.
+import { LogsService } from '../../logs/services/logs.service';
 
 // Import microservices client proxy.
 import { ClientProxy } from '@nestjs/microservices';
@@ -39,6 +43,7 @@ import { ErrorCode } from '@app/common/enums/errorCode.enum';
 export class SellingInvoicesController {
     constructor(
         @Inject('INVOICES_SERVICE') private readonly invoicesService: ClientProxy,
+        private readonly logsService: LogsService,
     ) { }
 
     // Create a new selling invoice.
@@ -54,6 +59,16 @@ export class SellingInvoicesController {
             const result: SellingInvoiceResponseDto = await firstValueFrom(
                 this.invoicesService.send({ cmd: 'selling-invoices.create' }, { dto, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.CASHIER,
+                actionUserId: user.id,
+                action: LogCode.CREATE_SELLING_INVOICE,
+                referenceType: ReferenceType.SELLING_INVOICE,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);

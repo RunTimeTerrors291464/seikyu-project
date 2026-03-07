@@ -10,6 +10,10 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
+import { LogCode, ReferenceType } from '@app/common/enums/logEnums.enum';
+
+// Import services.
+import { LogsService } from '../../logs/services/logs.service';
 
 // Import microservices client proxy.
 import { ClientProxy } from '@nestjs/microservices';
@@ -20,7 +24,6 @@ import {
     CreateProductRequestDto,
     EditProductRequestDto,
     GetListOfProductRequestDto,
-    UpdateProductInventoryRequestDto,
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import {
     ProductResponseDto,
@@ -31,10 +34,7 @@ import {
     ProductHistoryItemResponseDto,
     GetProductHistoryByVersionResponseDto,
 } from '@app/common/dtos/platform/products/history/crudProduct.dto';
-import {
-    GetListOfProductStockHistoryResponseDto,
-    ProductStockHistoryResponseDto,
-} from '@app/common/dtos/platform/products/history/crudProductStock.dto';
+import { GetListOfProductStockHistoryResponseDto } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
 import { ProductOverviewResponseDto } from '@app/common/dtos/platform/products/productOverviewReponse.dto';
 
 // Import error exceptions.
@@ -51,6 +51,7 @@ import { ErrorCode } from '@app/common/enums/errorCode.enum';
 export class ProductsController {
     constructor(
         @Inject('PLATFORM_SERVICE') private readonly platformService: ClientProxy,
+        private readonly logsService: LogsService,
     ) { }
 
     // Create a new product.
@@ -66,6 +67,16 @@ export class ProductsController {
             const result: ProductResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.createProduct' }, { dto, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.CREATE_NEW_PRODUCT,
+                referenceType: ReferenceType.PRODUCT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -86,6 +97,16 @@ export class ProductsController {
             const result: ProductResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.editProduct' }, { dto, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.EDIT_PRODUCT,
+                referenceType: ReferenceType.PRODUCT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -190,6 +211,16 @@ export class ProductsController {
             const result: ProductResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.deactivateProduct' }, { id, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.DEACTIVATE_PRODUCT,
+                referenceType: ReferenceType.PRODUCT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
@@ -210,6 +241,16 @@ export class ProductsController {
             const result: ProductResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.activateProduct' }, { id, user })
             );
+
+            // Log the result.
+            await this.logsService.createLog({
+                role: Role.MANAGER,
+                actionUserId: user.id,
+                action: LogCode.ACTIVATE_PRODUCT,
+                referenceType: ReferenceType.PRODUCT,
+                referenceId: result.id,
+            });
+
             return result;
         } catch (error: any) {
             if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
