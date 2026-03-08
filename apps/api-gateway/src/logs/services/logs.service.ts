@@ -62,7 +62,6 @@ export class LogsService {
             action: log.action,
             referenceType: log.referenceType,
             referenceId: log.referenceId,
-            metadata: log.metadata,
             createdAt: log.createdAt,
         }));
 

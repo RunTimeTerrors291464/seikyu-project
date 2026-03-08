@@ -54,7 +54,7 @@ export class LogResponseDto {
         },
         nullable: true,
     })
-    metadata: Record<string, any> | null;
+    metadata?: Record<string, any> | null;
 
     @ApiProperty({
         description: 'The timestamp when log was created',
