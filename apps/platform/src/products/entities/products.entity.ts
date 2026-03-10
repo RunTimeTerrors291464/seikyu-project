@@ -8,6 +8,9 @@ import { ProductNamesEntity } from './productNames.entity';
 import { ProductUnitsEntity } from './productUnits.entity';
 import { ProductsHistoryEntity } from './history/productsHistory.entity';
 import { ProductStockHistoryEntity } from './history/productStockHistory.entity';
+import { ProductRankingDailyEntity } from '../../dashboard/entities/productRankingDaily.entity';
+import { ProductRankingMonthlyEntity } from '../../dashboard/entities/productRankingMonthly.entity';
+import { ProductRankingYearlyEntity } from '../../dashboard/entities/productRankingYearly.entity';
 
 @Entity('products')
 export class ProductsEntity {
@@ -55,10 +58,19 @@ export class ProductsEntity {
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
 
+    // Relations.
     @OneToMany(() => ProductsHistoryEntity, (productsHistory) => productsHistory.product, { onDelete: 'CASCADE' })
     productsHistory: ProductsHistoryEntity[];
 
     @OneToMany(() => ProductStockHistoryEntity, (productStockHistory) => productStockHistory.product, { onDelete: 'CASCADE' })
     productStockHistory: ProductStockHistoryEntity[];
 
+    @OneToMany(() => ProductRankingDailyEntity, (productRankingDaily) => productRankingDaily.product, { onDelete: 'CASCADE' })
+    dailyRankings: ProductRankingDailyEntity[];
+
+    @OneToMany(() => ProductRankingMonthlyEntity, (productRankingMonthly) => productRankingMonthly.product, { onDelete: 'CASCADE' })
+    monthlyRankings: ProductRankingMonthlyEntity[];
+
+    @OneToMany(() => ProductRankingYearlyEntity, (productRankingYearly) => productRankingYearly.product, { onDelete: 'CASCADE' })
+    yearlyRankings: ProductRankingYearlyEntity[];
 }

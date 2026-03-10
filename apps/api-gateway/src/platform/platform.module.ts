@@ -15,11 +15,13 @@ import { UsersController } from './users/users.controller';
 
 import { ProductUnitsController } from './products/productUnits.controller';
 import { ProductsController } from './products/products.controller';
+import { ProductRankingController } from './dashboard/productRanking.controller';
 
 @Module({
     imports: [
         AuthModule,
         LogsModule,
+
         ClientsModule.registerAsync([
             {
                 name: 'PLATFORM_SERVICE',
@@ -40,6 +42,7 @@ import { ProductsController } from './products/products.controller';
         UsersController,
         ProductUnitsController,
         ProductsController,
+        ProductRankingController,
     ],
     providers: [],
     exports: []

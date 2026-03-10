@@ -131,8 +131,13 @@ export enum ErrorCode {
     GET_STOCK_ADJUSTMENT_INVOICE_BY_ID_SERVICE = 4505,
     GET_LIST_OF_STOCK_ADJUSTMENT_INVOICES_SERVICE = 4506,
 
-    // Logs related errors.
+    // Logs AND Dashboard related errors.
     LOG_NOT_FOUND = 5001,
+    DATE_CAN_NOT_BE_IN_FUTURE = 5002,
+    END_DATE_MUST_BE_PROVIDED = 5003,
+    DATE_RANGE_TOO_LARGE = 5004,
+
+    GET_LIST_PRODUCT_RANKING_SERVICE = 5101,
 
     // DTO validation error.
     DTO_VALIDATION_ERROR = 9001,

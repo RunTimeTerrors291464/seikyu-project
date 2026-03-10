@@ -185,7 +185,10 @@ export class ProductsService {
             const negativeStockProductIds: string[] = [];
             const validatedProducts: { product: ProductsEntity, update: (typeof dto.products)[number] }[] = [];
 
-            for (const productUpdate of dto.products) {
+            // Sort by ID before locking to prevent deadlock when concurrent transactions.
+            const sortedProducts = [...dto.products].sort((a, b) => a.id.localeCompare(b.id));
+
+            for (const productUpdate of sortedProducts) {
 
                 // Use SELECT FOR UPDATE to lock the row inside the transaction. Pessimistic locking.
                 const product = await queryRunner.manager.findOne(ProductsEntity, {

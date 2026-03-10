@@ -24,9 +24,13 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 // Import enums.
 import { StockStatus } from '@app/common/enums/stockStatus.enum';
 import { StockActionType } from '@app/common/enums/stockActionType.enum';
+import { InvoiceType } from '@app/common/enums/invoiceType.enum';
 
 // Import mappers.
 import { ProductMapper } from '@app/common/mappers/platform/product.mapper';
+
+// Import repositories.
+import { ProductRankingRepository } from '../../dashboard/repositories/productRanking.repository';
 
 @Injectable()
 export class ProductsRepository {
@@ -37,6 +41,7 @@ export class ProductsRepository {
         @InjectRepository(ProductStockHistoryEntity) private productStockHistoryRepository: Repository<ProductStockHistoryEntity>,
         @InjectRepository(ProductOverviewEntity) private productOverviewRepository: Repository<ProductOverviewEntity>,
         private readonly productMapper: ProductMapper,
+        private readonly productRankingRepository: ProductRankingRepository,
     ) { }
 
     // --- DRY methods ---
@@ -58,21 +63,21 @@ export class ProductsRepository {
             order: { version: 'ASC' },
         });
 
-        // If more than 16 versions, delete the oldest ones.
         if (histories.length > 16) {
             const toDelete = histories.slice(0, histories.length - 16);
             await manager.remove(toDelete);
         }
     }
-    // Clean up old product stock history if exceeding 32 records.
+
+    // Clean up old product stock history if exceeding 64 records.
     private async cleanupOldProductStockHistory(productId: string, transactionalManager: any): Promise<void> {
         const histories = await transactionalManager.find(ProductStockHistoryEntity, {
             where: { product: { id: productId } },
             order: { createdAt: 'ASC' },
         });
 
-        if (histories.length > 32) {
-            const toDelete = histories.slice(0, histories.length - 32);
+        if (histories.length > 64) {
+            const toDelete = histories.slice(0, histories.length - 64);
             await transactionalManager.remove(ProductStockHistoryEntity, toDelete);
         }
     }
@@ -217,7 +222,7 @@ export class ProductsRepository {
         productEntity: ProductsEntity,
         quantity: number,
         action: StockActionType,
-        referenceType: any,
+        referenceType: InvoiceType,
         referenceId: string,
         manager: any,
     ): Promise<ProductsEntity> {
@@ -260,7 +265,7 @@ export class ProductsRepository {
         await manager.save(ProductStockHistoryEntity, history);
         await this.cleanupOldProductStockHistory(productEntity.id, manager);
 
-        // Update the product overview.
+        // --- Update the productOverview entity ---
         const overviewId = '00000000-0000-0000-0000-000000000001';
         let overview = await manager.findOne(ProductOverviewEntity, {
             where: { id: overviewId },
@@ -280,8 +285,18 @@ export class ProductsRepository {
         // Update total inventory value by adding the delta change.
         const inventoryValueDelta = Number(productEntity.importPrice) * (afterInventoryStock - beforeInventoryStock);
         overview.inventoryValue = Number(overview.inventoryValue) + inventoryValueDelta;
-
+        
         await manager.save(ProductOverviewEntity, overview);
+
+        // --- Update the productRankingDaily entity ---
+        const totalPrice = Number(productEntity.sellingPrice) * quantity;
+        await this.productRankingRepository.storeProductRankingDaily(
+            manager,
+            productEntity.id,
+            referenceType,
+            quantity,
+            totalPrice
+        );
 
         return productToReturn;
     }
@@ -542,7 +557,7 @@ export class ProductsRepository {
             });
             const savedHistory = await transactionalManager.save(ProductStockHistoryEntity, history);
 
-            // Clean up old product stock history if exceeding 10.
+            // Clean up old product stock history if exceeding 64 records.
             await this.cleanupOldProductStockHistory(dto.productId, transactionalManager);
 
             return savedHistory;

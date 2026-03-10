@@ -13,6 +13,9 @@ import { ProductsHistoryEntity } from '../../../../apps/platform/src/products/en
 import { ProductUnitsHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productUnitsHistory.entity';
 import { ProductStockHistoryEntity } from '../../../../apps/platform/src/products/entities/history/productStockHistory.entity';
 import { ProductOverviewEntity } from '../../../../apps/platform/src/products/entities/productOverview.entity';
+import { ProductRankingDailyEntity } from '../../../../apps/platform/src/dashboard/entities/productRankingDaily.entity';
+import { ProductRankingMonthlyEntity } from '../../../../apps/platform/src/dashboard/entities/productRankingMonthly.entity';
+import { ProductRankingYearlyEntity } from '../../../../apps/platform/src/dashboard/entities/productRankingYearly.entity';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -39,6 +42,9 @@ export default new DataSource({
         ProductUnitsHistoryEntity,
         ProductStockHistoryEntity,
         ProductOverviewEntity,
+        ProductRankingDailyEntity,
+        ProductRankingMonthlyEntity,
+        ProductRankingYearlyEntity,
     ],
     migrations: [path.join(__dirname, '../platform/*.{ts,js}')],
     synchronize: false,

@@ -36,6 +36,9 @@ async function bootstrap() {
         { inheritAppConfig: true }
     );
 
+    // Initialize app to trigger lifecycle hooks.
+    await app.init();
+
     // Start all microservices.
     await app.startAllMicroservices();
     Logger.log(`Platform service is running on: http://${host}:${port}...`);

@@ -15,12 +15,18 @@ import { ProductUnitsHistoryEntity } from './products/entities/history/productUn
 import { ProductsHistoryEntity } from './products/entities/history/productsHistory.entity';
 import { ProductStockHistoryEntity } from './products/entities/history/productStockHistory.entity';
 import { ProductOverviewEntity } from './products/entities/productOverview.entity';
+import { ProductRankingDailyEntity } from './dashboard/entities/productRankingDaily.entity';
+import { ProductRankingMonthlyEntity } from './dashboard/entities/productRankingMonthly.entity';
+import { ProductRankingYearlyEntity } from './dashboard/entities/productRankingYearly.entity';
 
 // Import users module.
 import { UsersModule } from './users/users.module';
 
 // Import products module.
 import { ProductsModule } from './products/products.module';
+
+// Import dashboard module.
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
     imports: [
@@ -41,11 +47,15 @@ import { ProductsModule } from './products/products.module';
                 ProductsHistoryEntity,
                 ProductStockHistoryEntity,
                 ProductOverviewEntity,
+                ProductRankingDailyEntity,
+                ProductRankingMonthlyEntity,
+                ProductRankingYearlyEntity,
             ],
         }),
 
         UsersModule,
         ProductsModule,
+        DashboardModule,
     ],
     providers: [],
     exports: [],

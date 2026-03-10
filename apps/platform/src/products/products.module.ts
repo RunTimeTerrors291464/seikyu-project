@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 // Import modules.
 import { UsersModule } from '../users/users.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 
 // Import typeorm and entities.
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -42,6 +43,7 @@ import { ProductUnitMapper } from '@app/common/mappers/platform/productUnit.mapp
         ]),
 
         UsersModule,
+        DashboardModule,
     ],
     controllers: [
         ProductsController,
