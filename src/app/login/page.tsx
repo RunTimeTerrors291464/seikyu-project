@@ -3,8 +3,7 @@
 import LoginForm from "@/components/forms/login-form";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/theme-toggle";
-import { getLang } from "@/lib/getLang";
-import { getDictionary } from "@/lib/i18n";
+import { useDict } from "@/lib/lang/DictProvider";
 import { LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -13,7 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   // Load dictionary
-  const dict = getDictionary(getLang() as "en" | "vi");
+  const dict = useDict();
 
   // Redirect if already logged in
   useEffect(() => {

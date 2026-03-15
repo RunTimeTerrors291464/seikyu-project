@@ -45,7 +45,12 @@
   "loadingProducts": "Loading products...",
   "page": "Page",
   "of": "of",
+  "result": "result",
   "results": "results",
   "name": "Name",
-  "unnamed": "Unnamed"
+  "unnamed": "Unnamed",
+  "filter": "Filter",
+  "export": "Export",
+  "inventoryValue": "Inventory Value",
+  "all": "All"
 }

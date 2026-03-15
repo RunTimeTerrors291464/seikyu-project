@@ -11,7 +11,7 @@ export const login = async (data: {
 
   try {
     // Send POST request to backend login endpoint
-    const res = await apiClient.post("/api/v1/auth/login", data);
+    const res = await apiClient.post("/auth/login", data);
 
     // Debug log: confirm API returned successfully
     console.log("AUTH SERVICE → login success", res.data);

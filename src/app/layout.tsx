@@ -1,35 +1,55 @@
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { cookies } from "next/headers";
+
+import { DictProvider } from "@/lib/lang/DictProvider";
+import { getDictionary, type Lang } from "@/lib/lang/i18n";
+
 import "./globals.css";
 
-// Metadata for the application
 export const metadata: Metadata = {
   title: "Inventory System",
   description: "Inventory management system",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
+  const cookieStore = await cookies();
+
+  const lang =
+    (cookieStore.get("lang")?.value || "en") as Lang;
+
+  const dict = getDictionary(lang);
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
+
       <body>
-        {/* Global theme provider */}
+
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {/* Decides whether AppShell should be used */}
-          <LayoutWrapper>
-            {children}
-          </LayoutWrapper>
+
+          <DictProvider dict={dict}>
+
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
+
+          </DictProvider>
+
         </ThemeProvider>
+
       </body>
+
     </html>
   );
 }

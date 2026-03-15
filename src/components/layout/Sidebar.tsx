@@ -1,5 +1,6 @@
 "use client";
 
+import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import {
   Bell,
@@ -19,11 +20,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { getLang } from "@/lib/getLang";
-import { getDictionary } from "@/lib/i18n";
-
-const dict = getDictionary(getLang() as "en" | "vi");
-
 type Item = {
   href?: string;
   label: string;
@@ -40,153 +36,154 @@ type Group = {
   defaultOpen?: boolean;
 };
 
-const groups: Group[] = [
-  {
-    id: "admin",
-    label: dict.admin,
-    icon: <Users className="h-4 w-4" />,
-    collapsible: true,
-    defaultOpen: true,
-    items: [
-      { href: "/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
-      { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
-      { href: "/accounts", label: dict.manageAccounts, icon: <Users className="h-4 w-4" />, disabled: true },
-    ],
-  },
-  {
-    id: "cashier",
-    label: dict.cashier,
-    icon: <Store className="h-4 w-4" />,
-    collapsible: true,
-    defaultOpen: false,
-    items: [
-      { href: "/invoices", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
-      { href: "/invoices/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
-    ],
-  },
-  {
-    id: "manager",
-    label: dict.manager,
-    icon: <ClipboardList className="h-4 w-4" />,
-    collapsible: true,
-    defaultOpen: false,
-    items: [
-      { href: "/manager/product-inventory", label: dict.productInventory, icon: <FolderOpen className="h-4 w-4" /> },
-      { href: "/manager/inbound-invoices", label: dict.inboundInvoices, icon: <FileCheck2 className="h-4 w-4" />, disabled: true },
-      { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
-    ],
-  },
-  { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },
-  { id: "settings", label: dict.settings, icon: <SettingsIcon className="h-4 w-4" /> },
-];
-
-function usePersistedOpen(id: string, initial: boolean) {
-  const [open, setOpen] = useState(initial);
-
-  useEffect(() => {
-    const raw = localStorage.getItem(`sidebar-open:${id}`);
-    if (raw !== null) setOpen(raw === "1");
-  }, [id]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(`sidebar-open:${id}`, open ? "1" : "0");
-    } catch { }
-  }, [id, open]);
-
-  return [open, setOpen] as const;
-}
-
-function GroupSection({ group }: { group: Group }) {
-  const pathname = usePathname();
-  const hasChildren = (group.items?.length ?? 0) > 0;
-
-  const [open, setOpen] = usePersistedOpen(group.id, group.defaultOpen ?? false);
-
-  const childActive = useMemo(
-    () => group.items?.some((i) => !!i.href && pathname.startsWith(i.href)) ?? false,
-    [group.items, pathname]
-  );
-
-  useEffect(() => {
-    if (childActive && !open) {
-      setOpen(true);
-    }
-  }, [childActive, open, setOpen]);
-
-  return (
-    <div>
-      <button
-        className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-text hover:bg-bg"
-        onClick={() => {
-          if (hasChildren) setOpen((v) => !v);
-        }}
-        aria-expanded={open}
-      >
-        <span className="inline-flex items-center gap-2">
-          <span className="text-muted">{group.icon}</span>
-          <span>{group.label}</span>
-        </span>
-
-        {hasChildren ? (
-          <ChevronDown
-            className={clsx(
-              "h-4 w-4 text-muted transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        ) : (
-          <span />
-        )}
-      </button>
-
-      {hasChildren && open && (
-        <div className="relative ml-3 mt-1 pl-3">
-          <div className="absolute left-0 top-2 bottom-2 w-px bg-border" />
-
-          <ul className="space-y-1">
-            {group.items!.map((item) => {
-              const active = !!item.href && pathname.startsWith(item.href);
-
-              const content = (
-                <div
-                  className={clsx(
-                    "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-                    item.disabled && "opacity-50 cursor-not-allowed",
-                    active
-                      ? "bg-card text-text"
-                      : "text-muted hover:bg-bg"
-                  )}
-                >
-                  {/* connector curve */}
-                  <span
-                    aria-hidden
-                    className="absolute -left-3 top-2 h-4 w-3 rounded-bl border-b border-l border-border"
-                  />
-
-                  <span className="shrink-0 text-muted">{item.icon}</span>
-                  <span>{item.label}</span>
-                </div>
-              );
-
-              return (
-                <li key={item.label}>
-                  {item.disabled || !item.href ? (
-                    <span>{content}</span>
-                  ) : (
-                    <Link href={item.href}>{content}</Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function Sidebar() {
+  const dict = useDict();
+
+  const groups: Group[] = [
+    {
+      id: "admin",
+      label: dict.admin,
+      icon: <Users className="h-4 w-4" />,
+      collapsible: true,
+      defaultOpen: true,
+      items: [
+        { href: "/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
+        { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+        { href: "/accounts", label: dict.manageAccounts, icon: <Users className="h-4 w-4" />, disabled: true },
+      ],
+    },
+    {
+      id: "cashier",
+      label: dict.cashier,
+      icon: <Store className="h-4 w-4" />,
+      collapsible: true,
+      defaultOpen: false,
+      items: [
+        { href: "/invoices", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
+        { href: "/invoices/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+      ],
+    },
+    {
+      id: "manager",
+      label: dict.manager,
+      icon: <ClipboardList className="h-4 w-4" />,
+      collapsible: true,
+      defaultOpen: false,
+      items: [
+        { href: "/manager/product-inventory", label: dict.productInventory, icon: <FolderOpen className="h-4 w-4" /> },
+        { href: "/manager/inbound-invoices", label: dict.inboundInvoices, icon: <FileCheck2 className="h-4 w-4" />, disabled: true },
+        { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
+      ],
+    },
+    { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },
+    { id: "settings", label: dict.settings, icon: <SettingsIcon className="h-4 w-4" /> },
+  ];
+
+  function usePersistedOpen(id: string, initial: boolean) {
+    const [open, setOpen] = useState(initial);
+
+    useEffect(() => {
+      const raw = localStorage.getItem(`sidebar-open:${id}`);
+      if (raw !== null) setOpen(raw === "1");
+    }, [id]);
+
+    useEffect(() => {
+      try {
+        localStorage.setItem(`sidebar-open:${id}`, open ? "1" : "0");
+      } catch { }
+    }, [id, open]);
+
+    return [open, setOpen] as const;
+  }
+
+  function GroupSection({ group }: { group: Group }) {
+    const pathname = usePathname();
+    const hasChildren = (group.items?.length ?? 0) > 0;
+
+    const [open, setOpen] = usePersistedOpen(group.id, group.defaultOpen ?? false);
+
+    const childActive = useMemo(
+      () => group.items?.some((i) => !!i.href && pathname.startsWith(i.href)) ?? false,
+      [group.items, pathname]
+    );
+
+    useEffect(() => {
+      if (childActive && !open) {
+        setOpen(true);
+      }
+    }, [childActive, open, setOpen]);
+
+    return (
+      <div>
+        <button
+          className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-text hover:bg-bg"
+          onClick={() => {
+            if (hasChildren) setOpen((v) => !v);
+          }}
+          aria-expanded={open}
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="text-muted">{group.icon}</span>
+            <span>{group.label}</span>
+          </span>
+
+          {hasChildren ? (
+            <ChevronDown
+              className={clsx(
+                "h-4 w-4 text-muted transition-transform",
+                open && "rotate-180"
+              )}
+            />
+          ) : (
+            <span />
+          )}
+        </button>
+
+        {hasChildren && open && (
+          <div className="relative ml-3 mt-1 pl-3">
+            <div className="absolute left-0 top-2 bottom-2 w-px bg-border" />
+
+            <ul className="space-y-1">
+              {group.items!.map((item) => {
+                const active = !!item.href && pathname.startsWith(item.href);
+
+                const content = (
+                  <div
+                    className={clsx(
+                      "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+                      item.disabled && "opacity-50 cursor-not-allowed",
+                      active
+                        ? "bg-card text-text"
+                        : "text-muted hover:bg-bg"
+                    )}
+                  >
+                    {/* connector curve */}
+                    <span
+                      aria-hidden
+                      className="absolute -left-3 top-2 h-4 w-3 rounded-bl border-b border-l border-border"
+                    />
+
+                    <span className="shrink-0 text-muted">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </div>
+                );
+
+                return (
+                  <li key={item.label}>
+                    {item.disabled || !item.href ? (
+                      <span>{content}</span>
+                    ) : (
+                      <Link href={item.href}>{content}</Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <aside className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
       <div className="flex h-screen min-w-0 flex-col gap-6 p-4">

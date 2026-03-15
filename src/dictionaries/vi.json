@@ -45,7 +45,12 @@
   "loadingProducts": "Đang tải sản phẩm...",
   "page": "Trang",
   "of": "trên",
+  "result": "kết quả",
   "results": "kết quả",
   "name": "Tên",
-  "unnamed": "Chưa đặt tên"
+  "unnamed": "Chưa đặt tên",
+  "filter": "Lọc",
+  "export": "Xuất dữ liệu",
+  "inventoryValue": "Giá trị tồn kho",
+  "all": "Tất cả"
 }

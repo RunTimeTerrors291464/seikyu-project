@@ -11,27 +11,32 @@ import { useForm } from "react-hook-form";
 
 import { Eye, EyeOff, LogIn, User } from "lucide-react";
 
-import { getLang } from "@/lib/getLang";
-import { getDictionary } from "@/lib/i18n";
+import { useDict } from "@/lib/lang/DictProvider";
+import type { Dictionary } from "@/lib/lang/i18n";
 
-// Validation schema using Zod
 import { z } from "zod";
 
-const dict = getDictionary(getLang() as "en" | "vi");
+/* ---------------- Schema Factory ---------------- */
 
-export const loginSchema = z.object({
-  username: z.string().min(1, dict.usernameRequired),
-  password: z.string().min(1, dict.passwordRequired),
-});
-
-export type LoginSchema = z.infer<typeof loginSchema>;
+function createLoginSchema(dict: Dictionary) {
+  return z.object({
+    username: z.string().min(1, dict.usernameRequired),
+    password: z.string().min(1, dict.passwordRequired),
+  });
+}
 
 export default function LoginForm() {
+  const dict = useDict();
   const router = useRouter();
   const loginStore = useAuthStore((s) => s.login);
 
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
+
+  /* ---------------- Schema ---------------- */
+
+  const loginSchema = createLoginSchema(dict);
+  type LoginSchema = z.infer<typeof loginSchema>;
 
   const {
     register,
@@ -41,6 +46,8 @@ export default function LoginForm() {
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
   });
+
+  /* ---------------- Submit ---------------- */
 
   const onSubmit = async (values: LoginSchema) => {
     try {
@@ -58,6 +65,8 @@ export default function LoginForm() {
       // reset({ password: "" });
     }
   };
+
+  /* ---------------- UI ---------------- */
 
   return (
     <form

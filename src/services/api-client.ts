@@ -1,97 +1,83 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, {
+  AxiosError,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
 
 // ======================================================
-// CREATE AXIOS INSTANCE
+// AXIOS INSTANCE
 // ======================================================
-// This instance will be used for ALL API calls in the app.
-// It centralizes configuration like base URL, headers,
-// credentials, and interceptors.
 
 const apiClient = axios.create({
-  // Base API URL
-  // Uses environment variable if defined
-  // Falls back to localhost if not set
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
-
-  // Default headers sent with every request
+  baseURL:
+    (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
+    "/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
-
-  // Allows cookies to be sent with requests
-  // Needed if backend uses cookie-based auth
   withCredentials: true,
-
-  // Prevent requests from hanging forever
-  // 15 seconds timeout
   timeout: 15000,
 });
 
 
 // ======================================================
+// REFRESH TOKEN STATE
+// ======================================================
+
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+// Add request to queue while refresh is running
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+// Retry queued requests
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+
+// ======================================================
 // REQUEST INTERCEPTOR
 // ======================================================
-// Runs BEFORE every request is sent to the server.
-// Used for:
-// - attaching auth tokens
-// - debugging
-// - modifying request configuration
 
 apiClient.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
 
-    // Routes that DO NOT require authentication
     const publicRoutes = [
       "/login",
       "/refresh-token",
     ];
 
-    // Skip token logic for public routes
-    if (
-      publicRoutes.some((route) =>
-        config.url?.includes(route)
-      )
-    ) {
+    const isPublic = publicRoutes.some((route) =>
+      config.url?.includes(route)
+    );
+
+    if (isPublic) {
       return config;
     }
 
-    // Log request method and endpoint
-    console.log(
-      "API REQUEST →",
-      config.method?.toUpperCase(),
-      config.url
-    );
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("access_token");
 
-    // Safely read token from localStorage
-    // Must check window existence because Next.js
-    // may run code on server
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("access_token")
-        : null;
-
-    // If token exists attach Authorization header
-    if (token) {
-
-      // Ensure headers object exists
-      if (!config.headers) {
-        config.headers = {};
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
-
-      // Add bearer token
-      config.headers.Authorization = `Bearer ${token}`;
-
-      console.log("API REQUEST → token attached");
-
-    } else {
-      console.warn("API REQUEST → no token found");
     }
 
-    // Continue request
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "API REQUEST →",
+        config.method?.toUpperCase(),
+        config.url
+      );
+    }
+
     return config;
   },
 
-  // Handle request setup errors
   (error: AxiosError) => {
     console.error("API REQUEST ERROR →", error);
     return Promise.reject(error);
@@ -102,71 +88,131 @@ apiClient.interceptors.request.use(
 // ======================================================
 // RESPONSE INTERCEPTOR
 // ======================================================
-// Runs AFTER server sends response.
-// Used for:
-// - logging responses
-// - handling auth errors
-// - global error handling
 
 apiClient.interceptors.response.use(
 
-  // Successful response handler
   (response: AxiosResponse) => {
 
-    // Log response status and endpoint
-    console.log(
-      "API RESPONSE →",
-      response.status,
-      response.config.url
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "API RESPONSE →",
+        response.status,
+        response.config.url
+      );
+    }
 
-    // Return response to calling code
     return response;
   },
 
-  // Error response handler
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
 
-    // Extract useful debugging info
+    const originalRequest: any = error.config;
+
     const status = error.response?.status;
-    const data = error.response?.data;
-    const url = error.config?.url;
+    const url = originalRequest?.url;
 
-    // Log structured error
-    console.error("API ERROR →", {
-      status,
-      url,
-      data,
-    });
-
-    // Handle Unauthorized errors
-    // Usually means token expired or invalid
-    if (status === 401 && typeof window !== "undefined") {
-
-      console.warn("AUTH ERROR → clearing auth state");
-
-      // Remove token from localStorage
-      localStorage.removeItem("access_token");
-
-      // Remove auth cookie if it exists
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-      // Redirect user to login page
-      window.location.href = "/login";
+    if (process.env.NODE_ENV === "development") {
+      console.error("API ERROR →", {
+        status,
+        url,
+        data: error.response?.data,
+      });
     }
 
-    // Reject promise so calling code can handle it
+    // Routes that should NOT trigger refresh
+    const authRoutes = [
+      "/login",
+      "/refresh-token",
+    ];
+
+    const isAuthRoute = authRoutes.some((route) =>
+      url?.includes(route)
+    );
+
+    // ======================================================
+    // TOKEN EXPIRED → REFRESH
+    // ======================================================
+
+    if (
+      status === 401 &&
+      !isAuthRoute &&
+      !originalRequest._retry
+    ) {
+
+      originalRequest._retry = true;
+
+      // If refresh already running → queue request
+      if (isRefreshing) {
+
+        return new Promise((resolve) => {
+
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization =
+              `Bearer ${token}`;
+
+            resolve(apiClient(originalRequest));
+          });
+
+        });
+
+      }
+
+      isRefreshing = true;
+
+      try {
+
+        if (process.env.NODE_ENV === "development") {
+          console.warn("TOKEN EXPIRED → refreshing...");
+        }
+
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+
+        const newToken = response.data.accessToken;
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("access_token", newToken);
+        }
+
+        // Retry queued requests
+        onRefreshed(newToken);
+
+        // Retry original request
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+        return apiClient(originalRequest);
+
+      } catch (refreshError) {
+
+        console.warn("REFRESH FAILED → logout");
+
+        if (typeof window !== "undefined") {
+
+          localStorage.removeItem("access_token");
+
+          document.cookie =
+            "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+          window.location.href = "/login";
+        }
+
+        return Promise.reject(refreshError);
+
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     return Promise.reject(error);
   }
 );
 
 
 // ======================================================
-// EXPORT API CLIENT
+// EXPORT
 // ======================================================
-// This instance should be imported in all service files
-// Example:
-// import apiClient from "@/services/api-client"
 
 export default apiClient;

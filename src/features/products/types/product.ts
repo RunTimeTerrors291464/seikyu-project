@@ -1,7 +1,7 @@
 export type ProductStatus =
-  | "in_stock"
-  | "low_stock"
-  | "out_of_stock";
+  | "inStock"
+  | "lowStock"
+  | "outOfStock";
 
 export interface Product {
   id: string;
