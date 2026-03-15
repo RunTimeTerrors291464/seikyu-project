@@ -19,6 +19,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { getLang } from "@/lib/getLang";
+import { getDictionary } from "@/lib/i18n";
+
+const dict = getDictionary(getLang() as "en" | "vi");
+
 type Item = {
   href?: string;
   label: string;
@@ -38,41 +43,41 @@ type Group = {
 const groups: Group[] = [
   {
     id: "admin",
-    label: "Admin",
+    label: dict.admin,
     icon: <Users className="h-4 w-4" />,
     collapsible: true,
     defaultOpen: true,
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-      { href: "/report", label: "Report", icon: <FileText className="h-4 w-4" />, disabled: true },
-      { href: "/accounts", label: "Manage Accounts", icon: <Users className="h-4 w-4" />, disabled: true },
+      { href: "/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
+      { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+      { href: "/accounts", label: dict.manageAccounts, icon: <Users className="h-4 w-4" />, disabled: true },
     ],
   },
   {
     id: "cashier",
-    label: "Cashier",
+    label: dict.cashier,
     icon: <Store className="h-4 w-4" />,
     collapsible: true,
     defaultOpen: false,
     items: [
-      { href: "/invoices", label: "Sales Invoices", icon: <ReceiptText className="h-4 w-4" /> },
-      { href: "/invoices/report", label: "Report", icon: <FileText className="h-4 w-4" />, disabled: true },
+      { href: "/invoices", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
+      { href: "/invoices/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
     ],
   },
   {
     id: "manager",
-    label: "Manager",
+    label: dict.manager,
     icon: <ClipboardList className="h-4 w-4" />,
     collapsible: true,
     defaultOpen: false,
     items: [
-      { href: "/manager/product-inventory", label: "Product Inventory", icon: <FolderOpen className="h-4 w-4" /> },
-      { href: "/manager/inbound-invoices", label: "Inbound Invoices", icon: <FileCheck2 className="h-4 w-4" />, disabled: true },
-      { href: "/manager/stock-audit-logs", label: "Stock Audit Logs", icon: <ClipboardList className="h-4 w-4" />, disabled: true },
+      { href: "/manager/product-inventory", label: dict.productInventory, icon: <FolderOpen className="h-4 w-4" /> },
+      { href: "/manager/inbound-invoices", label: dict.inboundInvoices, icon: <FileCheck2 className="h-4 w-4" />, disabled: true },
+      { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
     ],
   },
-  { id: "notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
-  { id: "settings", label: "Settings", icon: <SettingsIcon className="h-4 w-4" /> },
+  { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },
+  { id: "settings", label: dict.settings, icon: <SettingsIcon className="h-4 w-4" /> },
 ];
 
 function usePersistedOpen(id: string, initial: boolean) {
@@ -96,10 +101,7 @@ function GroupSection({ group }: { group: Group }) {
   const pathname = usePathname();
   const hasChildren = (group.items?.length ?? 0) > 0;
 
-  const [open, setOpen] = usePersistedOpen(
-    group.id,
-    group.defaultOpen ?? false
-  );
+  const [open, setOpen] = usePersistedOpen(group.id, group.defaultOpen ?? false);
 
   const childActive = useMemo(
     () => group.items?.some((i) => !!i.href && pathname.startsWith(i.href)) ?? false,
@@ -185,11 +187,8 @@ function GroupSection({ group }: { group: Group }) {
 }
 
 export function Sidebar() {
-
   return (
-    <aside
-      className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden"
-    >
+    <aside className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
       <div className="flex h-screen min-w-0 flex-col gap-6 p-4">
 
         {/* Brand */}
@@ -203,7 +202,7 @@ export function Sidebar() {
             </div>
           </div>
 
-          <span>Inventory System</span>
+          <span>{dict.inventorySystem}</span>
         </div>
 
         {/* Navigation */}
@@ -226,7 +225,7 @@ export function Sidebar() {
             </div>
 
             <button
-              aria-label="Open profile"
+              aria-label={dict.openProfile}
               className="ml-auto rounded-md p-1 text-muted hover:bg-card"
             >
               <ExternalLink className="h-4 w-4" />

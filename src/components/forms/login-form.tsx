@@ -11,13 +11,17 @@ import { useForm } from "react-hook-form";
 
 import { Eye, EyeOff, LogIn, User } from "lucide-react";
 
+import { getLang } from "@/lib/getLang";
+import { getDictionary } from "@/lib/i18n";
+
 // Validation schema using Zod
-// MOVE TO SEPARATE FILE WHEN MORE FORMS ADDED
 import { z } from "zod";
 
+const dict = getDictionary(getLang() as "en" | "vi");
+
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(1, dict.usernameRequired),
+  password: z.string().min(1, dict.passwordRequired),
 });
 
 export type LoginSchema = z.infer<typeof loginSchema>;
@@ -50,7 +54,7 @@ export default function LoginForm() {
     } catch (err) {
       console.error("LOGIN FAILED", err);
 
-      setAuthError("Invalid username or password");
+      setAuthError(dict.invalidCredentials);
       // reset({ password: "" });
     }
   };
@@ -62,7 +66,9 @@ export default function LoginForm() {
     >
       {/* Username */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-text">Username</label>
+        <label className="text-sm font-medium text-text">
+          {dict.username}
+        </label>
 
         <div
           className={`flex items-center gap-3 rounded-md border bg-card px-3
@@ -75,7 +81,7 @@ export default function LoginForm() {
 
           <input
             {...register("username")}
-            placeholder="your.username"
+            placeholder={dict.usernamePlaceholder}
             className="h-10 flex-1 bg-transparent text-base text-text outline-none"
           />
         </div>
@@ -89,7 +95,9 @@ export default function LoginForm() {
 
       {/* Password */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-text">Password</label>
+        <label className="text-sm font-medium text-text">
+          {dict.password}
+        </label>
 
         <div
           className={`flex items-center gap-3 rounded-md border bg-card px-3
@@ -101,7 +109,7 @@ export default function LoginForm() {
           <input
             {...register("password")}
             type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
+            placeholder={dict.passwordPlaceholder}
             className="h-10 flex-1 bg-transparent text-base text-text outline-none"
           />
 
@@ -138,7 +146,7 @@ export default function LoginForm() {
       >
         <LogIn className="h-4 w-4" />
 
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        {isSubmitting ? dict.signingIn : dict.signIn}
       </button>
     </form>
   );
