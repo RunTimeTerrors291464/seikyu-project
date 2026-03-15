@@ -1,3 +1,4 @@
+import AppShell from "@/components/layout/AppShell";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -25,7 +26,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <AppShell>
+            {children}
+          </AppShell>
         </ThemeProvider>
       </body>
     </html>

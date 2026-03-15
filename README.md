@@ -1,36 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js Inventory Frontend Architecture
 
-## Getting Started
+This document describes a clean and scalable frontend architecture for
+an inventory dashboard built with:
 
-First, run the development server:
+-   Next.js
+-   Axios
+-   Zustand
+-   React Hook Form
+-   Zod
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+------------------------------------------------------------------------
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Directory Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    src
+    │
+    ├── app                         # Next.js App Router
+    │   │
+    │   ├── layout.tsx              # Root layout (ThemeProvider, AuthInitializer)
+    │   ├── page.tsx                # Root redirect → /login
+    │   │
+    │   ├── login
+    │   │   └── page.tsx            # Login page
+    │   │
+    │   └── dashboard
+    │       ├── layout.tsx          # Dashboard layout (sidebar, header)
+    │       └── page.tsx            # Dashboard home
+    │
+    ├── components                  # Reusable UI components
+    │   │
+    │   ├── forms
+    │   │   └── login-form.tsx
+    │   │
+    │   ├── auth-initializer.tsx    # Loads token from localStorage on startup
+    │   │
+    │   └── theme-toggle.tsx
+    │
+    ├── services                    # API communication layer
+    │   │
+    │   ├── api-client.ts           # Axios instance + interceptors
+    │   │
+    │   └── auth.service.ts         # Login API calls
+    │
+    ├── store                       # Zustand global state
+    │   │
+    │   └── auth.store.ts
+    │
+    ├── middleware.ts               # Route protection
+    │
+    ├── validators                  # Zod schemas (optional but scalable)
+    │   │
+    │   └── auth.schema.ts
+    │
+    └── styles
+        └── globals.css
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+------------------------------------------------------------------------
 
-## Learn More
+# Authentication Flow
 
-To learn more about Next.js, take a look at the following resources:
+    Login Form
+       │
+       ▼
+    auth.service.ts
+       │
+       ▼
+    api-client.ts (Axios)
+       │
+       ▼
+    Backend API
+       │
+       ▼
+    Response (token + user)
+       │
+       ▼
+    auth.store.ts (Zustand)
+       │
+       ├── localStorage (API auth)
+       └── cookie (middleware)
+       │
+       ▼
+    Redirect /dashboard
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+------------------------------------------------------------------------
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Route Protection Flow
 
-## Deploy on Vercel
+    User visits /dashboard
+           │
+           ▼
+    middleware.ts
+           │
+           ├── token exists → allow
+           │
+           └── no token → redirect /login
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+------------------------------------------------------------------------
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# App Startup Flow
+
+    App loads
+       │
+       ▼
+    AuthInitializer
+       │
+       ▼
+    auth.store.loadUserFromStorage()
+       │
+       ▼
+    token restored from localStorage
+
+------------------------------------------------------------------------
+
+# Feature-Based Growth (Future)
+
+As the project grows, the structure can evolve into a feature-based
+architecture:
+
+    src
+    ├── features
+    │   ├── auth
+    │   ├── products
+    │   ├── warehouse
+    │   ├── purchase-orders
+    │   └── invoices
+
+Each feature may contain:
+
+    feature
+    ├── components
+    ├── services
+    ├── schemas
+    ├── hooks
+
+This mirrors a backend module structure and keeps the frontend scalable.
+
+------------------------------------------------------------------------
+
+# Current Authentication Components
+
+Your system currently includes:
+
+-   Login page
+-   Login form
+-   Auth service
+-   Axios API client
+-   Zustand auth store
+-   Auth initializer
+-   Route middleware
+
+This forms a complete authentication system suitable for modern
+dashboards.
+
+------------------------------------------------------------------------
+
+# Notes
+
+-   Store access tokens in localStorage for API requests.
+-   Use cookies only for middleware route protection.
+-   Keep API communication inside the services layer.
+-   Use Zustand for global auth state.
