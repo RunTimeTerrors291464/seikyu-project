@@ -1,64 +1,118 @@
-import axios from "axios";
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
-// Create a base Axios instance used for all API requests
-export const apiClient = axios.create({
-  // Base API URL from environment variable
-  // Falls back to localhost if not defined
+// ======================================================
+// CREATE AXIOS INSTANCE
+// ======================================================
+// This instance will be used for ALL API calls in the app.
+// It centralizes configuration like base URL, headers,
+// credentials, and interceptors.
+
+const apiClient = axios.create({
+  // Base API URL
+  // Uses environment variable if defined
+  // Falls back to localhost if not set
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
 
-  // Default headers for every request
+  // Default headers sent with every request
   headers: {
     "Content-Type": "application/json",
   },
 
-  // Allows cookies to be sent with requests (important if backend uses cookies)
+  // Allows cookies to be sent with requests
+  // Needed if backend uses cookie-based auth
   withCredentials: true,
+
+  // Prevent requests from hanging forever
+  // 15 seconds timeout
+  timeout: 15000,
 });
 
-// Request interceptor
-// Runs BEFORE every request is sent
-apiClient.interceptors.request.use(
-  (config) => {
-    // Skip interceptor for login and refresh token requests
-    const publicRoutes = ["/login", "/refresh-token"];
 
-    if (publicRoutes.some((route) => config.url?.includes(route))) {
+// ======================================================
+// REQUEST INTERCEPTOR
+// ======================================================
+// Runs BEFORE every request is sent to the server.
+// Used for:
+// - attaching auth tokens
+// - debugging
+// - modifying request configuration
+
+apiClient.interceptors.request.use(
+  (config: AxiosRequestConfig) => {
+
+    // Routes that DO NOT require authentication
+    const publicRoutes = [
+      "/login",
+      "/refresh-token",
+    ];
+
+    // Skip token logic for public routes
+    if (
+      publicRoutes.some((route) =>
+        config.url?.includes(route)
+      )
+    ) {
       return config;
     }
 
-    // Log request method and endpoint for debugging
-    console.log("API REQUEST →", config.method?.toUpperCase(), config.url);
+    // Log request method and endpoint
+    console.log(
+      "API REQUEST →",
+      config.method?.toUpperCase(),
+      config.url
+    );
 
-    // Safely access localStorage only in browser environment
+    // Safely read token from localStorage
+    // Must check window existence because Next.js
+    // may run code on server
     const token =
       typeof window !== "undefined"
         ? localStorage.getItem("access_token")
         : null;
 
-    // If token exists, attach it to Authorization header
-    // This allows backend to authenticate the request
+    // If token exists attach Authorization header
     if (token) {
+
+      // Ensure headers object exists
+      if (!config.headers) {
+        config.headers = {};
+      }
+
+      // Add bearer token
       config.headers.Authorization = `Bearer ${token}`;
+
       console.log("API REQUEST → token attached");
+
     } else {
-      // Debug message if token is missing
-      console.log("API REQUEST → no token found");
+      console.warn("API REQUEST → no token found");
     }
 
-    // Return updated config so request continues
+    // Continue request
     return config;
   },
-  (error) => {
-    // Handle request setup errors
+
+  // Handle request setup errors
+  (error: AxiosError) => {
     console.error("API REQUEST ERROR →", error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor
-// Runs AFTER response is received
+
+// ======================================================
+// RESPONSE INTERCEPTOR
+// ======================================================
+// Runs AFTER server sends response.
+// Used for:
+// - logging responses
+// - handling auth errors
+// - global error handling
+
 apiClient.interceptors.response.use(
-  (response) => {
+
+  // Successful response handler
+  (response: AxiosResponse) => {
+
     // Log response status and endpoint
     console.log(
       "API RESPONSE →",
@@ -66,40 +120,53 @@ apiClient.interceptors.response.use(
       response.config.url
     );
 
-    // Return response to the calling function
+    // Return response to calling code
     return response;
   },
-  (error) => {
-    // Extract useful debug info from error
+
+  // Error response handler
+  (error: AxiosError) => {
+
+    // Extract useful debugging info
     const status = error.response?.status;
     const data = error.response?.data;
+    const url = error.config?.url;
 
-    // Log structured API error information
+    // Log structured error
     console.error("API ERROR →", {
       status,
-      url: error.config?.url,
+      url,
       data,
     });
 
-    // If backend returns 401 (Unauthorized)
-    // this usually means the token expired or is invalid
+    // Handle Unauthorized errors
+    // Usually means token expired or invalid
     if (status === 401 && typeof window !== "undefined") {
+
       console.warn("AUTH ERROR → clearing auth state");
 
       // Remove token from localStorage
       localStorage.removeItem("access_token");
 
-      // Remove authentication cookie so middleware also sees logout
+      // Remove auth cookie if it exists
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
-      // Redirect user back to login page
+      // Redirect user to login page
       window.location.href = "/login";
     }
 
-    // Reject promise so calling code can handle the error
+    // Reject promise so calling code can handle it
     return Promise.reject(error);
   }
 );
+
+
+// ======================================================
+// EXPORT API CLIENT
+// ======================================================
+// This instance should be imported in all service files
+// Example:
+// import apiClient from "@/services/api-client"
 
 export default apiClient;

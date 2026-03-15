@@ -77,58 +77,61 @@ const groups: Group[] = [
 
 function usePersistedOpen(id: string, initial: boolean) {
   const [open, setOpen] = useState(initial);
+
   useEffect(() => {
     const raw = localStorage.getItem(`sidebar-open:${id}`);
     if (raw !== null) setOpen(raw === "1");
   }, [id]);
+
   useEffect(() => {
     try {
       localStorage.setItem(`sidebar-open:${id}`, open ? "1" : "0");
     } catch { }
   }, [id, open]);
+
   return [open, setOpen] as const;
 }
 
 function GroupSection({ group }: { group: Group }) {
   const pathname = usePathname();
   const hasChildren = (group.items?.length ?? 0) > 0;
+
   const [open, setOpen] = usePersistedOpen(
     group.id,
     group.defaultOpen ?? false
   );
 
-  // auto-open when a child is active
   const childActive = useMemo(
     () => group.items?.some((i) => !!i.href && pathname.startsWith(i.href)) ?? false,
     [group.items, pathname]
   );
+
   useEffect(() => {
-    let firstOpen = true;
-    if (firstOpen && childActive && !open) {
+    if (childActive && !open) {
       setOpen(true);
-      firstOpen = false;
     }
-  }, []);
+  }, [childActive, open, setOpen]);
 
   return (
     <div>
       <button
-        className={clsx(
-          "flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-slate-200",
-          "hover:bg-slate-800/60"
-        )}
+        className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-text hover:bg-bg"
         onClick={() => {
           if (hasChildren) setOpen((v) => !v);
         }}
         aria-expanded={open}
       >
         <span className="inline-flex items-center gap-2">
-          <span className="text-slate-300">{group.icon}</span>
+          <span className="text-muted">{group.icon}</span>
           <span>{group.label}</span>
         </span>
+
         {hasChildren ? (
           <ChevronDown
-            className={clsx("h-4 w-4 text-slate-400 transition-transform", open && "rotate-180")}
+            className={clsx(
+              "h-4 w-4 text-muted transition-transform",
+              open && "rotate-180"
+            )}
           />
         ) : (
           <span />
@@ -137,32 +140,35 @@ function GroupSection({ group }: { group: Group }) {
 
       {hasChildren && open && (
         <div className="relative ml-3 mt-1 pl-3">
-          <div className="absolute left-0 top-2 bottom-2 w-px bg-slate-700/60" aria-hidden />
+          <div className="absolute left-0 top-2 bottom-2 w-px bg-border" />
+
           <ul className="space-y-1">
             {group.items!.map((item) => {
               const active = !!item.href && pathname.startsWith(item.href);
+
               const content = (
                 <div
                   className={clsx(
-                    "group relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+                    "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
                     item.disabled && "opacity-50 cursor-not-allowed",
                     active
-                      ? "bg-slate-700/60 text-white"
-                      : "text-slate-300 hover:bg-slate-800/60"
+                      ? "bg-card text-text"
+                      : "text-muted hover:bg-bg"
                   )}
                 >
                   {/* connector curve */}
                   <span
                     aria-hidden
-                    className={clsx("absolute -left-3 top-2 h-4 w-3 rounded-bl border-b border-l border-slate-700/60")}
+                    className="absolute -left-3 top-2 h-4 w-3 rounded-bl border-b border-l border-border"
                   />
-                  <span className="shrink-0 text-slate-300">{item.icon}</span>
+
+                  <span className="shrink-0 text-muted">{item.icon}</span>
                   <span>{item.label}</span>
                 </div>
               );
 
               return (
-                <li key={item.label} className="relative">
+                <li key={item.label}>
                   {item.disabled || !item.href ? (
                     <span>{content}</span>
                   ) : (
@@ -179,54 +185,55 @@ function GroupSection({ group }: { group: Group }) {
 }
 
 export function Sidebar() {
-  const sidebarWidth = "clamp(240px, 16vw, 320px)";
+
   return (
     <aside
-      className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-slate-800 bg-slate-900 text-slate-200 md:flex print:hidden"
-      style={{ width: sidebarWidth }}
+      className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden"
     >
-      <div
-        className={clsx(
-          "flex h-screen min-w-0 flex-col gap-6 p-4"
-        )}
-        style={{ width: "100%" }}
-      >
+      <div className="flex h-screen min-w-0 flex-col gap-6 p-4">
+
         {/* Brand */}
         <div className="flex items-center gap-2 px-2 pt-2 text-sm font-semibold">
-          <div className="grid h-6 w-6 place-items-center rounded-md bg-slate-800 text-slate-300">
-            {/* simple grid icon */}
+          <div className="grid h-6 w-6 place-items-center rounded-md bg-bg text-muted">
             <div className="grid h-4 w-4 grid-cols-2 gap-0.5">
-              <span className="block rounded-sm bg-slate-600" />
-              <span className="block rounded-sm bg-slate-600" />
-              <span className="block rounded-sm bg-slate-600" />
-              <span className="block rounded-sm bg-slate-600" />
+              <span className="block rounded-sm" />
+              <span className="block rounded-sm" />
+              <span className="block rounded-sm" />
+              <span className="block rounded-sm" />
             </div>
           </div>
-          <span className={clsx("text-slate-100")}>Inventory System</span>
+
+          <span>Inventory System</span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden pr-2">
+        <nav className="flex-1 space-y-3 overflow-y-auto pr-2">
           {groups.map((g) => (
             <GroupSection key={g.id} group={g} />
           ))}
         </nav>
 
         {/* User Card */}
-        <div className={clsx("rounded-md border border-slate-800 bg-slate-800/40 p-3 text-sm")}
-        >
+        <div className="rounded-md border border-border bg-bg p-3 text-sm">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-slate-700" />
-            <div className={clsx("min-w-0")}>
-              <div className="truncate text-slate-100">John</div>
-              <div className="truncate text-xs text-slate-400">john.doe@gmail.com</div>
+            <div className="h-8 w-8 shrink-0 rounded-full bg-muted" />
+
+            <div className="min-w-0">
+              <div className="truncate text-text">John</div>
+              <div className="truncate text-xs text-muted">
+                john.doe@gmail.com
+              </div>
             </div>
-            <button aria-label="Open profile" className={clsx("ml-auto rounded-md p-1 text-slate-300 hover:bg-slate-700")}
+
+            <button
+              aria-label="Open profile"
+              className="ml-auto rounded-md p-1 text-muted hover:bg-card"
             >
               <ExternalLink className="h-4 w-4" />
             </button>
           </div>
         </div>
+
       </div>
     </aside>
   );

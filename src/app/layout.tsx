@@ -1,4 +1,4 @@
-import AppShell from "@/components/layout/AppShell";
+import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -9,26 +9,25 @@ export const metadata: Metadata = {
   description: "Inventory management system",
 };
 
-// Root layout component that wraps all pages
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    // HTML root with language and hydration warning suppression
     <html lang="en" suppressHydrationWarning>
       <body>
-        {/* Theme provider for dark/light mode support */}
+        {/* Global theme provider */}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <AppShell>
+          {/* Decides whether AppShell should be used */}
+          <LayoutWrapper>
             {children}
-          </AppShell>
+          </LayoutWrapper>
         </ThemeProvider>
       </body>
     </html>
