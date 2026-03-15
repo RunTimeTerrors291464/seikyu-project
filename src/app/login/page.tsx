@@ -1,12 +1,24 @@
+"use client";
+
 import LoginForm from "@/components/forms/login-form";
 import ThemeToggle from "@/components/theme-toggle";
 import { LogIn } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export const metadata = {
-  title: "Sign In — Inventory System",
-};
+
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
       <div className="w-full max-w-md">
