@@ -123,6 +123,15 @@ export class ProductRankingRepository {
         if (cachedResult) {
             const cachedResponse: GetListOfProductRankingResponseDto = JSON.parse(cachedResult);
             allProducts = cachedResponse.data;
+
+            // If cached result, apply search filter in memory.
+            if (cachedResult && search) {
+                allProducts = allProducts.filter(product => product.product?.name.toLowerCase().includes(search.toLowerCase()));
+            }
+
+            // Apply sort order if different from cached order.
+            if (cachedResult && sortOrder === 'asc') allProducts = allProducts.reverse();
+
         } else {
             // Query database for top 100 products with search and sort.
             const queryBuilder = this.productRankingDailyRepository
@@ -158,18 +167,6 @@ export class ProductRankingRepository {
 
             const products = await queryBuilder.getMany();
             allProducts = this.productRankingMapper.toProductRankingItemResponseDtoArray(products);
-        }
-
-        // If cached result, apply search filter in memory.
-        if (cachedResult && search) {
-            allProducts = allProducts.filter(product =>
-                product.product?.name.toLowerCase().includes(search.toLowerCase())
-            );
-        }
-
-        // Apply sort order if different from cached order.
-        if (cachedResult && sortOrder === 'asc') {
-            allProducts = allProducts.reverse();
         }
 
         // Apply pagination on products.

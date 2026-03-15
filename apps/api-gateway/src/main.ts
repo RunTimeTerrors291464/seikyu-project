@@ -15,8 +15,17 @@ async function bootstrap() {
     const app = await NestFactory.create(ApiGatewayModule);
     const configService = app.get(ConfigService);
 
+    const acceptedOrigins = configService
+        .get<string>('ACCEPTED_ORIGINS', '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
     // Enable CORS.
-    app.enableCors();
+    app.enableCors({
+        origin: acceptedOrigins,
+        credentials: true,
+    });
 
     // Use the custom exception filter.
     app.useGlobalFilters(new CustomExceptionFilter());
