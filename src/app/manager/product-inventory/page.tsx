@@ -13,10 +13,14 @@ import {
   PRODUCT_STOCK_STATUS_OPTIONS,
   ProductStockStatus
 } from "@/features/products/filters/productFilters";
+
+import { useProducts } from "@/features/products/hooks/useProducts";
 import { useDict } from "@/lib/lang/DictProvider";
-import { useProducts } from "@features/products/hooks/useProducts";
+
+import { useTable } from "@/lib/table/useTable";
 
 import type { ProductQuery } from "@/features/products/services/product.service";
+import type { ProductApi } from "@/features/products/types/productApi";
 
 export default function ProductInventoryPage() {
 
@@ -38,12 +42,10 @@ export default function ProductInventoryPage() {
   const [activeFilter, setActiveFilter] =
     useState<"all" | "active" | "inactive">("all");
 
-  /* ---------------- PAGINATION ---------------- */
+  /* ---------------- QUERY ---------------- */
 
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  /* ---------------- QUERY ---------------- */
 
   const query: ProductQuery = useMemo(() => {
 
@@ -88,8 +90,10 @@ export default function ProductInventoryPage() {
 
   const columns = productColumns(dict);
 
-  const totalPages =
-    Math.ceil(total / rowsPerPage);
+  const table = useTable<ProductApi>(
+    products,
+    columns
+  );
 
   /* ---------------- KPI ---------------- */
 
@@ -186,7 +190,7 @@ export default function ProductInventoryPage() {
         <KpiTile
           label={dict.outOfStock}
           value={outStock}
-          accent="amber"
+          accent="red"
         />
 
         <KpiTile
@@ -202,6 +206,8 @@ export default function ProductInventoryPage() {
       {showFilters && (
 
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3">
+
+          {/* STOCK STATUS */}
 
           <span className="text-xs text-muted">
             {dict.stockStatus}
@@ -222,9 +228,37 @@ export default function ProductInventoryPage() {
                 : "border border-border bg-card text-muted"
                 }`}
             >
-
               {dict[opt.dictKey]}
+            </button>
 
+          ))}
+
+          {/* ACTIVE STATUS */}
+
+          <span className="ml-4 text-xs text-muted">
+            {dict.status}
+          </span>
+
+          {[
+            { key: "all", label: dict.all },
+            { key: "active", label: dict.active },
+            { key: "inactive", label: dict.inactive }
+          ].map((opt) => (
+
+            <button
+              key={opt.key}
+
+              onClick={() => {
+                setActiveFilter(opt.key as any);
+                setPage(1);
+              }}
+
+              className={`rounded-full px-2.5 py-0.5 text-xs ${activeFilter === opt.key
+                ? "bg-text text-bg"
+                : "border border-border bg-card text-muted"
+                }`}
+            >
+              {opt.label}
             </button>
 
           ))}
@@ -247,9 +281,14 @@ export default function ProductInventoryPage() {
 
           <DataTable
             columns={columns}
-            data={products}
+            data={table.data}
             getRowId={(p) => p.id}
             showIndex
+
+            sortField={table.sortField}
+            sortDirection={table.sortDirection}
+            onSort={table.handleSort}
+
             maxHeight="fill"
           />
 
@@ -261,7 +300,7 @@ export default function ProductInventoryPage() {
 
       <TablePagination
         page={page}
-        totalPages={totalPages}
+        totalPages={Math.ceil(total / rowsPerPage)}
         rowsPerPage={rowsPerPage}
 
         setRowsPerPage={(n) => {

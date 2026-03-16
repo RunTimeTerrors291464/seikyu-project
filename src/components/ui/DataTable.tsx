@@ -6,6 +6,7 @@ import React from "react";
 
 export type SortDirection = "asc" | "desc";
 
+
 export type Column<T> = {
   id?: string;
   header: string;
@@ -13,6 +14,8 @@ export type Column<T> = {
 
   accessor?: (row: T, index: number) => React.ReactNode;
   field?: keyof T;
+
+  sortAccessor?: (row: T) => string | number;
 
   align?: "left" | "right" | "center";
 
@@ -40,10 +43,10 @@ export type DataTableProps<T> = {
 
   /* sorting */
 
-  sortField?: keyof T;
+  sortField?: keyof T | string;
   sortDirection?: SortDirection;
 
-  onSort?: (field: keyof T) => void;
+  onSort?: (field: keyof T | string) => void;
 };
 
 export default function DataTable<T>({
@@ -92,14 +95,16 @@ export default function DataTable<T>({
                   key={c.id ?? c.header ?? idx}
                   style={c.width ? { width: c.width } : undefined}
                   className={clsx(
-                    "px-2 py-2 text-left font-medium text-muted",
-                    c.sortable && "cursor-pointer select-none",
+                    "px-2 py-2 font-medium text-muted",
+                    c.sortable && "cursor-pointer select-none hover:text-text",
                     c.thClassName
                   )}
                   onClick={() => {
-                    if (c.sortable && c.field && onSort) {
-                      onSort(c.field);
-                    }
+                    if (!c.sortable || !onSort) return;
+
+                    const key = (c.field ?? c.id);
+
+                    if (key) onSort(key as any);
                   }}
                 >
                   <span className="flex items-center gap-1.5">
@@ -110,20 +115,12 @@ export default function DataTable<T>({
                       </span>
                     )}
 
-                    <span className="truncate">
-                      {c.header}
-                    </span>
+                    <span>{c.header}</span>
 
-                    {/* SORT ICON */}
-
-                    {c.sortable && isSorted && (
-                      <>
-                        {sortDirection === "asc" ? (
-                          <ArrowUp className="h-3 w-3" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" />
-                        )}
-                      </>
+                    {c.sortable && sortField === (c.field ?? c.id) && (
+                      sortDirection === "asc"
+                        ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowDown className="h-3 w-3" />
                     )}
 
                   </span>
