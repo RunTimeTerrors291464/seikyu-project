@@ -7,6 +7,7 @@ import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
 
 import ProductTableToolbar from "@/features/products/components/ProductTableToolbar";
+import { useProductOverview } from "@/features/products/hooks/useProductOverview";
 import { productColumns } from "@/features/products/table/productColumns";
 
 import {
@@ -86,6 +87,12 @@ export default function ProductInventoryPage() {
   const { products, total, loading } =
     useProducts(query);
 
+  /* ---------------- OVERVIEW API ---------------- */
+  const {
+    data: overview,
+    loading: overviewLoading
+  } = useProductOverview();
+
   /* ---------------- TABLE ---------------- */
 
   const columns = productColumns(dict);
@@ -94,44 +101,6 @@ export default function ProductInventoryPage() {
     products,
     columns
   );
-
-  /* ---------------- KPI ---------------- */
-
-  const totalProducts = total;
-
-  const inventoryValue = useMemo(() => {
-
-    return products.reduce(
-      (sum, p) =>
-        sum + p.importPrice * p.inventoryStock,
-      0
-    );
-
-  }, [products]);
-
-  const inStock = useMemo(() => {
-
-    return products.filter(
-      (p) => p.stockStatus === 0
-    ).length;
-
-  }, [products]);
-
-  const lowStock = useMemo(() => {
-
-    return products.filter(
-      (p) => p.stockStatus === 1
-    ).length;
-
-  }, [products]);
-
-  const outStock = useMemo(() => {
-
-    return products.filter(
-      (p) => p.stockStatus === 2
-    ).length;
-
-  }, [products]);
 
   /* ---------------- UI ---------------- */
 
@@ -168,38 +137,50 @@ export default function ProductInventoryPage() {
 
       {/* KPI */}
 
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
+      {overviewLoading ? (
 
-        <KpiTile
-          label={dict.totalProducts}
-          value={totalProducts}
-        />
+        <div className="flex items-center justify-center py-6 text-sm text-muted">
+          {dict.loadingProducts}
+        </div>
 
-        <KpiTile
-          label={dict.inStock}
-          value={inStock}
-          accent="emerald"
-        />
+      ) : (
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
 
-        <KpiTile
-          label={dict.lowStock}
-          value={lowStock}
-          accent="amber"
-        />
+          <KpiTile
+            label={dict.totalProducts}
+            value={overview?.totalProducts ?? "-"}
+          />
 
-        <KpiTile
-          label={dict.outOfStock}
-          value={outStock}
-          accent="red"
-        />
+          <KpiTile
+            label={dict.inStock}
+            value={overview?.inStock ?? "-"}
+            accent="emerald"
+          />
 
-        <KpiTile
-          label={dict.inventoryValue}
-          value={`${(inventoryValue / 1_000_000).toFixed(2)}M`}
-          accent="blue"
-        />
+          <KpiTile
+            label={dict.lowStock}
+            value={overview?.lowStock ?? "-"}
+            accent="amber"
+          />
 
-      </div>
+          <KpiTile
+            label={dict.outOfStock}
+            value={overview?.outOfStock ?? "-"}
+            accent="red"
+          />
+
+          <KpiTile
+            label={dict.inventoryValue}
+            value={
+              overview
+                ? `${(Number(overview.inventoryValue) / 1_000_000).toFixed(2)}M`
+                : "-"
+            }
+            accent="blue"
+          />
+
+        </div>
+      )}
 
       {/* FILTER PANEL */}
 
