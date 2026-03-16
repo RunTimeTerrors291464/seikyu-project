@@ -22,6 +22,9 @@ import { useTable } from "@/lib/table/useTable";
 
 import type { ProductQuery } from "@/features/products/services/product.service";
 import type { ProductApi } from "@/features/products/types/productApi";
+import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
+
+import useDebounce from "@/lib/hooks/useDebounce";
 
 export default function ProductInventoryPage() {
 
@@ -30,6 +33,7 @@ export default function ProductInventoryPage() {
   /* ---------------- SEARCH ---------------- */
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [searchRule, setSearchRule] =
     useState<"sku" | "productName">("sku");
 
@@ -61,9 +65,9 @@ export default function ProductInventoryPage() {
       page,
       limit: rowsPerPage,
 
-      search: search || undefined,
+      search: debouncedSearch || undefined,
 
-      searchBy: search
+      searchBy: debouncedSearch
         ? searchRule
         : undefined,
 
@@ -76,7 +80,7 @@ export default function ProductInventoryPage() {
   }, [
     page,
     rowsPerPage,
-    search,
+    debouncedSearch,
     searchRule,
     statusFilter,
     activeFilter
@@ -130,8 +134,15 @@ export default function ProductInventoryPage() {
         }
 
         resetSearch={() => {
+
           setSearch("");
+          setSearchRule("sku");
+
+          setStatusFilter("all");
+          setActiveFilter("all");
+
           setPage(1);
+
         }}
       />
 
@@ -144,29 +155,42 @@ export default function ProductInventoryPage() {
         </div>
 
       ) : (
+
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
 
           <KpiTile
             label={dict.totalProducts}
             value={overview?.totalProducts ?? "-"}
+            icon={<Package className="h-4 w-4 text-muted" />}
+            helpText={dict.totalProductsHelp}
+            sub={dict.totalProductsSub}
           />
 
           <KpiTile
             label={dict.inStock}
             value={overview?.inStock ?? "-"}
+            icon={<Boxes className="h-4 w-4 text-muted" />}
             accent="emerald"
+            helpText={dict.inStockHelp}
+            sub={dict.inStockSub}
           />
 
           <KpiTile
             label={dict.lowStock}
             value={overview?.lowStock ?? "-"}
+            icon={<AlertTriangle className="h-4 w-4 text-muted" />}
             accent="amber"
+            helpText={dict.lowStockHelp}
+            sub={dict.lowStockSub}
           />
 
           <KpiTile
             label={dict.outOfStock}
             value={overview?.outOfStock ?? "-"}
+            icon={<AlertTriangle className="h-4 w-4 text-muted" />}
             accent="red"
+            helpText={dict.outOfStockHelp}
+            sub={dict.outOfStockSub}
           />
 
           <KpiTile
@@ -176,77 +200,106 @@ export default function ProductInventoryPage() {
                 ? `${(Number(overview.inventoryValue) / 1_000_000).toFixed(2)}M`
                 : "-"
             }
+            icon={<DollarSign className="h-4 w-4 text-muted" />}
             accent="blue"
+            helpText={dict.inventoryValueHelp}
+            sub={dict.inventoryValueSub}
           />
 
         </div>
+
       )}
 
       {/* FILTER PANEL */}
 
       {showFilters && (
 
-        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
 
           {/* STOCK STATUS */}
 
-          <span className="text-xs text-muted">
-            {dict.stockStatus}
-          </span>
+          <div className="flex items-center gap-2">
 
-          {PRODUCT_STOCK_STATUS_OPTIONS.map((opt) => (
+            <span className="text-xs text-muted">
+              {dict.stockStatus}
+            </span>
 
-            <button
-              key={opt.value}
+            <div className="flex gap-1">
 
-              onClick={() => {
-                setStatusFilter(opt.value);
-                setPage(1);
-              }}
+              {PRODUCT_STOCK_STATUS_OPTIONS.map((opt) => (
 
-              className={`rounded-full px-2.5 py-0.5 text-xs ${statusFilter === opt.value
-                ? "bg-text text-bg"
-                : "border border-border bg-card text-muted"
-                }`}
-            >
-              {dict[opt.dictKey]}
-            </button>
+                <button
+                  key={opt.value}
+                  type="button"
 
-          ))}
+                  onClick={() => {
+                    setStatusFilter(opt.value);
+                    setPage(1);
+                  }}
+
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors
+                    ${statusFilter === opt.value
+                      ? "border-text bg-text text-bg"
+                      : "border-border bg-card text-muted hover:border-text hover:bg-hover"
+                    }`}
+                >
+                  {dict[opt.dictKey]}
+                </button>
+
+              ))}
+
+            </div>
+
+          </div>
+
+          {/* DIVIDER */}
+
+          <span className="divider mx-2" />
 
           {/* ACTIVE STATUS */}
 
-          <span className="ml-4 text-xs text-muted">
-            {dict.status}
-          </span>
+          <div className="flex items-center gap-2">
 
-          {[
-            { key: "all", label: dict.all },
-            { key: "active", label: dict.active },
-            { key: "inactive", label: dict.inactive }
-          ].map((opt) => (
+            <span className="text-xs text-muted">
+              {dict.status}
+            </span>
 
-            <button
-              key={opt.key}
+            <div className="flex gap-1">
 
-              onClick={() => {
-                setActiveFilter(opt.key as any);
-                setPage(1);
-              }}
+              {[
+                { key: "all", label: dict.all },
+                { key: "active", label: dict.active },
+                { key: "inactive", label: dict.inactive }
+              ].map((opt) => (
 
-              className={`rounded-full px-2.5 py-0.5 text-xs ${activeFilter === opt.key
-                ? "bg-text text-bg"
-                : "border border-border bg-card text-muted"
-                }`}
-            >
-              {opt.label}
-            </button>
+                <button
+                  key={opt.key}
+                  type="button"
 
-          ))}
+                  onClick={() => {
+                    setActiveFilter(opt.key as any);
+                    setPage(1);
+                  }}
+
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors
+                    ${activeFilter === opt.key
+                      ? "border-text bg-text text-bg"
+                      : "border-border bg-card text-muted hover:border-text hover:bg-hover"
+                    }`}
+                >
+                  {opt.label}
+                </button>
+
+              ))}
+
+            </div>
+
+          </div>
 
         </div>
 
-      )}
+      )
+      }
 
       {/* TABLE */}
 
@@ -296,6 +349,6 @@ export default function ProductInventoryPage() {
         dict={dict}
       />
 
-    </div>
+    </div >
   );
 }

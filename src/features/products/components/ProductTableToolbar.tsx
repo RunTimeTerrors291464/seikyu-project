@@ -1,7 +1,11 @@
 "use client";
 
+import Button from "@/components/ui/Buttons";
+import IconButton from "@/components/ui/IconButton";
 import RuleInput from "@/components/ui/RuleInput";
+
 import { Dictionary } from "@/lib/lang/i18n";
+
 import {
   Barcode,
   Download,
@@ -38,13 +42,19 @@ export default function ProductTableToolbar({
 }: Props) {
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-4">
+
+      {/* ───────────────────────────── */}
+      {/* PAGE TITLE */}
+      {/* ───────────────────────────── */}
 
       <h1 className="text-xl font-semibold text-text">
         {dict.productInventory}
       </h1>
 
-      {/* SEARCH */}
+      {/* ───────────────────────────── */}
+      {/* SEARCH INPUT */}
+      {/* ───────────────────────────── */}
 
       <RuleInput
         options={[
@@ -67,54 +77,53 @@ export default function ProductTableToolbar({
 
           setSearchRule(ruleMap[rule]);
           setSearch(value);
-
         }}
       />
 
-      {/* ACTIONS */}
+      {/* ───────────────────────────── */}
+      {/* ACTION BUTTONS */}
+      {/* ───────────────────────────── */}
 
       <div className="flex items-center gap-2">
 
-        {/* FILTER */}
+        {/* FILTER BUTTON */}
 
-        <button
+        <Button
+          icon={<Filter className="h-3.5 w-3.5" />}
           onClick={toggleFilters}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs text-muted hover:bg-border"
         >
-          <Filter className="h-3.5 w-3.5" />
           {dict.filter}
-        </button>
+        </Button>
 
-        {/* RESET */}
+        {/* RESET FILTERS */}
 
-        <button
+        <IconButton
+          icon={<RotateCcw className="h-3.5 w-3.5" />}
           onClick={resetSearch}
-          className="inline-flex items-center justify-center rounded-md border border-border bg-card px-2 py-1.5 text-muted hover:bg-border"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
+          tooltip={dict.resetfilter ?? "Reset filters"}
+        />
 
-        {/* EXPORT */}
+        {/* EXPORT BUTTON */}
 
-        <button
+        <Button
+          icon={<Download className="h-3.5 w-3.5" />}
           onClick={onExport}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs text-muted hover:bg-border"
         >
-          <Download className="h-3.5 w-3.5" />
           {dict.export}
-        </button>
+        </Button>
 
-        {/* ADD PRODUCT */}
+        {/* ADD PRODUCT (PRIMARY ACTION) */}
 
-        <button
+        <Button
+          variant="primary"
+          icon={<Plus className="h-3.5 w-3.5" />}
           onClick={onAddProduct}
-          className="inline-flex items-center gap-1 rounded-md bg-text px-3 py-1.5 text-xs font-medium bg-primary text-white"
         >
-          <Plus className="h-3.5 w-3.5" />
           {dict.addProduct}
-        </button>
+        </Button>
 
       </div>
+
     </div>
   );
 }

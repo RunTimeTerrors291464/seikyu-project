@@ -54,5 +54,16 @@
   "export": "Xuất dữ liệu",
   "inventoryValue": "Giá trị tồn kho",
   "all": "Tất cả",
-  "somethingWentWrong": "Đã xảy ra lỗi. Vui lòng thử lại sau."
+  "somethingWentWrong": "Đã xảy ra lỗi. Vui lòng thử lại sau.",
+  "totalProductsHelp": "Tổng số sản phẩm trong kho",
+  "inStockHelp": "Sản phẩm có đủ tồn kho",
+  "lowStockHelp": "Sản phẩm dưới mức tồn kho tối thiểu",
+  "outOfStockHelp": "Sản phẩm hiện tại không có sẵn",
+  "inventoryValueHelp": "Tổng giá trị tồn kho dựa trên giá nhập",
+  "totalProductsSub": "trên tất cả các danh mục",
+  "inStockSub": "còn hàng",
+  "lowStockSub": "cần được bổ sung sớm",
+  "outOfStockSub": "cần được bổ sung ngay",
+  "inventoryValueSub": "theo giá nhập",
+  "resetfilter": "Đặt lại bộ lọc"
 }
