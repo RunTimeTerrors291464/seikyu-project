@@ -53,5 +53,6 @@
   "filter": "Lọc",
   "export": "Xuất dữ liệu",
   "inventoryValue": "Giá trị tồn kho",
-  "all": "Tất cả"
+  "all": "Tất cả",
+  "somethingWentWrong": "Đã xảy ra lỗi. Vui lòng thử lại sau."
 }

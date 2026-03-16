@@ -4,10 +4,6 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-// ======================================================
-// AXIOS INSTANCE
-// ======================================================
-
 const apiClient = axios.create({
   baseURL:
     (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
@@ -15,56 +11,35 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
   timeout: 15000,
 });
 
-
-// ======================================================
-// REFRESH TOKEN STATE
-// ======================================================
+// ===============================
+// REFRESH STATE
+// ===============================
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
-// Add request to queue while refresh is running
 function subscribeTokenRefresh(cb: (token: string) => void) {
   refreshSubscribers.push(cb);
 }
 
-// Retry queued requests
 function onRefreshed(token: string) {
   refreshSubscribers.forEach((cb) => cb(token));
   refreshSubscribers = [];
 }
 
-
-// ======================================================
+// ===============================
 // REQUEST INTERCEPTOR
-// ======================================================
+// ===============================
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem("access_token");
 
-    const publicRoutes = [
-      "/login",
-      "/refresh-token",
-    ];
-
-    const isPublic = publicRoutes.some((route) =>
-      config.url?.includes(route)
-    );
-
-    if (isPublic) {
-      return config;
-    }
-
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("access_token");
-
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     if (process.env.NODE_ENV === "development") {
@@ -77,127 +52,78 @@ apiClient.interceptors.request.use(
 
     return config;
   },
-
-  (error: AxiosError) => {
-    console.error("API REQUEST ERROR →", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-
-// ======================================================
+// ===============================
 // RESPONSE INTERCEPTOR
-// ======================================================
+// ===============================
 
 apiClient.interceptors.response.use(
-
-  (response: AxiosResponse) => {
-
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        "API RESPONSE →",
-        response.status,
-        response.config.url
-      );
-    }
-
-    return response;
-  },
+  (response: AxiosResponse) => response,
 
   async (error: AxiosError) => {
 
-    const originalRequest: any = error.config;
+    const originalRequest =
+      error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     const status = error.response?.status;
-    const url = originalRequest?.url;
 
-    if (process.env.NODE_ENV === "development") {
-      console.error("API ERROR →", {
-        status,
-        url,
-        data: error.response?.data,
-      });
-    }
-
-    // Routes that should NOT trigger refresh
     const authRoutes = [
-      "/login",
-      "/refresh-token",
+      "/auth/login",
+      "/auth/refresh-token",
     ];
 
     const isAuthRoute = authRoutes.some((route) =>
-      url?.includes(route)
+      originalRequest?.url?.includes(route)
     );
 
-    // ======================================================
-    // TOKEN EXPIRED → REFRESH
-    // ======================================================
+    // ===============================
+    // TOKEN EXPIRED
+    // ===============================
 
-    if (
-      status === 401 &&
-      !isAuthRoute &&
-      !originalRequest._retry
-    ) {
+    if (status === 401 && !isAuthRoute && !originalRequest._retry) {
 
       originalRequest._retry = true;
 
-      // If refresh already running → queue request
       if (isRefreshing) {
-
         return new Promise((resolve) => {
-
           subscribeTokenRefresh((token: string) => {
-            originalRequest.headers.Authorization =
-              `Bearer ${token}`;
-
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             resolve(apiClient(originalRequest));
           });
-
         });
-
       }
 
       isRefreshing = true;
 
       try {
 
-        if (process.env.NODE_ENV === "development") {
-          console.warn("TOKEN EXPIRED → refreshing...");
-        }
+        const refreshToken = localStorage.getItem("refresh_token");
 
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/refresh-token`,
-          {},
-          { withCredentials: true }
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh-token`,
+          { refreshToken }
         );
 
-        const newToken = response.data.accessToken;
+        const newAccessToken = res.data.accessToken;
 
-        if (typeof window !== "undefined") {
-          localStorage.setItem("access_token", newToken);
-        }
+        localStorage.setItem("access_token", newAccessToken);
 
-        // Retry queued requests
-        onRefreshed(newToken);
+        onRefreshed(newAccessToken);
 
-        // Retry original request
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
         return apiClient(originalRequest);
 
       } catch (refreshError) {
 
-        console.warn("REFRESH FAILED → logout");
+        console.warn("Refresh token expired → logout");
 
-        if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
 
-          localStorage.removeItem("access_token");
-
-          document.cookie =
-            "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-          window.location.href = "/login";
-        }
+        window.location.href = "/login";
 
         return Promise.reject(refreshError);
 
@@ -209,10 +135,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-
-// ======================================================
-// EXPORT
-// ======================================================
 
 export default apiClient;

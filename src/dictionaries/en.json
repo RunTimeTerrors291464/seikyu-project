@@ -53,5 +53,6 @@
   "filter": "Filter",
   "export": "Export",
   "inventoryValue": "Inventory Value",
-  "all": "All"
+  "all": "All",
+  "somethingWentWrong": "Something went wrong. Please try again later."
 }

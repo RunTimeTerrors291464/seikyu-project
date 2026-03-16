@@ -5,23 +5,9 @@ import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/theme-toggle";
 import { useDict } from "@/lib/lang/DictProvider";
 import { LogIn } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function LoginPage() {
-  const router = useRouter();
-
-  // Load dictionary
   const dict = useDict();
-
-  // Redirect if already logged in
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-
-    if (token) {
-      router.push("/dashboard");
-    }
-  }, [router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">

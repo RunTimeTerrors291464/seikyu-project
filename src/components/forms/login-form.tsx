@@ -58,11 +58,16 @@ export default function LoginForm() {
       loginStore(data.accessToken, data.user);
 
       router.push("/dashboard");
-    } catch (err) {
+
+    } catch (err: any) {
       console.error("LOGIN FAILED", err);
 
-      setAuthError(dict.invalidCredentials);
-      // reset({ password: "" });
+      // prevent page navigation side effects
+      if (err?.response?.status === 401) {
+        setAuthError(dict.invalidCredentials);
+      } else {
+        setAuthError(dict.somethingWentWrong ?? "Something went wrong");
+      }
     }
   };
 
@@ -71,6 +76,7 @@ export default function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
+      noValidate
       className="flex flex-col gap-6 px-6 py-6"
     >
       {/* Username */}
