@@ -47,6 +47,9 @@
       ],
       "@dictionaries/*": [
         "dictionaries/*"
+      ],
+      "@lib/*": [
+        "lib/*"
       ]
     }
   },

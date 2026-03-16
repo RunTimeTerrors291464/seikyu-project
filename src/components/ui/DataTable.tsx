@@ -1,34 +1,49 @@
 "use client";
 
 import clsx from "clsx";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import React from "react";
+
+export type SortDirection = "asc" | "desc";
 
 export type Column<T> = {
   id?: string;
   header: string;
   icon?: React.ReactNode;
+
   accessor?: (row: T, index: number) => React.ReactNode;
   field?: keyof T;
+
   align?: "left" | "right" | "center";
+
   thClassName?: string;
   tdClassName?: string;
+
   width?: string;
+
+  sortable?: boolean;
 };
 
 export type DataTableProps<T> = {
   columns: Column<T>[];
   data: T[];
+
   getRowId?: (row: T, index: number) => string | number;
+
   showIndex?: boolean;
+
   className?: string;
+
   emptyMessage?: string;
 
-  /**
-   * maxHeight options:
-   * "400px" | "50vh" | "100%"
-   * or "fill" to occupy remaining flex height
-   */
   maxHeight?: string | "fill";
+
+  /* sorting */
+
+  sortField?: keyof T;
+  sortDirection?: SortDirection;
+
+  onSort?: (field: keyof T) => void;
 };
 
 export default function DataTable<T>({
@@ -39,6 +54,10 @@ export default function DataTable<T>({
   className,
   emptyMessage = "No records",
   maxHeight,
+
+  sortField,
+  sortDirection,
+  onSort,
 }: DataTableProps<T>) {
   const isFill = maxHeight === "fill";
 
@@ -51,7 +70,7 @@ export default function DataTable<T>({
       )}
       style={maxHeight && !isFill ? { maxHeight } : undefined}
     >
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full table-fixed border-collapse text-sm">
 
         {/* HEADER */}
 
@@ -59,32 +78,58 @@ export default function DataTable<T>({
           <tr className="border-b border-border">
 
             {showIndex && (
-              <th className="w-10 py-2 pl-3 pr-2 text-left text-muted">
+              <th className="w-12 py-2 pl-3 pr-2 text-left text-muted">
                 #
               </th>
             )}
 
-            {columns.map((c, idx) => (
-              <th
-                key={c.id ?? c.header ?? idx}
-                className={clsx(
-                  "px-2 py-2 text-left font-medium text-muted",
-                  c.thClassName
-                )}
-              >
-                <span className="inline-flex items-center gap-1.5">
+            {columns.map((c, idx) => {
+              const isSorted =
+                sortField && c.field && sortField === c.field;
 
-                  {c.icon && (
-                    <span className="text-muted">
-                      {c.icon}
-                    </span>
+              return (
+                <th
+                  key={c.id ?? c.header ?? idx}
+                  style={c.width ? { width: c.width } : undefined}
+                  className={clsx(
+                    "px-2 py-2 text-left font-medium text-muted",
+                    c.sortable && "cursor-pointer select-none",
+                    c.thClassName
                   )}
+                  onClick={() => {
+                    if (c.sortable && c.field && onSort) {
+                      onSort(c.field);
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-1.5">
 
-                  <span>{c.header}</span>
+                    {c.icon && (
+                      <span className="text-muted">
+                        {c.icon}
+                      </span>
+                    )}
 
-                </span>
-              </th>
-            ))}
+                    <span className="truncate">
+                      {c.header}
+                    </span>
+
+                    {/* SORT ICON */}
+
+                    {c.sortable && isSorted && (
+                      <>
+                        {sortDirection === "asc" ? (
+                          <ArrowUp className="h-3 w-3" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3" />
+                        )}
+                      </>
+                    )}
+
+                  </span>
+                </th>
+              );
+            })}
 
           </tr>
         </thead>
@@ -116,7 +161,7 @@ export default function DataTable<T>({
                 >
 
                   {showIndex && (
-                    <td className="w-10 py-2 pl-3 pr-2 text-muted">
+                    <td className="w-12 py-2 pl-3 pr-2 text-muted">
                       {rIdx + 1}
                     </td>
                   )}
@@ -137,7 +182,7 @@ export default function DataTable<T>({
                       <td
                         key={(c.id ?? c.header ?? cIdx) + "-" + cIdx}
                         className={clsx(
-                          "px-2 py-2 align-middle text-text",
+                          "px-2 py-2 align-middle text-text truncate whitespace-nowrap",
                           c.align === "right" && "text-right",
                           c.align === "center" && "text-center",
                           c.tdClassName

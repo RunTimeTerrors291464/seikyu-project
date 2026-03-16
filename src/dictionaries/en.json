@@ -34,6 +34,7 @@
   "sellingPrice": "Sell",
   "stock": "Stock",
   "stockStatus": "Stock Status",
+  "status": "Status",
   "active": "Active",
   "inactive": "Inactive",
   "inStock": "In Stock",

@@ -34,6 +34,7 @@
   "sellingPrice": "Giá bán",
   "stock": "Tồn kho",
   "stockStatus": "Trạng thái kho",
+  "status": "Trạng thái",
   "active": "Hoạt động",
   "inactive": "Ngừng",
   "inStock": "Còn hàng",

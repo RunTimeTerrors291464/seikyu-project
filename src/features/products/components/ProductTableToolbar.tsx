@@ -108,7 +108,7 @@ export default function ProductTableToolbar({
 
         <button
           onClick={onAddProduct}
-          className="inline-flex items-center gap-1 rounded-md bg-text px-3 py-1.5 text-xs font-medium text-bg"
+          className="inline-flex items-center gap-1 rounded-md bg-text px-3 py-1.5 text-xs font-medium bg-primary text-white"
         >
           <Plus className="h-3.5 w-3.5" />
           {dict.addProduct}
