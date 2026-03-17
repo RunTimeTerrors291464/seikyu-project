@@ -10,15 +10,15 @@ type Props = {
 
 const STATUS_CONFIG = {
   inStock: {
-    tone: "bg-emerald-100 text-emerald-700",
+    tone: "bg-success-soft text-success",
     Icon: TrendingUp
   },
   lowStock: {
-    tone: "bg-amber-100 text-amber-700",
+    tone: "bg-warning-soft text-warning",
     Icon: AlertTriangle
   },
   outOfStock: {
-    tone: "bg-red-100 text-red-700",
+    tone: "bg-danger-soft text-danger",
     Icon: TrendingDown
   }
 } as const;

@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -18,7 +19,7 @@ export default function Tooltip({
   side = "top",
   align = "center",
   openDelay = 150,
-  offset = 8
+  offset = 8,
 }: TooltipProps) {
 
   const [open, setOpen] = useState(false);
@@ -34,7 +35,6 @@ export default function Tooltip({
   }, []);
 
   function updatePosition() {
-
     const trigger = triggerRef.current;
     const tooltip = tooltipRef.current;
 
@@ -54,11 +54,9 @@ export default function Tooltip({
 
     if (align === "start") {
       left = tRect.left;
-    }
-    else if (align === "center") {
+    } else if (align === "center") {
       left = tRect.left + tRect.width / 2 - tipRect.width / 2;
-    }
-    else {
+    } else {
       left = tRect.right - tipRect.width;
     }
 
@@ -78,7 +76,6 @@ export default function Tooltip({
   }
 
   useLayoutEffect(() => {
-
     if (!open) return;
 
     updatePosition();
@@ -93,14 +90,13 @@ export default function Tooltip({
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
-
   }, [open, side, align, offset, content]);
 
   return (
 
     <span
       ref={triggerRef}
-      className="inline-flex"
+      className="inline-flex cursor-help"  // QUESTION MARK CURSOR
 
       onMouseEnter={() => {
         if (timerRef.current) clearTimeout(timerRef.current);
@@ -135,7 +131,15 @@ export default function Tooltip({
             }}
           >
 
-            <div className="max-w-xs rounded-md border border-border bg-card px-2 py-1 text-[11px] text-muted shadow-lg">
+            <div
+              className={clsx(
+                "max-w-xs rounded-md px-2 py-1 text-[11px]",
+                "border border-border",
+                "bg-card text-text",
+                "shadow-md",
+                "animate-in fade-in zoom-in-95 duration-150"
+              )}
+            >
               {content}
             </div>
 
@@ -146,6 +150,5 @@ export default function Tooltip({
         : null}
 
     </span>
-
   );
 }

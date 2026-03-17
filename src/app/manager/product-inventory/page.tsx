@@ -170,7 +170,7 @@ export default function ProductInventoryPage() {
             label={dict.inStock}
             value={overview?.inStock ?? "-"}
             icon={<Boxes className="h-4 w-4 text-muted" />}
-            accent="emerald"
+            accent="success"
             helpText={dict.inStockHelp}
             sub={dict.inStockSub}
           />
@@ -179,7 +179,7 @@ export default function ProductInventoryPage() {
             label={dict.lowStock}
             value={overview?.lowStock ?? "-"}
             icon={<AlertTriangle className="h-4 w-4 text-muted" />}
-            accent="amber"
+            accent="warning"
             helpText={dict.lowStockHelp}
             sub={dict.lowStockSub}
           />
@@ -188,7 +188,7 @@ export default function ProductInventoryPage() {
             label={dict.outOfStock}
             value={overview?.outOfStock ?? "-"}
             icon={<AlertTriangle className="h-4 w-4 text-muted" />}
-            accent="red"
+            accent="danger"
             helpText={dict.outOfStockHelp}
             sub={dict.outOfStockSub}
           />
@@ -201,7 +201,7 @@ export default function ProductInventoryPage() {
                 : "-"
             }
             icon={<DollarSign className="h-4 w-4 text-muted" />}
-            accent="blue"
+            accent="primary"
             helpText={dict.inventoryValueHelp}
             sub={dict.inventoryValueSub}
           />

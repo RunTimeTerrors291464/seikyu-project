@@ -80,12 +80,14 @@ export function Sidebar() {
   ];
 
   function usePersistedOpen(id: string, initial: boolean) {
-    const [open, setOpen] = useState(initial);
+    const [open, setOpen] = useState(() => {
+      if (typeof window === "undefined") return initial;
 
-    useEffect(() => {
       const raw = localStorage.getItem(`sidebar-open:${id}`);
-      if (raw !== null) setOpen(raw === "1");
-    }, [id]);
+      if (raw !== null) return raw === "1";
+
+      return initial;
+    });
 
     useEffect(() => {
       try {
@@ -108,16 +110,20 @@ export function Sidebar() {
     );
 
     useEffect(() => {
-      if (childActive && !open) {
-        setOpen(true);
-      }
+      if (childActive && !open) setOpen(true);
     }, [childActive, open, setOpen]);
 
     return (
       <div>
+        {/* GROUP HEADER */}
         <button
-          className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-text hover:bg-bg"
+          className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-text transition-colors hover:bg-hover"
           onClick={() => {
+            if (!hasChildren) return;
+
+            // prevent closing if current route is inside
+            if (childActive && open) return;
+
             if (hasChildren) setOpen((v) => !v);
           }}
           aria-expanded={open}
@@ -139,6 +145,7 @@ export function Sidebar() {
           )}
         </button>
 
+        {/* CHILD ITEMS */}
         {hasChildren && open && (
           <div className="relative ml-3 mt-1 pl-3">
             <div className="absolute left-0 top-2 bottom-2 w-px bg-border" />
@@ -150,11 +157,11 @@ export function Sidebar() {
                 const content = (
                   <div
                     className={clsx(
-                      "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+                      "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-all duration-150 hover:translate-x-[2px]",
                       item.disabled && "opacity-50 cursor-not-allowed",
                       active
-                        ? "bg-card text-text"
-                        : "text-muted hover:bg-bg"
+                        ? "bg-active text-text font-medium"
+                        : "text-muted hover:bg-hover hover:text-text"
                     )}
                   >
                     {/* connector curve */}
@@ -184,6 +191,7 @@ export function Sidebar() {
       </div>
     );
   }
+
   return (
     <aside className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
       <div className="flex h-screen min-w-0 flex-col gap-6 p-4">
@@ -198,7 +206,6 @@ export function Sidebar() {
               <span className="block rounded-sm" />
             </div>
           </div>
-
           <span>{dict.inventorySystem}</span>
         </div>
 
@@ -223,7 +230,7 @@ export function Sidebar() {
 
             <button
               aria-label={dict.openProfile}
-              className="ml-auto rounded-md p-1 text-muted hover:bg-card"
+              className="ml-auto rounded-md p-1 text-muted transition-colors hover:bg-hover hover:text-text"
             >
               <ExternalLink className="h-4 w-4" />
             </button>

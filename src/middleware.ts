@@ -1,5 +1,4 @@
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get("access_token")?.value;
@@ -8,13 +7,14 @@ export function middleware(req: NextRequest) {
 
   const isAuthPage =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/forgot-password");
+    pathname.startsWith("/register");
 
+  // Not logged in → block everything
   if (!token && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // Already logged in → block login page
   if (token && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }

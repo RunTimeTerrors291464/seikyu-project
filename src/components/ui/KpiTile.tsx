@@ -1,15 +1,16 @@
 "use client";
 
 import Tooltip from "@/components/ui/ToolTips";
+import clsx from "clsx";
 import { Info } from "lucide-react";
 import { ReactNode } from "react";
 
 type Accent =
   | "neutral"
-  | "emerald"
-  | "amber"
-  | "red"
-  | "blue";
+  | "success"
+  | "warning"
+  | "danger"
+  | "primary";
 
 type Delta = {
   value: number;
@@ -37,31 +38,41 @@ export default function KpiTile({
   icon,
   accent = "neutral",
   delta,
-  helpText
+  helpText,
 }: Props) {
 
+  /* ───────── Accent (SYSTEM TOKENS) ───────── */
+
   const accentStyles = {
-    neutral: "",
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    red: "text-red-600",
-    blue: "text-blue-600"
+    neutral: "text-text",
+    success: "text-success",
+    warning: "text-warning",
+    danger: "text-danger",
+    primary: "text-primary",
   };
+
+  /* ───────── Delta ───────── */
 
   const deltaStyles = {
     increase:
-      "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20",
+      "text-success bg-success",
 
     decrease:
-      "text-red-600 bg-red-50 dark:bg-red-900/20",
+      "text-danger bg-danger",
 
     neutral:
-      "text-muted bg-muted/20"
+      "text-muted bg-hover",
   };
 
   return (
 
-    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+    <div
+      className={clsx(
+        "rounded-lg border border-border bg-card p-4",
+        "transition-all duration-150",
+        "hover:bg-hover"
+      )}
+    >
 
       {/* HEADER */}
 
@@ -69,23 +80,16 @@ export default function KpiTile({
 
         <div className="flex items-center gap-2 text-xs text-muted">
 
-          {icon}
+          {icon && <span className="text-text">{icon}</span>}
 
-          <span>{label}</span>
+          <span className="text-text">{label}</span>
 
         </div>
 
         {helpText && (
 
           <Tooltip content={helpText}>
-
-            <button
-              type="button"
-              className="text-muted hover:text-text"
-            >
-              <Info className="h-3.5 w-3.5" />
-            </button>
-
+            <Info className="h-3.5 w-3.5" />
           </Tooltip>
 
         )}
@@ -94,10 +98,13 @@ export default function KpiTile({
 
       {/* VALUE */}
 
-      <div className="mt-2 flex items-center justify-between">
+      <div className="flex items-center justify-between">
 
         <div
-          className={`text-lg font-semibold ${accentStyles[accent]}`}
+          className={clsx(
+            "mt-1 text-2xl font-semibold",
+            accentStyles[accent]
+          )}
         >
           {value}
         </div>
@@ -105,7 +112,10 @@ export default function KpiTile({
         {delta && (
 
           <div
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${deltaStyles[delta.type]}`}
+            className={clsx(
+              "rounded-full px-2 py-0.5 text-xs font-medium",
+              deltaStyles[delta.type]
+            )}
           >
             {delta.value > 0 ? "+" : ""}
             {delta.value}%

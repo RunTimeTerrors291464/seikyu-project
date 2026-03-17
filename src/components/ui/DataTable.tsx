@@ -6,7 +6,6 @@ import React from "react";
 
 export type SortDirection = "asc" | "desc";
 
-
 export type Column<T> = {
   id?: string;
   header: string;
@@ -41,8 +40,6 @@ export type DataTableProps<T> = {
 
   maxHeight?: string | "fill";
 
-  /* sorting */
-
   sortField?: keyof T | string;
   sortDirection?: SortDirection;
 
@@ -57,7 +54,6 @@ export default function DataTable<T>({
   className,
   emptyMessage = "No records",
   maxHeight,
-
   sortField,
   sortDirection,
   onSort,
@@ -67,7 +63,7 @@ export default function DataTable<T>({
   return (
     <div
       className={clsx(
-        "w-full overflow-auto rounded-lg border border-border bg-card",
+        "w-full overflow-auto rounded-lg border-border bg-card",
         isFill && "h-full",
         className
       )}
@@ -76,7 +72,6 @@ export default function DataTable<T>({
       <table className="w-full table-fixed border-collapse text-sm">
 
         {/* HEADER */}
-
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border">
 
@@ -88,22 +83,23 @@ export default function DataTable<T>({
 
             {columns.map((c, idx) => {
               const isSorted =
-                sortField && c.field && sortField === c.field;
+                sortField && (c.field ?? c.id) === sortField;
 
               return (
                 <th
                   key={c.id ?? c.header ?? idx}
                   style={c.width ? { width: c.width } : undefined}
                   className={clsx(
-                    "px-2 py-2 font-medium text-muted",
-                    c.sortable && "cursor-pointer select-none hover:text-text",
+                    "px-2 py-2 font-medium text-muted transition-colors",
+                    c.sortable &&
+                    "cursor-pointer select-none hover:bg-hover hover:text-text",
+                    isSorted && "text-text",
                     c.thClassName
                   )}
                   onClick={() => {
                     if (!c.sortable || !onSort) return;
 
-                    const key = (c.field ?? c.id);
-
+                    const key = c.field ?? c.id;
                     if (key) onSort(key as any);
                   }}
                 >
@@ -117,10 +113,10 @@ export default function DataTable<T>({
 
                     <span>{c.header}</span>
 
-                    {c.sortable && sortField === (c.field ?? c.id) && (
+                    {c.sortable && isSorted && (
                       sortDirection === "asc"
-                        ? <ArrowUp className="h-3 w-3" />
-                        : <ArrowDown className="h-3 w-3" />
+                        ? <ArrowUp className="h-3 w-3 text-text" />
+                        : <ArrowDown className="h-3 w-3 text-text" />
                     )}
 
                   </span>
@@ -132,7 +128,6 @@ export default function DataTable<T>({
         </thead>
 
         {/* BODY */}
-
         <tbody>
 
           {data.length === 0 ? (
@@ -146,7 +141,6 @@ export default function DataTable<T>({
             </tr>
           ) : (
             data.map((row, rIdx) => {
-
               const rid = getRowId
                 ? getRowId(row, rIdx)
                 : rIdx;
@@ -154,7 +148,10 @@ export default function DataTable<T>({
               return (
                 <tr
                   key={rid}
-                  className="h-10 border-b border-border last:border-0 hover:bg-border"
+                  className={clsx(
+                    "h-10 border-b border-border last:border-0 transition-colors",
+                    "hover:bg-hover"
+                  )}
                 >
 
                   {showIndex && (
@@ -164,7 +161,6 @@ export default function DataTable<T>({
                   )}
 
                   {columns.map((c, cIdx) => {
-
                     const content = c.accessor
                       ? c.accessor(row, rIdx)
                       : c.field
@@ -188,7 +184,6 @@ export default function DataTable<T>({
                         {content}
                       </td>
                     );
-
                   })}
 
                 </tr>

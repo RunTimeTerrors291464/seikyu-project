@@ -11,14 +11,12 @@ type RuleOption = {
 type RuleInputProps = {
   options: RuleOption[];
 
-  /* Controlled props */
   value?: string;
   rule?: string;
 
   onChange?: (data: { rule: string; value: string }) => void;
 
   placeholder?: string;
-
   clearable?: boolean;
 };
 
@@ -28,10 +26,8 @@ export default function RuleInput({
   rule,
   onChange,
   placeholder = "Search…",
-  clearable = true
+  clearable = true,
 }: RuleInputProps) {
-
-  /* ───────────────── State ───────────────── */
 
   const [open, setOpen] = useState(false);
 
@@ -46,21 +42,17 @@ export default function RuleInput({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /* ───────────────── Sync with parent (important) ───────────────── */
+  /* ───────── Sync ───────── */
 
   useEffect(() => {
-    if (rule !== undefined) {
-      setSelectedRule(rule);
-    }
+    if (rule !== undefined) setSelectedRule(rule);
   }, [rule]);
 
   useEffect(() => {
-    if (value !== undefined) {
-      setInputValue(value);
-    }
+    if (value !== undefined) setInputValue(value);
   }, [value]);
 
-  /* ───────────────── Close on outside click ───────────────── */
+  /* ───────── Outside click ───────── */
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -73,57 +65,50 @@ export default function RuleInput({
     }
 
     document.addEventListener("mousedown", handleClickOutside);
-
     return () =>
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* ───────────────── Handlers ───────────────── */
+  /* ───────── Handlers ───────── */
 
   function handleSelect(option: RuleOption) {
-
     setSelectedRule(option.label);
     setOpen(false);
 
     onChange?.({
       rule: option.label,
-      value: inputValue
+      value: inputValue,
     });
 
     inputRef.current?.focus();
   }
 
   function handleInput(val: string) {
-
     setInputValue(val);
 
     onChange?.({
       rule: selectedRule,
-      value: val
+      value: val,
     });
   }
 
   function handleClear() {
-
     setInputValue("");
 
     onChange?.({
       rule: selectedRule,
-      value: ""
+      value: "",
     });
 
     inputRef.current?.focus();
   }
 
-  /* ───────────────── Derived ───────────────── */
+  /* ───────── Derived ───────── */
 
   const currentIcon =
     options.find(o => o.label === selectedRule)?.icon;
 
-  /* ───────────────── UI ───────────────── */
+  /* ───────── UI ───────── */
 
   return (
     <div
@@ -138,15 +123,15 @@ export default function RuleInput({
         <button
           type="button"
           onClick={() => setOpen(v => !v)}
-          className="inline-flex items-center gap-2 px-2.5 py-1.5 text-muted hover:bg-border cursor-pointer"
+          className="inline-flex items-center gap-2 px-2.5 py-1.5 text-muted
+          transition-colors
+          hover:bg-hover hover:text-text
+          active:bg-active
+          cursor-pointer"
         >
-
           {currentIcon}
-
           <span>{selectedRule}</span>
-
           <ChevronDown className="h-3 w-3 text-muted" />
-
         </button>
 
         {/* Divider */}
@@ -161,25 +146,26 @@ export default function RuleInput({
             ref={inputRef}
             type="text"
             value={inputValue}
-            onChange={(e) =>
-              handleInput(e.target.value)
-            }
+            onChange={(e) => handleInput(e.target.value)}
             placeholder={placeholder}
             className="flex-1 bg-card px-3 py-2 text-xs text-text outline-none placeholder:text-muted"
           />
 
-          {/* Clear button */}
+          {/* Clear */}
 
           {clearable && inputValue && (
-
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-1.5 p-1 text-muted hover:text-text"
+              className="absolute right-1.5 p-1
+              text-muted
+              transition-colors
+              hover:text-text
+              active:opacity-70
+              cursor-pointer"
             >
               <X className="h-3 w-3" />
             </button>
-
           )}
 
         </div>
@@ -189,7 +175,6 @@ export default function RuleInput({
       {/* Dropdown */}
 
       {open && (
-
         <ul className="absolute left-0 top-full z-20 mt-1 w-44 rounded-md border border-border bg-card shadow-md">
 
           {options.map(option => (
@@ -197,23 +182,23 @@ export default function RuleInput({
             <li
               key={option.label}
               onClick={() => handleSelect(option)}
-              className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-text hover:bg-border"
+              className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted
+              transition-colors
+              hover:bg-hover
+              active:bg-active
+              cursor-pointer"
             >
-
               {option.icon && (
-                <span className="h-4 w-4">
+                <span className="h-3 w-3 text-muted">
                   {option.icon}
                 </span>
               )}
-
               {option.label}
-
             </li>
 
           ))}
 
         </ul>
-
       )}
 
     </div>
