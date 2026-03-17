@@ -63,7 +63,7 @@ export default function LoginForm() {
       console.error("LOGIN FAILED", err);
 
       // prevent page navigation side effects
-      if (err?.response?.status === 401) {
+      if (err?.response?.status === 401 || err?.response?.status === 404) {
         setAuthError(dict.invalidCredentials);
       } else {
         setAuthError(dict.somethingWentWrong ?? "Something went wrong");

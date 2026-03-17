@@ -1,21 +1,21 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-// Middleware runs before the request reaches the page
 export function middleware(req: NextRequest) {
-  // Get token from cookies
   const token = req.cookies.get("access_token")?.value;
 
-  const isDashboard = req.nextUrl.pathname.startsWith("/dashboard");
-  const isLogin = req.nextUrl.pathname.startsWith("/login");
+  const { pathname } = req.nextUrl;
 
-  // Not logged in → redirect to login
-  if (!token && isDashboard) {
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password");
+
+  if (!token && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Already logged in → prevent login page
-  if (token && isLogin) {
+  if (token && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -23,8 +23,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/login",
-  ],
+  matcher: ["/((?!_next|api|favicon.ico).*)"],
 };

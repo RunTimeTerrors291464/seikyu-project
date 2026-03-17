@@ -2,9 +2,61 @@ import api from "@/services/api-client";
 import { ProductOverview } from "@features/products/types/product.overview";
 import type { ProductListResponse } from "@features/products/types/productApi";
 
-/**
- * Query parameters used for fetching products
- */
+
+export type ProductDetailResponse = {
+  id: string;
+  sku: string;
+  productNames: string[];
+
+  productUnitId: string;
+  productUnitName: string;
+
+  productDescription: string;
+
+  importPrice: number;
+  sellingPrice: number;
+
+  reorderThreshold: number;
+  inventoryStock: number;
+
+  active: boolean;
+  stockStatus: number;
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ============================= */
+/* API CALL */
+/* ============================= */
+
+export async function getProductById(id: string) {
+
+  console.log("PRODUCT SERVICE → getProductById", id);
+
+  try {
+    const res = await api.get<ProductDetailResponse>(
+      `/products/${id}`
+    );
+
+    console.log("PRODUCT SERVICE → success", res.data);
+
+    return res.data;
+
+  } catch (error: any) {
+
+    console.error(
+      "PRODUCT SERVICE → failed",
+      error.response?.data
+    );
+
+    throw error;
+  }
+}
+
+/*
+  Query parameters used for fetching products
+*/
 export type ProductQuery = {
   page?: number;
   limit?: number;
@@ -28,11 +80,11 @@ export type ProductQuery = {
   stockStatus?: "0" | "1" | "2" | "all";
 };
 
-/**
- * Remove empty query params before sending request
- * This prevents sending useless values like:
- * undefined, null, "", or "all"
- */
+/*
+  Remove empty query params before sending request
+  This prevents sending useless values like:
+  undefined, null, "", or "all"
+*/
 function cleanParams(params: ProductQuery) {
   const cleaned: Record<string, any> = {};
 
@@ -53,13 +105,13 @@ function cleanParams(params: ProductQuery) {
   return cleaned;
 }
 
-/**
- * Product API Service
- */
+/*
+  Product API Service
+*/
 export const productService = {
-  /**
-   * Fetch product list with filters, pagination, and sorting
-   */
+  /*
+  Fetch product list with filters, pagination, and sorting
+  */
   async getProducts(params: ProductQuery) {
 
     // Debug: check what parameters are received
@@ -98,9 +150,9 @@ export const productService = {
   }
 };
 
-/**
- * Fetch product overview (statistics / dashboard data)
- */
+/*
+  Fetch product overview (statistics / dashboard data)
+*/
 export async function getProductOverview(): Promise<ProductOverview> {
 
   // Debug: confirm function execution

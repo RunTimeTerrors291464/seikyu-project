@@ -65,5 +65,13 @@
   "lowStockSub": "needs restock soon",
   "outOfStockSub": "requires immediate restock",
   "inventoryValueSub": "at import price",
-  "resetfilter": "Reset filter"
+  "resetfilter": "Reset filter",
+  "productDetails": "Product Details",
+  "currentStock": "Current Stock",
+  "history": "History",
+  "created": "Created",
+  "lastUpdated": "Last Updated",
+  "lastTransaction": "Last Transaction",
+  "loading": "Loading...",
+  "notFound": "Product not found"
 }
