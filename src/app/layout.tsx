@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { DictProvider } from "@/lib/lang/DictProvider";
 import { getDictionary, type Lang } from "@/lib/lang/i18n";
 
+import AuthProvider from "@/components/layout/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -40,9 +41,13 @@ export default async function RootLayout({
 
           <DictProvider dict={dict}>
 
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
+            <AuthProvider>
+
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+
+            </AuthProvider>
 
           </DictProvider>
 

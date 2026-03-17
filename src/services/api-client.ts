@@ -110,6 +110,9 @@ apiClient.interceptors.response.use(
 
         localStorage.setItem("access_token", newAccessToken);
 
+        // sync cookie
+        document.cookie = `access_token=${newAccessToken}; path=/`;
+
         onRefreshed(newAccessToken);
 
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

@@ -59,10 +59,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // Remove token used by API client
       localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
 
       // Delete cookie by expiring it
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+      window.location.href = "/login";
     }
 
     // Reset store state

@@ -1,7 +1,7 @@
 "use client";
 
 import { login } from "@/services/auth.service";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/stores/auth.store";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
