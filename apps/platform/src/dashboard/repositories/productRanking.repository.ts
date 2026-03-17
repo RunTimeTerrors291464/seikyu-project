@@ -8,6 +8,8 @@ import Redis from 'ioredis';
 
 // Import entities.
 import { ProductRankingDailyEntity } from '../entities/productRankingDaily.entity';
+import { ProductRankingMonthlyEntity } from '../entities/productRankingMonthly.entity';
+import { ProductRankingYearlyEntity } from '../entities/productRankingYearly.entity';
 
 // Import enum.
 import { InvoiceType } from '@app/common/enums/invoiceType.enum';
@@ -24,12 +26,16 @@ import { ProductRankingMapper } from '@app/common/mappers/platform/productRankin
 export class ProductRankingRepository {
     constructor(
         @InjectRepository(ProductRankingDailyEntity) private readonly productRankingDailyRepository: Repository<ProductRankingDailyEntity>,
+        @InjectRepository(ProductRankingMonthlyEntity) private readonly productRankingMonthlyRepository: Repository<ProductRankingMonthlyEntity>,
+        @InjectRepository(ProductRankingYearlyEntity) private readonly productRankingYearlyRepository: Repository<ProductRankingYearlyEntity>,
         @InjectRedis() private readonly redisClient: Redis,
         private readonly productRankingMapper: ProductRankingMapper,
     ) { }
 
     // --- Private helper variables ---
-     private readonly ProductRankingDailyPrefix: string = 'PRD:';
+    private readonly ProductRankingDailyPrefix: string = 'PRD:';
+    private readonly ProductRankingMonthlyPrefix: string = 'PRM:';
+    private readonly ProductRankingYearlyPrefix: string = 'PRY:';
 
     // --- Helper methods ---
     // Get the current date.
@@ -42,13 +48,28 @@ export class ProductRankingRepository {
         });
     }
 
-    // Set the prefix for product ranking cache in Redis (base cache for top 100).
-    private getProductRankingCacheKey(invoiceType: InvoiceType, startDate: Date, endDate: Date): string {
-        return `${this.ProductRankingDailyPrefix}${invoiceType}:${startDate.getTime()}-${endDate.getTime()}:top100`;
+    // Set the prefix for product ranking cache in Redis.
+    private getProductRankingDailyCacheKey(invoiceType: InvoiceType, startDate: Date, endDate: Date): string {
+        return `${this.ProductRankingDailyPrefix}${invoiceType}:${startDate.getTime()}-${endDate.getTime()}`;
+    }
+
+    // Set the cache key for product ranking monthly in Redis.
+    private getProductRankingMonthlyCacheKey(invoiceType: InvoiceType, month: number, year: number): string {
+        return `${this.ProductRankingMonthlyPrefix}${invoiceType}:${month}-${year}`;
+    }
+
+    // Set the cache key for product ranking yearly in Redis.
+    private getProductRankingYearlyCacheKey(invoiceType: InvoiceType, year: number): string {
+        return `${this.ProductRankingYearlyPrefix}${invoiceType}:${year}`;
     }
 
     // Cache top 100 products ranking daily.
     async cacheTop100ProductsDaily(invoiceType: InvoiceType, day: number, month: number, year: number): Promise<boolean> {
+
+        // Get the cache key for this invoice type and date.
+        const cacheKey = this.getProductRankingDailyCacheKey(invoiceType, new Date(year, month - 1, day), new Date(year, month - 1, day));
+
+        // Get top 100 products for the given invoice type and date.
         const queryBuilder = this.productRankingDailyRepository
             .createQueryBuilder('ranking')
             .leftJoinAndSelect('ranking.product', 'product')
@@ -69,15 +90,119 @@ export class ProductRankingRepository {
             data,
         };
 
+        // Remove the existing cache for this key if exists.
+        if (await this.redisClient.exists(cacheKey)) await this.redisClient.del(cacheKey);
+
         // Cache the top 100 products in Redis for 30 minutes.
-        const cacheKey = this.getProductRankingCacheKey(invoiceType, new Date(year, month - 1, day), new Date(year, month - 1, day));
         await this.redisClient.setex(cacheKey, 30 * 60, JSON.stringify(response));
 
         return true;
     }
 
+    // Cache top 100 products ranking monthly.
+    async cacheTop100ProductsMonthly(invoiceType: InvoiceType, month: number, year: number): Promise<boolean> {
+
+        // Get the cache key for this invoice type and month.
+        const cacheKey = this.getProductRankingMonthlyCacheKey(invoiceType, month, year);
+
+        const queryBuilder = this.productRankingMonthlyRepository
+            .createQueryBuilder('ranking')
+            .leftJoinAndSelect('ranking.product', 'product')
+            .leftJoinAndSelect('product.productNames', 'productName')
+            .andWhere('ranking.invoiceType = :invoiceType', { invoiceType })
+            .andWhere('ranking.month = :month AND ranking.year = :year', { month, year })
+            .orderBy('ranking.quantity', 'DESC')
+            .take(100);
+
+        const products = await queryBuilder.getMany();
+        const data: ProductRankingItemResponseDto[] = products.map((item) => ({
+            id: item.id,
+            product: {
+                id: item.product?.id,
+                sku: item.product?.sku,
+                name: item.product?.productNames && item.product.productNames.length > 0
+                    ? item.product.productNames[0].name
+                    : 'N/A',
+            },
+            quantity: item.quantity,
+            totalPrice: Number(item.revenue),
+            invoiceType: item.invoiceType,
+            day: 1,
+            month: item.month,
+            year: item.year,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+        }));
+
+        const response: GetListOfProductRankingResponseDto = {
+            total: data.length,
+            page: 1,
+            limit: 100,
+            data,
+        };
+
+        // Remove the existing cache for this key if exists.
+        if (await this.redisClient.exists(cacheKey)) await this.redisClient.del(cacheKey);
+
+        // Cache monthly top 100 for 24 hours.
+        await this.redisClient.setex(cacheKey, 24 * 60 * 60, JSON.stringify(response));
+
+        return true;
+    }
+
+    // Cache top 100 products ranking yearly.
+    async cacheTop100ProductsYearly(invoiceType: InvoiceType, year: number): Promise<boolean> {
+
+        // Get the cache key for this invoice type and year.
+        const cacheKey = this.getProductRankingYearlyCacheKey(invoiceType, year);
+
+        const queryBuilder = this.productRankingYearlyRepository
+            .createQueryBuilder('ranking')
+            .leftJoinAndSelect('ranking.product', 'product')
+            .leftJoinAndSelect('product.productNames', 'productName')
+            .andWhere('ranking.invoiceType = :invoiceType', { invoiceType })
+            .andWhere('ranking.year = :year', { year })
+            .orderBy('ranking.quantity', 'DESC')
+            .take(100);
+
+        const products = await queryBuilder.getMany();
+        const data: ProductRankingItemResponseDto[] = products.map((item) => ({
+            id: item.id,
+            product: {
+                id: item.product?.id,
+                sku: item.product?.sku,
+                name: item.product?.productNames && item.product.productNames.length > 0
+                    ? item.product.productNames[0].name
+                    : 'N/A',
+            },
+            quantity: item.quantity,
+            totalPrice: Number(item.revenue),
+            invoiceType: item.invoiceType,
+            day: 1,
+            month: 1,
+            year: item.year,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+        }));
+
+        const response: GetListOfProductRankingResponseDto = {
+            total: data.length,
+            page: 1,
+            limit: 100,
+            data,
+        };
+
+        // Remove the existing cache for this key if exists.
+        if (await this.redisClient.exists(cacheKey)) await this.redisClient.del(cacheKey);
+
+        // Cache yearly top 100 for 24 hours.
+        await this.redisClient.setex(cacheKey, 24 * 60 * 60, JSON.stringify(response));
+
+        return true;
+    }
+
     // --- API methods ---
-    // Store the product rankign daily data.
+    // Store the product ranking daily data.
     async storeProductRankingDaily(transactionManager: any, productId: string, invoiceType: InvoiceType, quantity: number, totalPrice: number) {
         
         // Get the current date.
@@ -112,27 +237,127 @@ export class ProductRankingRepository {
         }
     }
 
+    // Store the product ranking monthly data using the daily data.
+    async storeProductRankingMonthly(invoiceType: InvoiceType, day: number, month: number, year: number): Promise<void> {
+        await this.productRankingDailyRepository.manager.transaction(async (transactionalManager) => {
+
+            // Get all daily product rankings for the given invoice type and date.
+            const dailyProducts = await transactionalManager.find(ProductRankingDailyEntity, {
+                where: { invoiceType, day, month, year },
+                relations: ['product'],
+            });
+            if (dailyProducts.length === 0) return;
+
+            // For each daily product ranking, update or insert the monthly ranking.
+            for (const dailyProduct of dailyProducts) {
+
+                const existingMonthlyRecord = await transactionalManager.findOne(ProductRankingMonthlyEntity, {
+                    where: {
+                        product: { id: dailyProduct.product.id },
+                        invoiceType,
+                        month,
+                        year,
+                    },
+                });
+
+                let newMonthlyRecord: ProductRankingMonthlyEntity;
+
+                if (existingMonthlyRecord) {
+                    existingMonthlyRecord.quantity += dailyProduct.quantity;
+                    existingMonthlyRecord.revenue = Number(existingMonthlyRecord.revenue) + Number(dailyProduct.totalPrice);
+                    await transactionalManager.save(ProductRankingMonthlyEntity, existingMonthlyRecord);
+                    continue;
+                } 
+                else {
+                    newMonthlyRecord = this.productRankingMonthlyRepository.create({
+                        product: { id: dailyProduct.product.id },
+                        quantity: dailyProduct.quantity,
+                        revenue: Number(dailyProduct.totalPrice),
+                        invoiceType,
+                        month,
+                        year,
+                    });
+                }
+
+                await transactionalManager.save(ProductRankingMonthlyEntity, newMonthlyRecord);
+            }
+        });
+
+        // Refresh monthly cache after storing is completed.
+        await this.cacheTop100ProductsMonthly(invoiceType, month, year);
+    }
+
+    // Store the product ranking yearly data using the monthly data.
+    async storeProductRankingYearly(invoiceType: InvoiceType, month: number, year: number): Promise<void> {
+        await this.productRankingMonthlyRepository.manager.transaction(async (transactionalManager) => {
+
+            // Get all monthly product rankings for the given invoice type and month.
+            const monthlyProducts = await transactionalManager.find(ProductRankingMonthlyEntity, {
+                where: { invoiceType, month, year },
+                relations: ['product'],
+            });
+            if (monthlyProducts.length === 0) return;
+
+            // For each monthly product ranking, update or insert the yearly ranking.
+            for (const monthlyProduct of monthlyProducts) {
+
+                const existingYearlyRecord = await transactionalManager.findOne(ProductRankingYearlyEntity, {
+                    where: {
+                        product: { id: monthlyProduct.product.id },
+                        invoiceType,
+                        year,
+                    },
+                });
+
+                let newYearlyRecord: ProductRankingYearlyEntity;
+
+                if (existingYearlyRecord) {
+                    existingYearlyRecord.quantity += monthlyProduct.quantity;
+                    existingYearlyRecord.revenue = Number(existingYearlyRecord.revenue) + Number(monthlyProduct.revenue);
+                    await transactionalManager.save(ProductRankingYearlyEntity, existingYearlyRecord);
+                    continue;
+                }
+                else {
+                    newYearlyRecord = this.productRankingYearlyRepository.create({
+                        product: { id: monthlyProduct.product.id },
+                        quantity: monthlyProduct.quantity,
+                        revenue: Number(monthlyProduct.revenue),
+                        invoiceType,
+                        year,
+                    });
+                }
+
+                await transactionalManager.save(ProductRankingYearlyEntity, newYearlyRecord);
+            }
+        });
+
+        // Refresh yearly cache after storing is completed.
+        await this.cacheTop100ProductsYearly(invoiceType, year);
+    }
+
     // Get a list of product ranking daily.
     async getListOfProductRankingDaily(dto: GetListOfProductRankingRequestDto): Promise<GetListOfProductRankingResponseDto> {
         const { page = 1, limit = 10, search, sortOrder = 'desc', invoiceType, startDate } = dto;
-        const cacheKey = this.getProductRankingCacheKey(invoiceType, new Date(startDate), new Date(startDate));
+        const cacheKey = this.getProductRankingDailyCacheKey(invoiceType, new Date(startDate), new Date(startDate));
         let allProducts: ProductRankingItemResponseDto[];
 
-        // Get cached result if exists. If not, query database.
+        // Get cached result if exists. 
         const cachedResult = await this.redisClient.get(cacheKey);
         if (cachedResult) {
             const cachedResponse: GetListOfProductRankingResponseDto = JSON.parse(cachedResult);
             allProducts = cachedResponse.data;
 
             // If cached result, apply search filter in memory.
-            if (cachedResult && search) {
+            if (search) {
                 allProducts = allProducts.filter(product => product.product?.name.toLowerCase().includes(search.toLowerCase()));
             }
 
             // Apply sort order if different from cached order.
-            if (cachedResult && sortOrder === 'asc') allProducts = allProducts.reverse();
+            if (sortOrder === 'asc') allProducts = allProducts.reverse();
+        }
 
-        } else {
+        // If there is no cached, query the database.
+        else {
             // Query database for top 100 products with search and sort.
             const queryBuilder = this.productRankingDailyRepository
                 .createQueryBuilder('ranking')
@@ -170,6 +395,147 @@ export class ProductRankingRepository {
         }
 
         // Apply pagination on products.
+        const total = allProducts.length;
+        const startIndex = (page - 1) * limit;
+        const data = allProducts.slice(startIndex, startIndex + limit);
+
+        return { total, page, limit, data };
+    }
+
+    // Get a list of product ranking monthly.
+    async getListOfProductRankingMonthly(dto: GetListOfProductRankingRequestDto): Promise<GetListOfProductRankingResponseDto> {
+        const { page = 1, limit = 10, search, sortOrder = 'desc', invoiceType, startDate } = dto;
+
+        const start = new Date(startDate);
+        const month = start.getMonth() + 1;
+        const year = start.getFullYear();
+        const cacheKey = this.getProductRankingMonthlyCacheKey(invoiceType, month, year);
+
+        let allProducts: ProductRankingItemResponseDto[];
+
+        // Get cached result if exists.
+        const cachedResult = await this.redisClient.get(cacheKey);
+        if (cachedResult) {
+            const cachedResponse: GetListOfProductRankingResponseDto = JSON.parse(cachedResult);
+            allProducts = cachedResponse.data;
+
+            if (search) {
+                allProducts = allProducts.filter(product => product.product?.name.toLowerCase().includes(search.toLowerCase()));
+            }
+
+            if (sortOrder === 'asc') allProducts = allProducts.reverse();
+        } 
+
+        // If there is no cached, query the database.
+        else {
+            const queryBuilder = this.productRankingMonthlyRepository
+                .createQueryBuilder('ranking')
+                .leftJoinAndSelect('ranking.product', 'product')
+                .leftJoinAndSelect('product.productNames', 'productName')
+                .andWhere('ranking.month = :month AND ranking.year = :year', { month, year });
+
+            if (search) {
+                queryBuilder.andWhere('productName.name ILIKE :search', { search: `%${search}%` });
+            }
+
+            if (invoiceType) {
+                queryBuilder.andWhere('ranking.invoiceType = :invoiceType', { invoiceType });
+            }
+
+            queryBuilder.orderBy('ranking.quantity', sortOrder.toUpperCase() as 'ASC' | 'DESC');
+            queryBuilder.take(100);
+
+            const products = await queryBuilder.getMany();
+            allProducts = products.map((item) => ({
+                id: item.id,
+                product: {
+                    id: item.product?.id,
+                    sku: item.product?.sku,
+                    name: item.product?.productNames && item.product.productNames.length > 0
+                        ? item.product.productNames[0].name
+                        : 'N/A',
+                },
+                quantity: item.quantity,
+                totalPrice: Number(item.revenue),
+                invoiceType: item.invoiceType,
+                day: 1,
+                month: item.month,
+                year: item.year,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+            }));
+        }
+
+        const total = allProducts.length;
+        const startIndex = (page - 1) * limit;
+        const data = allProducts.slice(startIndex, startIndex + limit);
+
+        return { total, page, limit, data };
+    }
+
+    // Get a list of product ranking yearly.
+    async getListOfProductRankingYearly(dto: GetListOfProductRankingRequestDto): Promise<GetListOfProductRankingResponseDto> {
+        const { page = 1, limit = 10, search, sortOrder = 'desc', invoiceType, startDate } = dto;
+
+        const start = new Date(startDate);
+        const year = start.getFullYear();
+        const cacheKey = this.getProductRankingYearlyCacheKey(invoiceType, year);
+
+        let allProducts: ProductRankingItemResponseDto[];
+
+        // Get cached result if exists.
+        const cachedResult = await this.redisClient.get(cacheKey);
+        if (cachedResult) {
+            const cachedResponse: GetListOfProductRankingResponseDto = JSON.parse(cachedResult);
+            allProducts = cachedResponse.data;
+
+            if (search) {
+                allProducts = allProducts.filter(product => product.product?.name.toLowerCase().includes(search.toLowerCase()));
+            }
+
+            if (sortOrder === 'asc') allProducts = allProducts.reverse();
+        }
+
+        // If there is no cached, query the database.
+        else {
+            const queryBuilder = this.productRankingYearlyRepository
+                .createQueryBuilder('ranking')
+                .leftJoinAndSelect('ranking.product', 'product')
+                .leftJoinAndSelect('product.productNames', 'productName')
+                .andWhere('ranking.year = :year', { year });
+
+            if (search) {
+                queryBuilder.andWhere('productName.name ILIKE :search', { search: `%${search}%` });
+            }
+
+            if (invoiceType) {
+                queryBuilder.andWhere('ranking.invoiceType = :invoiceType', { invoiceType });
+            }
+
+            queryBuilder.orderBy('ranking.quantity', sortOrder.toUpperCase() as 'ASC' | 'DESC');
+            queryBuilder.take(100);
+
+            const products = await queryBuilder.getMany();
+            allProducts = products.map((item) => ({
+                id: item.id,
+                product: {
+                    id: item.product?.id,
+                    sku: item.product?.sku,
+                    name: item.product?.productNames && item.product.productNames.length > 0
+                        ? item.product.productNames[0].name
+                        : 'N/A',
+                },
+                quantity: item.quantity,
+                totalPrice: Number(item.revenue),
+                invoiceType: item.invoiceType,
+                day: 1,
+                month: 1,
+                year: item.year,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+            }));
+        }
+
         const total = allProducts.length;
         const startIndex = (page - 1) * limit;
         const data = allProducts.slice(startIndex, startIndex + limit);
@@ -232,23 +598,78 @@ export class ProductRankingRepository {
     }
 
     // Remove all product ranking daily data if it is not in the top 100.
-    async removeNonTop100ProductRankingDaily(day: number, month: number, year: number): Promise<number> {
+    async removeNonTop100ProductRankingDaily(invoiceType: InvoiceType, day: number, month: number, year: number): Promise<number> {
+        return await this.productRankingDailyRepository.manager.transaction(async (transactionalManager) => {
+            const subQuery = transactionalManager
+                .createQueryBuilder(ProductRankingDailyEntity, 'ranking')
+                .select('ranking.id')
+                .where('ranking.invoiceType = :invoiceType', { invoiceType })
+                .andWhere('ranking.day = :day AND ranking.month = :month AND ranking.year = :year', { day, month, year })
+                .orderBy('ranking.quantity', 'DESC')
+                .limit(100);
 
-        const subQuery = this.productRankingDailyRepository
-            .createQueryBuilder('ranking')
-            .select('ranking.id')
-            .where('ranking.day = :day AND ranking.month = :month AND ranking.year = :year', { day, month, year })
-            .orderBy('ranking.quantity', 'DESC')
-            .limit(100);
-        
-        const result = await this.productRankingDailyRepository
-            .createQueryBuilder()
-            .delete()
-            .where('id NOT IN (' + subQuery.getQuery() + ')', subQuery.getParameters())
-            .execute();
+            const result = await transactionalManager
+                .createQueryBuilder()
+                .delete()
+                .from(ProductRankingDailyEntity)
+                .where('invoiceType = :invoiceType', { invoiceType })
+                .andWhere('day = :day AND month = :month AND year = :year', { day, month, year })
+                .andWhere('id NOT IN (' + subQuery.getQuery() + ')', subQuery.getParameters())
+                .execute();
 
-        if (result.affected === undefined || result.affected === null) return 0;
-        return result.affected; 
+            if (result.affected === undefined || result.affected === null) return 0;
+            return result.affected;
+        });
+    }
+
+    // Remove all product ranking monthly data if it is not in the top 100.
+    async removeNonTop100ProductRankingMonthly(invoiceType: InvoiceType, month: number, year: number): Promise<number> {
+        return await this.productRankingMonthlyRepository.manager.transaction(async (transactionalManager) => {
+            const subQuery = transactionalManager
+                .createQueryBuilder(ProductRankingMonthlyEntity, 'ranking')
+                .select('ranking.id')
+                .where('ranking.invoiceType = :invoiceType', { invoiceType })
+                .andWhere('ranking.month = :month AND ranking.year = :year', { month, year })
+                .orderBy('ranking.quantity', 'DESC')
+                .limit(100);
+
+            const result = await transactionalManager
+                .createQueryBuilder()
+                .delete()
+                .from(ProductRankingMonthlyEntity)
+                .where('invoiceType = :invoiceType', { invoiceType })
+                .andWhere('month = :month AND year = :year', { month, year })
+                .andWhere('id NOT IN (' + subQuery.getQuery() + ')', subQuery.getParameters())
+                .execute();
+
+            if (result.affected === undefined || result.affected === null) return 0;
+            return result.affected;
+        });
+    }
+
+    // Remove all product ranking yearly data if it is not in the top 100.
+    async removeNonTop100ProductRankingYearly(invoiceType: InvoiceType, year: number): Promise<number> {
+        return await this.productRankingYearlyRepository.manager.transaction(async (transactionalManager) => {
+            const subQuery = transactionalManager
+                .createQueryBuilder(ProductRankingYearlyEntity, 'ranking')
+                .select('ranking.id')
+                .where('ranking.invoiceType = :invoiceType', { invoiceType })
+                .andWhere('ranking.year = :year', { year })
+                .orderBy('ranking.quantity', 'DESC')
+                .limit(100);
+
+            const result = await transactionalManager
+                .createQueryBuilder()
+                .delete()
+                .from(ProductRankingYearlyEntity)
+                .where('invoiceType = :invoiceType', { invoiceType })
+                .andWhere('year = :year', { year })
+                .andWhere('id NOT IN (' + subQuery.getQuery() + ')', subQuery.getParameters())
+                .execute();
+
+            if (result.affected === undefined || result.affected === null) return 0;
+            return result.affected;
+        });
     }
 
 }

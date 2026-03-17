@@ -15,7 +15,7 @@ async function bootstrap() {
     const app = await NestFactory.create(ApiGatewayModule);
     const configService = app.get(ConfigService);
 
-    const acceptedOrigins = configService
+    const acceptedOrigins: string[] = configService
         .get<string>('ACCEPTED_ORIGINS', '')
         .split(',')
         .map((origin) => origin.trim())

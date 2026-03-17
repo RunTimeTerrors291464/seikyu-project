@@ -38,6 +38,12 @@ export class ProductRankingService {
             case 'daily':
                 response = await this.productRankingRepository.getListOfProductRankingDaily(dto);
                 break;
+            case 'monthly':
+                response = await this.productRankingRepository.getListOfProductRankingMonthly(dto);
+                break;
+            case 'yearly':
+                response = await this.productRankingRepository.getListOfProductRankingYearly(dto);
+                break;
             case 'custom':
                 // Check if the endDate is provided and not in the future.
                 if (!dto.endDate) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.END_DATE_MUST_BE_PROVIDED, 'End date is required for custom date range.');
@@ -48,6 +54,9 @@ export class ProductRankingService {
                 // Only allow the time range of maximum 90 days for custom date range to prevent performance issues.
                 const daysDifference = Math.ceil((endDateOnly.getTime() - startDateOnly.getTime()) / (1000 * 60 * 60 * 24));
                 if (daysDifference > 90) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DATE_RANGE_TOO_LARGE, 'The date range for custom date type cannot exceed 90 days.');
+
+                response = await this.productRankingRepository.getListOfProductRankingCustom(dto);
+                break;
 
             default:
                 response = await this.productRankingRepository.getListOfProductRankingDaily(dto);

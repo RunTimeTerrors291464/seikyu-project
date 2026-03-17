@@ -18,7 +18,6 @@ import { ProductRankingController } from './controllers/productRanking.controlle
 // Import services.
 import { ProductRankingService } from './services/productRanking.service';
 import { ScheduleProductRankingService } from './services/scheduleProductRanking.service';
-import { CleanUpProductRankingService } from './services/cleanUpProductRanking.service';
 
 // Import repositories.
 import { ProductRankingRepository } from './repositories/productRanking.repository';
@@ -46,7 +45,6 @@ import { ProductRankingMapper } from '@app/common/mappers/platform/productRankin
     providers: [
         ProductRankingService,
         ScheduleProductRankingService,
-        CleanUpProductRankingService,
         
         ProductRankingRepository,
         ProductRankingMapper,
