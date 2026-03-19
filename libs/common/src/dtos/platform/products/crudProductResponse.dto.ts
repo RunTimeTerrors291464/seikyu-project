@@ -69,7 +69,7 @@ export class ProductResponseDto {
         description: 'Whether the product is active',
         example: true,
     })
-    active: boolean;
+    isActive: boolean;
 
     @ApiProperty({
         description: 'Stock status of the product',
@@ -134,7 +134,7 @@ export class ProductCashierResponseDto {
         description: 'Whether the product is active',
         example: true,
     })
-    active: boolean;
+    isActive: boolean;
 
     @ApiProperty({
         description: 'Product creation timestamp',

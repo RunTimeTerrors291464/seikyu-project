@@ -46,7 +46,7 @@ export enum ProductChangedField {
     REORDER_THRESHOLD = 'reorder_threshold',
     PRODUCT_UNIT = 'product_unit',
     PRODUCT_NAMES = 'product_names',
-    ACTIVE = 'active',
+    ACTIVE = 'isActive',
 }
 
 export class ProductChangeEventDto {

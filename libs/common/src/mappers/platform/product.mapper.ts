@@ -27,7 +27,7 @@ export class ProductMapper {
             sellingPrice: productEntity.sellingPrice,
             reorderThreshold: productEntity.reorderThreshold || null,
             inventoryStock: productEntity.inventoryStock,
-            active: productEntity.active,
+            isActive: productEntity.active,
             stockStatus: productEntity.stockStatus,
             createdAt: productEntity.createdAt,
             updatedAt: productEntity.updatedAt,
@@ -44,7 +44,7 @@ export class ProductMapper {
             unitName: productEntity.productUnit.unitName,
             productDescription: productEntity.productDescription || null,
             sellingPrice: productEntity.sellingPrice,
-            active: productEntity.active,
+            isActive: productEntity.active,
             createdAt: productEntity.createdAt,
             updatedAt: productEntity.updatedAt,
         };
