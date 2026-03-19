@@ -45,7 +45,7 @@ export class UserResponseDto {
         description: 'User active status',
         example: true,
     })
-    active: boolean;
+    isActive: boolean;
 
     @ApiProperty({
         description: 'User creation timestamp',
@@ -110,7 +110,7 @@ export class UserResponseWithPasswordDto {
         description: 'User active status',
         example: true,
     })
-    active: boolean;
+    isActive: boolean;
 
     @ApiProperty({
         description: 'User creation timestamp',

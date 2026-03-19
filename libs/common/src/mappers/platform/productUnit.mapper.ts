@@ -17,7 +17,7 @@ export class ProductUnitMapper {
             id: productUnitEntity.id,
             unitName: productUnitEntity.unitName,
             unitDescription: productUnitEntity.unitDescription,
-            active: productUnitEntity.active,
+            isActive: productUnitEntity.active,
             createdAt: productUnitEntity.createdAt,
             updatedAt: productUnitEntity.updatedAt,
         };

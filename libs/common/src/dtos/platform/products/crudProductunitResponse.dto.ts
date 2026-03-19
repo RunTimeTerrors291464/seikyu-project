@@ -24,7 +24,7 @@ export class ProductUnitResponseDto {
         description: 'Whether the product unit is active',
         example: true,
     })
-    active: boolean;
+    isActive: boolean;
 
     @ApiProperty({
         description: 'The creation date of the product unit',

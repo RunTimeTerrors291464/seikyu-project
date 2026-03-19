@@ -25,7 +25,7 @@ export class UsersMapper {
                 lastName: userEntity.lastName,
                 username: userEntity.username,
                 roles: userRoleEntities.map(role => role.role),
-                active: userEntity.active,
+                isActive: userEntity.active,
                 password: userEntity.password,
                 createdAt: userEntity.createdAt,
                 updatedAt: userEntity.updatedAt,
@@ -38,7 +38,7 @@ export class UsersMapper {
                 lastName: userEntity.lastName,
                 username: userEntity.username,
                 roles: userRoleEntities.map(role => role.role),
-                active: userEntity.active,
+                isActive: userEntity.active,
                 createdAt: userEntity.createdAt,
                 updatedAt: userEntity.updatedAt,
             };
