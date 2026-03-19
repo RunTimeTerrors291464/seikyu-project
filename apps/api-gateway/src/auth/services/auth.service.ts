@@ -66,7 +66,7 @@ export class AuthService {
         const { password, ...userResponseDto } = user;
 
         // Check if the user is active.
-        if (!user.active) throw new CustomException(HttpStatus.UNAUTHORIZED, ErrorCode.USER_ALREADY_DEACTIVATED, 'The user is not active.');
+        if (!user.isActive) throw new CustomException(HttpStatus.UNAUTHORIZED, ErrorCode.USER_ALREADY_DEACTIVATED, 'The user is not active.');
 
         // Check if the user has too many refresh tokens.
         const hasTooManyRefreshTokens: boolean = await this.refreshTokenRepository.checkUserHasTooManyRefreshTokens(user.id);

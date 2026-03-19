@@ -72,7 +72,7 @@ export class InvoiceHelperService {
         products.forEach((product, index) => {
             const id = productIds[index];
             if (!product) notFound.push(id);
-            else if (!product.active) notActive.push(id);
+            else if (!product.isActive) notActive.push(id);
         });
 
         if (!notFound.length && !notActive.length) return { success: true, notFound, notActive };
@@ -92,7 +92,7 @@ export class InvoiceHelperService {
         products.forEach((product, index) => {
             const sku = skus[index];
             if (!product) notFound.push(sku);
-            else if (!product.active) notActive.push(sku);
+            else if (!product.isActive) notActive.push(sku);
         });
 
         if (!notFound.length && !notActive.length) return { success: true, notFound, notActive, products: products as ProductResponseDto[] };

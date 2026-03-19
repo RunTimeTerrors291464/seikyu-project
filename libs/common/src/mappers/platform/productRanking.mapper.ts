@@ -47,27 +47,4 @@ export class ProductRankingMapper {
         return entities.map(entity => this.toProductRankingItemResponseDto(entity));
     }
 
-    // FROM: Aggregated ranking data (raw query result)
-    // TO: Formatted aggregated response
-    toAggregatedRankingResponseDto(data: Array<{
-        productId: string;
-        sku: string;
-        productNames: string[];
-        totalQuantity: number;
-        totalRevenue: number;
-    }>): Array<{
-        productId: string;
-        sku: string;
-        productNames: string[];
-        totalQuantity: number;
-        totalRevenue: number;
-    }> {
-        return data.map(item => ({
-            productId: item.productId,
-            sku: item.sku,
-            productNames: item.productNames,
-            totalQuantity: item.totalQuantity,
-            totalRevenue: Number(item.totalRevenue),
-        }));
-    }
 }

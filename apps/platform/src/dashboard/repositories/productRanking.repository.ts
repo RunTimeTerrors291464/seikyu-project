@@ -125,7 +125,7 @@ export class ProductRankingRepository {
                     : 'N/A',
             },
             quantity: item.quantity,
-            totalPrice: Number(item.revenue),
+            totalPrice: Number(item.totalPrice),
             invoiceType: item.invoiceType,
             day: 1,
             month: item.month,
@@ -176,7 +176,7 @@ export class ProductRankingRepository {
                     : 'N/A',
             },
             quantity: item.quantity,
-            totalPrice: Number(item.revenue),
+            totalPrice: Number(item.totalPrice),
             invoiceType: item.invoiceType,
             day: 1,
             month: 1,
@@ -264,7 +264,7 @@ export class ProductRankingRepository {
 
                 if (existingMonthlyRecord) {
                     existingMonthlyRecord.quantity += dailyProduct.quantity;
-                    existingMonthlyRecord.revenue = Number(existingMonthlyRecord.revenue) + Number(dailyProduct.totalPrice);
+                    existingMonthlyRecord.totalPrice = Number(existingMonthlyRecord.totalPrice) + Number(dailyProduct.totalPrice);
                     await transactionalManager.save(ProductRankingMonthlyEntity, existingMonthlyRecord);
                     continue;
                 } 
@@ -272,7 +272,7 @@ export class ProductRankingRepository {
                     newMonthlyRecord = this.productRankingMonthlyRepository.create({
                         product: { id: dailyProduct.product.id },
                         quantity: dailyProduct.quantity,
-                        revenue: Number(dailyProduct.totalPrice),
+                        totalPrice: Number(dailyProduct.totalPrice),
                         invoiceType,
                         month,
                         year,
@@ -313,7 +313,7 @@ export class ProductRankingRepository {
 
                 if (existingYearlyRecord) {
                     existingYearlyRecord.quantity += monthlyProduct.quantity;
-                    existingYearlyRecord.revenue = Number(existingYearlyRecord.revenue) + Number(monthlyProduct.revenue);
+                    existingYearlyRecord.totalPrice = Number(existingYearlyRecord.totalPrice) + Number(monthlyProduct.totalPrice);
                     await transactionalManager.save(ProductRankingYearlyEntity, existingYearlyRecord);
                     continue;
                 }
@@ -321,7 +321,7 @@ export class ProductRankingRepository {
                     newYearlyRecord = this.productRankingYearlyRepository.create({
                         product: { id: monthlyProduct.product.id },
                         quantity: monthlyProduct.quantity,
-                        revenue: Number(monthlyProduct.revenue),
+                        totalPrice: Number(monthlyProduct.totalPrice),
                         invoiceType,
                         year,
                     });
@@ -456,7 +456,7 @@ export class ProductRankingRepository {
                         : 'N/A',
                 },
                 quantity: item.quantity,
-                totalPrice: Number(item.revenue),
+                totalPrice: Number(item.totalPrice),
                 invoiceType: item.invoiceType,
                 day: 1,
                 month: item.month,
@@ -526,7 +526,7 @@ export class ProductRankingRepository {
                         : 'N/A',
                 },
                 quantity: item.quantity,
-                totalPrice: Number(item.revenue),
+                totalPrice: Number(item.totalPrice),
                 invoiceType: item.invoiceType,
                 day: 1,
                 month: 1,

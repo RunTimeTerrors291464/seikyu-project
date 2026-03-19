@@ -19,8 +19,8 @@ export class ProductRankingMonthlyEntity {
     @Column({ name: 'quantity', type: 'integer' })
     quantity: number;
 
-    @Column({ name: 'revenue', type: 'decimal', precision: 10, scale: 2 })
-    revenue: number;
+    @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 2 })
+    totalPrice: number;
 
     @Column({ name: 'invoice_type', type: 'varchar', length: 20, enum: InvoiceType })
     invoiceType: InvoiceType;
