@@ -35,6 +35,7 @@
     "test:e2e:gateway": "jest --config ./apps/api-gateway/test/jest-e2e.json",
     "test:integration:platform": "npx jest --config ./apps/platform/test/jest-integration.json --runInBand --verbose",
     "db:check": "ts-node libs/migrations/src/scripts/checkDatabase.ts",
+    "db:clear": "ts-node libs/migrations/src/scripts/clearDatabase.ts",
     "migration:create:gateway": "npm run typeorm -- migration:create libs/migrations/src/api-gateway/%MIGRATION_NAME%",
     "migration:generate:gateway": "npm run typeorm -- migration:generate libs/migrations/src/api-gateway/%MIGRATION_NAME% -d libs/migrations/src/scripts/dataSource.gateway.ts",
     "migration:run:gateway": "npm run typeorm -- migration:run -d libs/migrations/src/scripts/dataSource.gateway.ts",
