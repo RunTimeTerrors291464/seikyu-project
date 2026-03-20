@@ -4,13 +4,8 @@ import Tooltip from "@/components/ui/ToolTips";
 import clsx from "clsx";
 import { Info } from "lucide-react";
 import { ReactNode } from "react";
+import { Accent } from "../types/ui";
 
-type Accent =
-  | "neutral"
-  | "success"
-  | "warning"
-  | "danger"
-  | "primary";
 
 type Delta = {
   value: number;

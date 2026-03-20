@@ -1,7 +1,6 @@
 "use client";
 
 import Button from "@/components/ui/Buttons";
-import IconButton from "@/components/ui/IconButton";
 import RuleInput from "@/components/ui/RuleInput";
 
 import { Dictionary } from "@/lib/lang/i18n";
@@ -44,50 +43,45 @@ export default function ProductTableToolbar({
   return (
     <div className="flex items-center justify-between gap-4">
 
-      {/* ───────────────────────────── */}
-      {/* PAGE TITLE */}
-      {/* ───────────────────────────── */}
+      {/* ───────── TITLE ───────── */}
 
-      <h1 className="text-xl font-semibold text-text">
+      <h1 className="text-lg font-semibold text-text">
         {dict.productInventory}
       </h1>
 
-      {/* ───────────────────────────── */}
-      {/* SEARCH INPUT */}
-      {/* ───────────────────────────── */}
+      {/* ───────── SEARCH ───────── */}
 
-      <RuleInput
-        options={[
-          {
-            label: dict.sku,
-            icon: <Barcode className="h-3 w-3" />
-          },
-          {
-            label: dict.name,
-            icon: <Package className="h-3 w-3" />
-          }
-        ]}
-        placeholder={dict.searchPlaceholder}
-        onChange={({ rule, value }) => {
+      <div className="w-full max-w-md">
+        <RuleInput
+          options={[
+            {
+              label: dict.sku,
+              icon: <Barcode className="h-3 w-3" />
+            },
+            {
+              label: dict.name,
+              icon: <Package className="h-3 w-3" />
+            }
+          ]}
+          placeholder={dict.searchPlaceholder}
+          onChange={({ rule, value }) => {
 
-          const ruleMap: Record<string, "sku" | "productName"> = {
-            [dict.sku]: "sku",
-            [dict.name]: "productName"
-          };
+            const ruleMap: Record<string, "sku" | "productName"> = {
+              [dict.sku]: "sku",
+              [dict.name]: "productName"
+            };
 
-          setSearchRule(ruleMap[rule]);
-          setSearch(value);
-        }}
-      />
+            setSearchRule(ruleMap[rule]);
+            setSearch(value);
+          }}
+        />
+      </div>
 
-      {/* ───────────────────────────── */}
-      {/* ACTION BUTTONS */}
-      {/* ───────────────────────────── */}
+      {/* ───────── ACTIONS ───────── */}
 
       <div className="flex items-center gap-2">
 
-        {/* FILTER BUTTON */}
-
+        {/* FILTER */}
         <Button
           icon={<Filter className="h-3.5 w-3.5" />}
           onClick={toggleFilters}
@@ -95,16 +89,15 @@ export default function ProductTableToolbar({
           {dict.filter}
         </Button>
 
-        {/* RESET FILTERS */}
-
-        <IconButton
+        {/* RESET */}
+        <Button
           icon={<RotateCcw className="h-3.5 w-3.5" />}
           onClick={resetSearch}
-          tooltip={dict.resetfilter ?? "Reset filters"}
-        />
+        >
+          {dict.resetfilter}
+        </Button>
 
-        {/* EXPORT BUTTON */}
-
+        {/* EXPORT */}
         <Button
           icon={<Download className="h-3.5 w-3.5" />}
           onClick={onExport}
@@ -112,10 +105,9 @@ export default function ProductTableToolbar({
           {dict.export}
         </Button>
 
-        {/* ADD PRODUCT (PRIMARY ACTION) */}
-
+        {/* ADD PRODUCT */}
         <Button
-          variant="primary"
+          accent="primary"
           icon={<Plus className="h-3.5 w-3.5" />}
           onClick={onAddProduct}
         >

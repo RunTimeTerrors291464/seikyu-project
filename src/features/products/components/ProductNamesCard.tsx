@@ -1,0 +1,140 @@
+"use client";
+
+import { useDict } from "@/lib/lang/DictProvider";
+import clsx from "clsx";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+
+import Button from "@/components/ui/Buttons";
+import DataTable from "@/components/ui/DataTable";
+import { nameColumns } from "@/features/products/table/nameColumns";
+
+/* ============================= */
+/* TYPES */
+/* ============================= */
+
+type Props = {
+  names: string[];
+  max?: number;
+
+  onAdd: (name: string) => void;
+  onRemove: (index: number) => void;
+  onMakeDefault: (index: number) => void;
+};
+
+/* ============================= */
+/* COMPONENT */
+/* ============================= */
+
+export default function ProductNamesCard({
+  names,
+  max = 5,
+  onAdd,
+  onRemove,
+  onMakeDefault,
+}: Props) {
+  const dict = useDict();
+
+  const [adding, setAdding] = useState(false);
+  const [value, setValue] = useState("");
+
+  const trimmed = value.trim();
+  const isDuplicate = names.some(
+    (n) => n.toLowerCase() === trimmed.toLowerCase()
+  );
+
+  const canAdd = trimmed.length > 0 && !isDuplicate;
+
+  function handleAdd() {
+    if (!canAdd) return;
+
+    onAdd(trimmed);
+    setValue("");
+    setAdding(false);
+  }
+
+  return (
+    <div className="flex grow overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex flex-col gap-4 p-4 w-full">
+        {/* HEADER */}
+        <div className="flex items-center gap-2 border-border justify-between">
+          <span className="text-sm font-semibold text-text">
+            {dict.productNames}
+          </span>
+
+          {adding ? (
+            <div className="ml-auto flex items-center gap-2 animate-shoot">
+              <input
+                autoFocus
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAdd();
+                  if (e.key === "Escape") {
+                    setAdding(false);
+                    setValue("");
+                  }
+                }}
+                placeholder={dict.addNamePlaceholder}
+                className={clsx(
+                  "h-8 w-44 rounded-md border px-2 text-xs",
+                  "bg-card text-text outline-none transition-colors",
+                  isDuplicate ? "border-danger bg-danger" : "border-border",
+                  "focus:border-primary"
+                )}
+              />
+
+              {canAdd && (
+                <button
+                  onClick={handleAdd}
+                  className="h-8 rounded-md border border-border px-2 text-xs text-text hover:bg-hover transition"
+                >
+                  {dict.add}
+                </button>
+              )}
+
+              {isDuplicate && (
+                <span className="text-xs text-danger">{dict.isDuplicate}</span>
+              )}
+
+              <button
+                onClick={() => {
+                  setAdding(false);
+                  setValue("");
+                }}
+                className="h-8 rounded-md border border-border px-2 text-xs text-muted hover:bg-hover transition"
+              >
+                {dict.cancel}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 border-border justify-between">
+              <Button
+                onClick={() => names.length < max && setAdding(true)}
+                disabled={names.length >= max}
+                accent="neutral"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {dict.add}
+              </Button>
+              <span className="text-sm text-text">
+                {names.length}/{max}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* TABLE */}
+        <div className="grow rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+          <DataTable<string>
+            data={names}
+            getRowId={(n, idx) => idx.toString()}
+            showIndex
+            maxHeight="fill"
+            columns={nameColumns(dict, { onRemove, onMakeDefault })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

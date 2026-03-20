@@ -1,17 +1,12 @@
-import ActivePill from "@/components/ui/ActivePill";
 import type { Column } from "@/components/ui/DataTable";
-import StatusPill from "@/components/ui/StatusPill";
+import ActivePill from "@/features/products/components/ActivePill";
+import StatusPill from "@/features/products/components/StockStatusPill";
+import { Dictionary } from "@/lib/lang/i18n";
 import { Barcode, CircleEllipsis, CirclePower, DollarSign, Warehouse } from "lucide-react";
 import Link from "next/link";
-import type { ProductApi } from "../types/productApi";
+import { Product } from "../types/product";
 
-export function productColumns(dict: any): Column<ProductApi>[] {
-
-  const stockMap = {
-    0: "inStock",
-    1: "lowStock",
-    2: "outOfStock"
-  } as const;
+export function productColumns(dict: Dictionary): Column<Product>[] {
 
   return [
 
@@ -83,12 +78,9 @@ export function productColumns(dict: any): Column<ProductApi>[] {
       sortable: true,
       icon: <CircleEllipsis className="h-3.5 w-3.5" />,
       accessor: (p) => {
-        const status = stockMap[p.stockStatus];
-
         return (
           <StatusPill
-            status={status}
-            label={dict[status]}
+            status={p.stockStatus}
           />
         );
       }
@@ -97,13 +89,12 @@ export function productColumns(dict: any): Column<ProductApi>[] {
     {
       id: "active",
       header: dict.status,
-      field: "active",
+      field: "isActive",
       sortable: true,
       icon: <CirclePower className="h-3.5 w-3.5" />,
       accessor: (p) => (
         <ActivePill
-          active={p.active}
-          label={p.active ? dict.active : dict.inactive}
+          active={p.isActive}
         />
       )
     }

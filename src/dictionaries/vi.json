@@ -88,5 +88,20 @@
   "save": "Lưu",
   "back": "Quay lại",
   "add": "Thêm",
-  "productNames": "Tên sản phẩm"
+  "productNames": "Tên sản phẩm",
+  "descriptionPlaceholder": "Nhập mô tả sản phẩm",
+  "isDuplicate": "Tên sản phẩm đã tồn tại",
+  "action": "Hành Động",
+  "addNamePlaceholder": "Nhập tên sản phẩm mới...",
+  "newProdduct": "Sản phẩm mới",
+  "history": "Lịch sử",
+  "saves": "lưu",
+  "changes": "Chỉnh sữa",
+  "noHistory": "Chưa có lịch sử",
+  "newest": "Mới nhất",
+  "oldest": "Cũ nhất",
+  "noDetailAvailable": "Chưa có thông tin chi tiết",
+  "newDefault": "Mặc định mới",
+  "addNewName": "Thêm tên mới",
+  "removeName": "Bỏ tên cũ"
 }

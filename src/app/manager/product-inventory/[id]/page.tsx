@@ -1,112 +1,78 @@
 "use client";
 
+import ProductDetailsCard from "@/features/products/components/ProductDetailsCard";
+import ProductHeader from "@/features/products/components/ProductHeader";
+import ProductHistoryCard from "@/features/products/components/ProductHistoryCard";
+import ProductNamesCard from "@/features/products/components/ProductNamesCard";
+import { useProductDetail } from "@/features/products/hooks/useProducts";
 import { useDict } from "@/lib/lang/DictProvider";
 import { useParams } from "next/navigation";
 
-import { useProductDetail } from "@/features/products/hooks/useProductDetail";
-
-import ProductDetailsCard from "@/features/products/components/ProductDetailsCard";
-import ProductHeader from "@/features/products/components/ProductHeader";
-//import ProductNamesCard from "@/features/products/components/ProductNamesCard";
-import ProductHistoryCard from "@/features/products/components/ProductHistoryCard";
-//import ProductChartCard from "@/features/products/components/ProductChartCard";
-
-export default function ProductDetailPage() {
-
-  /* ============================= */
-  /* PARAMS */
-  /* ============================= */
-
-  const params = useParams();
-  const id = params?.id as string;
-
+export default function Page() {
+  const { id } = useParams();
+  const { product, loading, update, toggleActive } = useProductDetail(id as string);
   const dict = useDict();
 
-  /* ============================= */
-  /* DATA */
-  /* ============================= */
-
-  const {
-    product,
-    loading,
-
-    update,
-    toggleActive,
-
-    names,
-    addName,
-    removeName,
-    makeDefault
-  } = useProductDetail(id);
-
-  /* ============================= */
-  /* LOADING */
-  /* ============================= */
-
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-muted">
-        {dict.loading || "Loading product..."}
-      </div>
-    );
-  }
-
-  /* ============================= */
-  /* NOT FOUND */
-  /* ============================= */
-
-  if (!product) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-danger">
-        {dict.notFound || "Product not found"}
-      </div>
-    );
-  }
-
-  /* ============================= */
-  /* UI */
-  /* ============================= */
+  if (loading || !product) return null;
 
   return (
-    <div className="flex min-h-0 flex-col gap-6">
+    <div className="space-y-6 grow">
 
-      {/* ───────────────── HEADER ───────────────── */}
       <ProductHeader
-        product={product}
+        name={product.productNames[0]}
+        createdAt={product.createdAt}
+        updatedAt={product.updatedAt}
+        active={product.active}
         onToggleActive={toggleActive}
-        dict={dict}
       />
 
-      {/* ───────────────── GRID ───────────────── */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr_1fr]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* LEFT COLUMN */}
         <ProductDetailsCard
           product={product}
           update={update}
           dict={dict}
         />
+        <div className="flex h-full flex-col gap-4 overflow-hidden">
+          <ProductNamesCard
+            names={product.productNames}
 
-        {/* MIDDLE COLUMN */}
-        <div className="flex flex-col gap-4">
+            onAdd={(name) =>
+              update("productNames", [
+                ...product.productNames,
+                name,
+              ])
+            }
 
-          {/* <ProductNamesCard
-            names={names}
-            onAdd={addName}
-            onRemove={removeName}
-            onDefault={makeDefault}
-            dict={dict}
+            onRemove={(index) =>
+              update(
+                "productNames",
+                product.productNames.filter(
+                  (_, i) => i !== index
+                )
+              )
+            }
+
+            onMakeDefault={(index) => {
+              const target = product.productNames[index];
+
+              if (!target) return;
+
+              update("productNames", [
+                target,
+                ...product.productNames.filter(
+                  (_, i) => i !== index
+                ),
+              ]);
+            }}
           />
-
-          <ProductChartCard dict={dict} /> */}
-
         </div>
+        {/* TODO: ProductNamesCard */}
+        {/* TODO: ChartCard */}
 
-        {/* RIGHT COLUMN */}
-        <ProductHistoryCard dict={dict} />
+        <ProductHistoryCard productId={id as string} />
 
       </div>
-
     </div>
   );
 }

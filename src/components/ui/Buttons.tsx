@@ -2,15 +2,13 @@
 
 import clsx from "clsx";
 import { ReactNode } from "react";
-
-type Variant = "default" | "primary" | "danger";
-type Size = "sm" | "md";
+import { Accent, ACCENT_STYLES, Size } from "../types/ui";
 
 type Props = {
   children: ReactNode;
   icon?: ReactNode;
   onClick?: () => void;
-  variant?: Variant;
+  accent?: Accent;
   size?: Size;
   className?: string;
   disabled?: boolean;
@@ -20,7 +18,7 @@ export default function Button({
   children,
   icon,
   onClick,
-  variant = "default",
+  accent = "neutral" as Accent,
   size = "sm",
   className,
   disabled,
@@ -31,20 +29,6 @@ export default function Button({
   const sizeStyles = {
     sm: "px-2.5 py-1.5 text-xs gap-1",
     md: "px-3 py-2 text-sm gap-2",
-  };
-
-  /* ───────── Variant styles  ───────── */
-
-  const variantStyles = {
-    default:
-      "border border-border bg-card text-muted hover:bg-hover hover:text-text active:bg-active",
-
-    primary:
-      "bg-primary text-white hover:bg-primary-hover active:opacity-95",
-
-    danger:
-      "bg-danger text-white hover:opacity-90 active:opacity-80",
-
   };
 
   return (
@@ -65,7 +49,7 @@ export default function Button({
         "active:translate-y-[1px]",
 
         sizeStyles[size],
-        variantStyles[variant],
+        ACCENT_STYLES[accent],
         className
       )}
     >

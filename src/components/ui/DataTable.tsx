@@ -76,7 +76,7 @@ export default function DataTable<T>({
           <tr className="border-b border-border">
 
             {showIndex && (
-              <th className="w-12 py-2 pl-3 pr-2 text-left text-muted">
+              <th className="w-8 py-2 pl-3 pr-2 text-left text-muted">
                 #
               </th>
             )}
@@ -103,7 +103,11 @@ export default function DataTable<T>({
                     if (key) onSort(key as any);
                   }}
                 >
-                  <span className="flex items-center gap-1.5">
+                  <span className={clsx(
+                    "flex items-center gap-1.5 w-full",
+                    c.align === "right" && "justify-end",
+                    c.align === "center" && "justify-center"
+                  )}>
 
                     {c.icon && (
                       <span className="text-muted">

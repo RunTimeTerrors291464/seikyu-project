@@ -1,31 +1,5 @@
-import api from "@/services/api-client";
-import { ProductOverview } from "@features/products/types/product.overview";
-import type { ProductListResponse } from "@features/products/types/productApi";
-
-
-export type ProductDetailResponse = {
-  id: string;
-  sku: string;
-  productNames: string[];
-
-  productUnitId: string;
-  productUnitName: string;
-
-  productDescription: string;
-
-  importPrice: number;
-  sellingPrice: number;
-
-  reorderThreshold: number;
-  inventoryStock: number;
-
-  active: boolean;
-  stockStatus: number;
-
-  createdAt: string;
-  updatedAt: string;
-};
-
+import apiClient from "@/services/api-client";
+import { Product, ProductHistoryDetail, ProductHistoryItem, ProductListResponse, ProductOverview } from "@features/products/types/product";
 /* ============================= */
 /* API CALL */
 /* ============================= */
@@ -35,7 +9,7 @@ export async function getProductById(id: string) {
   console.log("PRODUCT SERVICE → getProductById", id);
 
   try {
-    const res = await api.get<ProductDetailResponse>(
+    const res = await apiClient.get<Product>(
       `/products/${id}`
     );
 
@@ -62,28 +36,25 @@ export type ProductQuery = {
   limit?: number;
 
   search?: string;
-  searchBy?: "sku" | "productName" | "importPrice" | "sellingPrice";
+  searchBy?: "sku" | "productName";
 
   sortBy?:
   | "sku"
   | "productName"
-  | "unit"
   | "importPrice"
   | "sellingPrice"
   | "createdAt"
   | "updatedAt"
-  | "stockStatus";
+  | "status";
 
   sortOrder?: "asc" | "desc";
 
-  active?: "true" | "false" | "all";
-  stockStatus?: "0" | "1" | "2" | "all";
+  isActive?: "true" | "false";
+  stockStatus?: "0" | "1" | "2";
 };
 
 /*
   Remove empty query params before sending request
-  This prevents sending useless values like:
-  undefined, null, "", or "all"
 */
 function cleanParams(params: ProductQuery) {
   const cleaned: Record<string, any> = {};
@@ -92,15 +63,11 @@ function cleanParams(params: ProductQuery) {
     if (
       value !== undefined &&
       value !== null &&
-      value !== "" &&
-      value !== "all"
+      value !== ""
     ) {
       cleaned[key] = value;
     }
   });
-
-  // Debug: show cleaned query params
-  console.log("PRODUCT SERVICE → cleaned params", cleaned);
 
   return cleaned;
 }
@@ -109,45 +76,14 @@ function cleanParams(params: ProductQuery) {
   Product API Service
 */
 export const productService = {
-  /*
-  Fetch product list with filters, pagination, and sorting
-  */
   async getProducts(params: ProductQuery) {
+    const res = await apiClient.get<ProductListResponse>(
+      "/products",
+      { params: cleanParams(params) }
+    );
 
-    // Debug: check what parameters are received
-    console.log("PRODUCT SERVICE → getProducts called", params);
-
-    try {
-
-      // Remove empty query parameters
-      const query = cleanParams(params);
-
-      // Debug: confirm final query sent to backend
-      console.log("PRODUCT SERVICE → sending query", query);
-
-      // Call backend API
-      const res = await api.get<ProductListResponse>(
-        "/products",
-        { params: query }
-      );
-
-      // Debug: confirm API response
-      console.log("PRODUCT SERVICE → getProducts success", res.data);
-
-      return res.data;
-
-    } catch (error: any) {
-
-      // Debug: show backend error response
-      console.error(
-        "PRODUCT SERVICE → getProducts failed",
-        error.response?.data
-      );
-
-      // Re-throw so UI/components can handle it
-      throw error;
-    }
-  }
+    return res.data;
+  },
 };
 
 /*
@@ -161,7 +97,7 @@ export async function getProductOverview(): Promise<ProductOverview> {
   try {
 
     // Call backend overview endpoint
-    const res = await api.get<ProductOverview>(
+    const res = await apiClient.get<ProductOverview>(
       "/products/overview"
     );
 
@@ -184,3 +120,68 @@ export async function getProductOverview(): Promise<ProductOverview> {
     throw error;
   }
 }
+
+// GET /products/history/{id}
+export const getProductHistory = async (
+  productId: string
+): Promise<ProductHistoryItem[]> => {
+  console.log("[API] getProductHistory → request", {
+    productId,
+    url: `/products/history/${productId}`,
+  });
+
+  try {
+    const res = await apiClient.get(
+      `/products/history/${productId}`
+    );
+
+    console.log("[API] getProductHistory → response", {
+      status: res.status,
+      data: res.data,
+    });
+
+    return res.data;
+  } catch (error: any) {
+    console.error("[API] getProductHistory → error", {
+      productId,
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data,
+    });
+    throw error;
+  }
+};
+
+// GET /products/history/{id}/{version}
+export const getProductHistoryDetail = async (
+  productId: string,
+  version: number
+): Promise<ProductHistoryDetail> => {
+  console.log("[API] getProductHistoryDetail → request", {
+    productId,
+    version,
+    url: `/products/history/${productId}/${version}`,
+  });
+
+  try {
+    const res = await apiClient.get(
+      `/products/history/${productId}/${version}`
+    );
+
+    console.log("[API] getProductHistoryDetail → response", {
+      status: res.status,
+      data: res.data,
+    });
+
+    return res.data;
+  } catch (error: any) {
+    console.error("[API] getProductHistoryDetail → error", {
+      productId,
+      version,
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data,
+    });
+    throw error;
+  }
+};

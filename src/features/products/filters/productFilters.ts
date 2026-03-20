@@ -1,57 +1,61 @@
+import { ProductStockFilter } from "@/components/types/ui";
 import { Dictionary } from "@/lib/lang/i18n";
-import { booleanFilter, equalsFilter, textFilter } from "@/lib/table/filter";
-import { Product, ProductStatus } from "../types/product";
-
-export type ProductStockStatus =
-  | "all"
-  | "0"
-  | "1"
-  | "2";
+import { booleanFilter, textFilter } from "@/lib/table/filter";
+import { Product } from "../types/product";
 
 export const PRODUCT_STOCK_STATUS_OPTIONS: {
-  value: ProductStockStatus;
+  value: ProductStockFilter;
   dictKey: keyof Dictionary;
 }[] = [
     {
       value: "all",
-      dictKey: "all"
+      dictKey: "all",
     },
     {
-      value: "0",
-      dictKey: "inStock"
+      value: 0,
+      dictKey: "inStock",
     },
     {
-      value: "1",
-      dictKey: "lowStock"
+      value: 1,
+      dictKey: "lowStock",
     },
     {
-      value: "2",
-      dictKey: "outOfStock"
-    }
+      value: 2,
+      dictKey: "outOfStock",
+    },
   ];
+
 export function filterProducts(
   products: Product[],
   search: string,
   searchRule: string,
-  statusFilter: ProductStatus | "all",
+  stockFilter: ProductStockFilter,
   activeFilter: "all" | "active" | "inactive"
 ) {
   return products.filter((p) => {
 
+    /* SEARCH */
     if (search) {
       const value =
         searchRule === "SKU"
           ? p.sku
-          : p.names?.[0]?.name ?? "";
+          : p.productNames.join(" ");
 
       if (!textFilter(value, search)) return false;
     }
 
-    if (!equalsFilter(p.status, statusFilter))
+    /* STOCK STATUS */
+    if (
+      stockFilter !== "all" &&
+      p.stockStatus !== stockFilter
+    ) {
       return false;
+    }
 
-    if (!booleanFilter(p.is_active, activeFilter))
+    /* ACTIVE */
+    if (!booleanFilter(p.active, activeFilter)) {
       return false;
+    }
 
     return true;
   });

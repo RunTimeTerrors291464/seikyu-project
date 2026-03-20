@@ -7,61 +7,76 @@ import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
 
 import ProductTableToolbar from "@/features/products/components/ProductTableToolbar";
-import { useProductOverview } from "@/features/products/hooks/useProductOverview";
 import { productColumns } from "@/features/products/table/productColumns";
 
+import { ProductStockFilter } from "@/components/types/ui";
 import {
   PRODUCT_STOCK_STATUS_OPTIONS,
-  ProductStockStatus
 } from "@/features/products/filters/productFilters";
-
-import { useProducts } from "@/features/products/hooks/useProducts";
 import { useDict } from "@/lib/lang/DictProvider";
 
 import { useTable } from "@/lib/table/useTable";
 
 import type { ProductQuery } from "@/features/products/services/product.service";
-import type { ProductApi } from "@/features/products/types/productApi";
-import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 
+import {
+  AlertTriangle,
+  Boxes,
+  DollarSign,
+  Package,
+} from "lucide-react";
+
+import { useProductOverview, useProducts } from "@/features/products/hooks/useProducts";
+import { Product } from "@/features/products/types/product";
 import useDebounce from "@/lib/hooks/useDebounce";
 
-export default function ProductInventoryPage() {
+/* ============================= */
+/* Helper */
+/* ============================= */
 
+function mapStockFilterToApi(
+  filter: ProductStockFilter
+): "0" | "1" | "2" | undefined {
+  if (filter === "all") return undefined;
+
+  return String(filter) as "0" | "1" | "2";
+}
+/* ============================= */
+/* Page */
+/* ============================= */
+
+export default function ProductInventoryPage() {
   const dict = useDict();
 
   /* ---------------- SEARCH ---------------- */
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
+
   const [searchRule, setSearchRule] =
     useState<"sku" | "productName">("sku");
 
   /* ---------------- FILTERS ---------------- */
 
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] =
+    useState(false);
 
   const [statusFilter, setStatusFilter] =
-    useState<ProductStockStatus>("all");
+    useState<ProductStockFilter>("all");
 
   const [activeFilter, setActiveFilter] =
     useState<"all" | "active" | "inactive">("all");
 
-  /* ---------------- QUERY ---------------- */
+  /* ---------------- PAGINATION ---------------- */
 
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] =
+    useState(10);
+
+  /* ---------------- QUERY ---------------- */
 
   const query: ProductQuery = useMemo(() => {
-
-    const activeMap = {
-      all: "all",
-      active: "true",
-      inactive: "false"
-    } as const;
-
     return {
-
       page,
       limit: rowsPerPage,
 
@@ -71,19 +86,22 @@ export default function ProductInventoryPage() {
         ? searchRule
         : undefined,
 
-      stockStatus: statusFilter,
+      stockStatus: mapStockFilterToApi(statusFilter),
 
-      active: activeMap[activeFilter]
-
+      isActive:
+        activeFilter === "all"
+          ? undefined
+          : activeFilter === "active"
+            ? "true"
+            : "false",
     };
-
   }, [
     page,
     rowsPerPage,
     debouncedSearch,
     searchRule,
     statusFilter,
-    activeFilter
+    activeFilter,
   ]);
 
   /* ---------------- API ---------------- */
@@ -91,26 +109,28 @@ export default function ProductInventoryPage() {
   const { products, total, loading } =
     useProducts(query);
 
-  /* ---------------- OVERVIEW API ---------------- */
+  /* ---------------- OVERVIEW ---------------- */
+
   const {
     data: overview,
-    loading: overviewLoading
+    loading: overviewLoading,
   } = useProductOverview();
 
   /* ---------------- TABLE ---------------- */
 
   const columns = productColumns(dict);
 
-  const table = useTable<ProductApi>(
+  const table = useTable<Product>(
     products,
     columns
   );
 
-  /* ---------------- UI ---------------- */
+  /* ============================= */
+  /* UI */
+  /* ============================= */
 
   return (
-
-    <div className="flex min-h-0 grow flex-col space-y-6">
+    <div className="flex grow flex-col space-y-6">
 
       {/* HEADER */}
 
@@ -130,32 +150,25 @@ export default function ProductInventoryPage() {
         }}
 
         toggleFilters={() =>
-          setShowFilters(v => !v)
+          setShowFilters((v) => !v)
         }
 
         resetSearch={() => {
-
           setSearch("");
           setSearchRule("sku");
-
           setStatusFilter("all");
           setActiveFilter("all");
-
           setPage(1);
-
         }}
       />
 
       {/* KPI */}
 
       {overviewLoading ? (
-
         <div className="flex items-center justify-center py-6 text-sm text-muted">
           {dict.loadingProducts}
         </div>
-
       ) : (
-
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
 
           <KpiTile
@@ -197,7 +210,10 @@ export default function ProductInventoryPage() {
             label={dict.inventoryValue}
             value={
               overview
-                ? `${(Number(overview.inventoryValue) / 1_000_000).toFixed(2)}M`
+                ? `${(
+                  Number(overview.inventoryValue) /
+                  1_000_000
+                ).toFixed(2)}M`
                 : "-"
             }
             icon={<DollarSign className="h-4 w-4 text-muted" />}
@@ -205,33 +221,27 @@ export default function ProductInventoryPage() {
             helpText={dict.inventoryValueHelp}
             sub={dict.inventoryValueSub}
           />
-
         </div>
-
       )}
 
       {/* FILTER PANEL */}
 
       {showFilters && (
-
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
 
           {/* STOCK STATUS */}
 
           <div className="flex items-center gap-2">
-
             <span className="text-xs text-muted">
-              {dict.stockStatus}
+              {dict.status}
             </span>
 
             <div className="flex gap-1">
 
               {PRODUCT_STOCK_STATUS_OPTIONS.map((opt) => (
-
                 <button
-                  key={opt.value}
+                  key={String(opt.value)}
                   type="button"
-
                   onClick={() => {
                     setStatusFilter(opt.value);
                     setPage(1);
@@ -247,13 +257,11 @@ export default function ProductInventoryPage() {
                 </button>
 
               ))}
-
             </div>
 
           </div>
 
           {/* DIVIDER */}
-
           <span className="divider mx-2" />
 
           {/* ACTIVE STATUS */}
@@ -269,13 +277,12 @@ export default function ProductInventoryPage() {
               {[
                 { key: "all", label: dict.all },
                 { key: "active", label: dict.active },
-                { key: "inactive", label: dict.inactive }
+                { key: "inactive", label: dict.inactive },
               ].map((opt) => (
 
                 <button
                   key={opt.key}
                   type="button"
-
                   onClick={() => {
                     setActiveFilter(opt.key as any);
                     setPage(1);
@@ -297,13 +304,11 @@ export default function ProductInventoryPage() {
           </div>
 
         </div>
-
-      )
-      }
+      )}
 
       {/* TABLE */}
 
-      <div className="min-h-0 grow rounded-lg border border-border bg-card shadow-sm">
+      <div className="grow rounded-lg border border-border bg-card shadow-sm">
 
         {loading ? (
 
@@ -318,11 +323,9 @@ export default function ProductInventoryPage() {
             data={table.data}
             getRowId={(p) => p.id}
             showIndex
-
             sortField={table.sortField}
             sortDirection={table.sortDirection}
             onSort={table.handleSort}
-
             maxHeight="fill"
           />
 
@@ -348,7 +351,6 @@ export default function ProductInventoryPage() {
 
         dict={dict}
       />
-
-    </div >
+    </div>
   );
 }

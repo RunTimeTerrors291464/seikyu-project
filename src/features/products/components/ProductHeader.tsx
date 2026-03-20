@@ -1,40 +1,67 @@
 "use client";
 
-import { Dictionary } from "@/lib/lang/i18n";
-import { Power } from "lucide-react";
+import {
+  ArrowLeft,
+  Save
+} from "lucide-react";
+import Link from "next/link";
+
+import Button from "@/components/ui/Buttons";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
+import { StatusToggle } from "@/components/ui/StatusToggle";
+import { useDict } from "@/lib/lang/DictProvider";
 
 type Props = {
-  product: any;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  active: boolean;
   onToggleActive: () => void;
-  dict: Dictionary;
+  onSave?: () => void;
 };
 
 export default function ProductHeader({
-  product,
+  name,
+  createdAt,
+  updatedAt,
+  active,
   onToggleActive,
-  dict
+  onSave,
 }: Props) {
+  const dict = useDict();
+
   return (
     <div className="flex items-center justify-between">
-
-      <div>
-        <h1 className="text-xl font-semibold text-text">
-          {product.productName}
-        </h1>
-      </div>
-
-      <button
-        onClick={onToggleActive}
-        className={`inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium cursor-pointer
-        ${product.active
-            ? "border-success text-success hover:bg-success/10"
-            : "border-danger text-danger hover:bg-danger/10"
-          }`}
+      {/* Left */}
+      <Link
+        href="/manager/product-inventory"
+        className="flex items-center gap-2 text-xl font-semibold text-text hover:text-muted"
       >
-        <Power className="h-3.5 w-3.5" />
-        {product.active ? dict.active : dict.inactive}
-      </button>
+        <ArrowLeft className="h-5 w-5" />
+        {name}
+      </Link>
 
+      {/* Right */}
+      <div className="flex items-center gap-2">
+        <HeaderMeta label={dict.createdAt} value={createdAt} />
+        <HeaderMeta label={dict.updatedAt} value={updatedAt} />
+
+        <StatusToggle
+          active={active}
+          onClick={onToggleActive}
+          activeLabel={dict.active}
+          inactiveLabel={dict.inactive}
+        />
+
+        <Button
+          onClick={onSave}
+          accent="primary"
+          icon={<Save className="h-3.5 w-3.5" />}
+        >
+          {dict.save}
+        </Button>
+
+      </div>
     </div>
   );
 }

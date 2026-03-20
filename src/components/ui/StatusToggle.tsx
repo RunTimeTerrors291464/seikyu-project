@@ -21,7 +21,7 @@ export function StatusToggle({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-medium shadow-sm
+      className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-medium shadow-sm bg-primary-soft
         transition-all duration-150 cursor-pointer
         active:translate-y-[1px]
 

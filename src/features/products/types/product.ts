@@ -1,29 +1,67 @@
-export type ProductStatus =
-  | "inStock"
-  | "lowStock"
-  | "outOfStock";
-
+export type ProductStockStatus = 0 | 1 | 2;
 export interface Product {
   id: string;
   sku: string;
 
-  names: {
-    language: string;
-    name: string;
-  }[];
+  productNames: string[];
 
-  unit_id: string;
+  productUnitId: string;
+  productUnitName: string;
+  productDescription: string;
 
-  import_price: number;
-  selling_price: number;
+  importPrice: number;
+  sellingPrice: number;
 
-  current_stock: number;
-  min_stock: number;
+  inventoryStock: number;
+  reorderThreshold: number;
 
-  status: ProductStatus;
+  isActive: boolean;
+  stockStatus: ProductStockStatus;
 
-  is_active: boolean;
-
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export type ProductListResponse = {
+  page: number;
+  limit: number;
+  total: number;
+  products: Product[];
+};
+
+export type ProductOverview = {
+  id: string;
+  totalProducts: number;
+  inStock: number;
+  lowStock: number;
+  outOfStock: number;
+  inventoryValue: string;
+  updatedAt: string;
+};
+
+export type ProductHistoryItem = {
+  id: string;
+  version: number;
+  createdBy: string;
+  createdByUsername: string;
+  createdAt: string;
+  eventSummary: string[];
+};
+
+export type ProductHistoryEvent = {
+  fieldName: string;
+  previousValue: any;
+  newValue: any;
+};
+
+export type ProductHistoryDetail = {
+  id: string;
+  version: number;
+  createdBy: string;
+  createdByUsername: string;
+  createdAt: string;
+  events: ProductHistoryEvent[];
+  eventSummary: string[];
+  isSnapshot: boolean;
+  data: any;
+};

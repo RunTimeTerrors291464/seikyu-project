@@ -88,5 +88,20 @@
   "save": "Save",
   "back": "Back",
   "add": "Add",
-  "productNames": "Product Names"
+  "productNames": "Product Names",
+  "descriptionPlaceholder": "Enter product description",
+  "isDuplicate": "Duplicate",
+  "action": "Action",
+  "addNamePlaceholder": "Enter new name...",
+  "newProdduct": "New Product",
+  "history": "History",
+  "saves": "saves",
+  "changes": "Changes",
+  "noHistory": "No history yet",
+  "newest": "Newest",
+  "oldest": "Oldest",
+  "noDetailAvailable": "No detail available",
+  "newDefault": "New default",
+  "addNewName": "Added New name",
+  "removeName": "Removed name"
 }
