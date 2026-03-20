@@ -38,14 +38,14 @@ export class ProductSnapshotDto {
 }
 
 export enum ProductChangedField {
-    NEW_PRODUCT = 'new_product',
+    NEW_PRODUCT = 'newProduct',
     SKU = 'sku',
-    PRODUCT_DESCRIPTION = 'product_description',
-    IMPORT_PRICE = 'import_price',
-    SELLING_PRICE = 'selling_price',
-    REORDER_THRESHOLD = 'reorder_threshold',
-    PRODUCT_UNIT = 'product_unit',
-    PRODUCT_NAMES = 'product_names',
+    PRODUCT_DESCRIPTION = 'productDescription',
+    IMPORT_PRICE = 'importPrice',
+    SELLING_PRICE = 'sellingPrice',
+    REORDER_THRESHOLD = 'reorderThreshold',
+    PRODUCT_UNIT = 'productUnit',
+    PRODUCT_NAMES = 'productNames',
     ACTIVE = 'isActive',
 }
 

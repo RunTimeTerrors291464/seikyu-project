@@ -36,6 +36,7 @@ export class ProductRankingRepository {
     private readonly ProductRankingDailyPrefix: string = 'PRD:';
     private readonly ProductRankingMonthlyPrefix: string = 'PRM:';
     private readonly ProductRankingYearlyPrefix: string = 'PRY:';
+    private readonly PriceTrendPrefix: string = 'PT:';
 
     // --- Helper methods ---
     // Get the current date.
@@ -61,6 +62,11 @@ export class ProductRankingRepository {
     // Set the cache key for product ranking yearly in Redis.
     private getProductRankingYearlyCacheKey(invoiceType: InvoiceType, year: number): string {
         return `${this.ProductRankingYearlyPrefix}${invoiceType}:${year}`;
+    }
+
+    // Set the cache key for price trend in Redis.
+    private getPriceTrendCacheKey(startDate: Date, endDate: Date): string {
+        return `${this.PriceTrendPrefix}${startDate.getTime()}-${endDate.getTime()}`;
     }
 
     // Cache top 100 products ranking daily.
@@ -645,6 +651,80 @@ export class ProductRankingRepository {
             if (result.affected === undefined || result.affected === null) return 0;
             return result.affected;
         });
+    }
+
+    // Get aggregated daily totalPrice grouped by (day, month, year, invoiceType) for a date range.
+    // Results are cached in Redis for 30 minutes to avoid repeated DB hits for the same range.
+    async getPriceTrendRawData(startDate: Date, endDate: Date): Promise<{ day: number; month: number; year: number; invoiceType: string; totalPrice: number }[]> {
+        const cacheKey = this.getPriceTrendCacheKey(startDate, endDate);
+
+        const cached = await this.redisClient.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+        const endYear = endDate.getFullYear();
+        const endMonth = endDate.getMonth() + 1;
+        const endDay = endDate.getDate();
+
+        const rows = await this.productRankingDailyRepository
+            .createQueryBuilder('ranking')
+            .select('ranking.day', 'day')
+            .addSelect('ranking.month', 'month')
+            .addSelect('ranking.year', 'year')
+            .addSelect('ranking.invoiceType', 'invoiceType')
+            .addSelect('SUM(ranking.totalPrice)', 'totalPrice')
+            .where(
+                '(ranking.year > :startYear OR (ranking.year = :startYear AND ranking.month > :startMonth) OR (ranking.year = :startYear AND ranking.month = :startMonth AND ranking.day >= :startDay))',
+                { startYear, startMonth, startDay },
+            )
+            .andWhere(
+                '(ranking.year < :endYear OR (ranking.year = :endYear AND ranking.month < :endMonth) OR (ranking.year = :endYear AND ranking.month = :endMonth AND ranking.day <= :endDay))',
+                { endYear, endMonth, endDay },
+            )
+            .groupBy('ranking.day')
+            .addGroupBy('ranking.month')
+            .addGroupBy('ranking.year')
+            .addGroupBy('ranking.invoiceType')
+            .orderBy('ranking.year', 'ASC')
+            .addOrderBy('ranking.month', 'ASC')
+            .addOrderBy('ranking.day', 'ASC')
+            .getRawMany();
+
+        const result = rows.map((r) => ({
+            day: Number(r.day),
+            month: Number(r.month),
+            year: Number(r.year),
+            invoiceType: r.invoiceType,
+            totalPrice: Number(r.totalPrice),
+        }));
+
+        await this.redisClient.setex(cacheKey, 30 * 60, JSON.stringify(result));
+        return result;
+    }
+
+    // Invalidate all price trend cache keys whose date range includes today.
+    // Called by the 30-minute cron so fresh daily data is reflected immediately.
+    async invalidatePriceTrendCacheForToday(): Promise<void> {
+        const now = new Date();
+        const todayTs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        let cursor = '0';
+        do {
+            const [nextCursor, keys] = await this.redisClient.scan(cursor, 'MATCH', `*${this.PriceTrendPrefix}*`, 'COUNT', 100);
+            cursor = nextCursor;
+
+            for (const key of keys) {
+                const suffix = key.substring(key.indexOf(this.PriceTrendPrefix) + this.PriceTrendPrefix.length);
+                const [startTsStr, endTsStr] = suffix.split('-');
+                const startTs = Number(startTsStr);
+                const endTs = Number(endTsStr);
+                if (!isNaN(startTs) && !isNaN(endTs) && startTs <= todayTs && todayTs <= endTs) {
+                    await this.redisClient.del(key);
+                }
+            }
+        } while (cursor !== '0');
     }
 
     // Remove all product ranking yearly data if it is not in the top 100.

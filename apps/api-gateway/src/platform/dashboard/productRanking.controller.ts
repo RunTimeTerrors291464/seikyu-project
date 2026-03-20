@@ -16,6 +16,8 @@ import { firstValueFrom } from 'rxjs';
 // Import DTOs.
 import { GetListOfProductRankingRequestDto } from '@app/common/dtos/platform/dashboard/crudProductRankingRequest.dto';
 import { GetListOfProductRankingResponseDto } from '@app/common/dtos/platform/dashboard/crudProductRankingResponse.dto';
+import { GetPriceTrendRequestDto } from '@app/common/dtos/platform/dashboard/priceTrendRequest.dto';
+import { GetPriceTrendResponseDto } from '@app/common/dtos/platform/dashboard/priceTrendResponse.dto';
 
 // Import error exceptions.
 import { CustomException } from '@app/common/error-exceptions/customException';
@@ -45,6 +47,25 @@ export class ProductRankingController {
         try {
             const result: GetListOfProductRankingResponseDto = await firstValueFrom(
                 this.platformService.send({ cmd: 'dashboard.getListOfProductRanking' }, dto)
+            );
+            return result;
+        } catch (error: any) {
+            if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
+            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UNKNOWN_ERROR, error.message);
+        }
+    }
+
+    // Get price trend data for the line chart.
+    // GET /api/v1/dashboard/price-trend
+    @Get('price-trend')
+    @Roles(Role.MANAGER)
+    @ApiOperation({ summary: '[MANAGER] Get price trend line chart data (up to 12 bucketed columns)' })
+    @ApiResponse({ status: 200, description: 'Price trend data has been retrieved successfully.', type: GetPriceTrendResponseDto })
+    @HttpCode(HttpStatus.OK)
+    async getPriceTrend(@Query() dto: GetPriceTrendRequestDto): Promise<GetPriceTrendResponseDto> {
+        try {
+            const result: GetPriceTrendResponseDto = await firstValueFrom(
+                this.platformService.send({ cmd: 'dashboard.getPriceTrend' }, dto)
             );
             return result;
         } catch (error: any) {

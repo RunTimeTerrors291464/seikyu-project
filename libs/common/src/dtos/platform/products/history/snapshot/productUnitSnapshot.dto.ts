@@ -15,9 +15,9 @@ export class ProductUnitSnapshotDto {
 }
 
 export enum ProductUnitChangedField {
-    NEW_PRODUCT_UNIT = 'new_product_unit',
-    UNIT_NAME = 'unit_name',
-    UNIT_DESCRIPTION = 'unit_description',
+    NEW_PRODUCT_UNIT = 'newProductUnit',
+    UNIT_NAME = 'unitName',
+    UNIT_DESCRIPTION = 'unitDescription',
     ACTIVE = 'active',
 }
 

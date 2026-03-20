@@ -65,7 +65,7 @@ export class ProductUnitHistoryItemResponseDto {
 
     @ApiProperty({
         description: 'Quick-access list of changed field names',
-        example: ['unit_name'],
+        example: ['unitName'],
         type: [String],
     })
     eventSummary: string[];
@@ -111,7 +111,7 @@ export class GetProductUnitHistoryByVersionResponseDto {
 
     @ApiProperty({
         description: 'Quick-access list of changed field names',
-        example: ['unit_name'],
+        example: ['unitName'],
         type: [String],
     })
     eventSummary: string[];

@@ -31,6 +31,9 @@ export class ScheduleProductRankingService {
                 this.productRankingRepository.cacheTop100ProductsDaily(InvoiceType.STOCK_ADJUSTMENT, day, month, year),
             ]);
 
+            // Invalidate price trend cache entries that cover today so they reflect the latest data.
+            await this.productRankingRepository.invalidatePriceTrendCacheForToday();
+
             Logger.log(`Calculated and stored product rankings for all invoice types.`);
         } catch (error) {
             Logger.error('Failed to calculate and store product ranking daily.');

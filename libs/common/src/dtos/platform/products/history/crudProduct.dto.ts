@@ -64,7 +64,7 @@ export class ProductHistoryItemResponseDto {
 
     @ApiProperty({
         description: 'Quick-access list of changed field names',
-        example: ['selling_price', 'product_names'],
+        example: ['sellingPrice', 'productNames'],
         type: [String],
     })
     eventSummary: string[];
@@ -110,7 +110,7 @@ export class GetProductHistoryByVersionResponseDto {
 
     @ApiProperty({
         description: 'Quick-access list of changed field names',
-        example: ['selling_price', 'product_names'],
+        example: ['sellingPrice', 'productNames'],
         type: [String],
     })
     eventSummary: string[];
