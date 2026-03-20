@@ -1,7 +1,7 @@
 export enum ImportInvoiceStatus {
     DRAFT = 'draft',
     CONFIRMED = 'confirmed',
-    PARTIALLY_RETURNED = 'partially_returned',
+    PARTIALLY_RETURNED = 'partiallyReturned',
     RETURNED = 'returned'
 }
 
@@ -12,7 +12,7 @@ export enum ReturnImportInvoiceStatus {
 
 export enum SellingInvoiceStatus {
     CONFIRMED = 'confirmed',
-    PARTIALLY_RETURNED = 'partially_returned',
+    PARTIALLY_RETURNED = 'partiallyReturned',
     RETURNED = 'returned'
 }
 
@@ -25,4 +25,3 @@ export enum StockAdjustmentInvoiceStatus {
     DRAFT = 'draft',
     CONFIRMED = 'confirmed'
 }
-

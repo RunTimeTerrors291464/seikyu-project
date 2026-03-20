@@ -5,19 +5,19 @@ export enum StockActionType {
 
 export enum StockActionReason {
     // Subtract reasons
-    DAMAGED_GOODS = 'damaged_goods',
-    EXPIRED_GOODS = 'expired_goods',
-    LOST_GOODS = 'lost_goods',
+    DAMAGED_GOODS = 'damagedGoods',
+    EXPIRED_GOODS = 'expiredGoods',
+    LOST_GOODS = 'lostGoods',
     THEFT = 'theft',
-    SAMPLE_USAGE = 'sample_usage',
-    INTERNAL_USE = 'internal_use',
+    SAMPLE_USAGE = 'sampleUsage',
+    INTERNAL_USE = 'internalUse',
 
     // Add reasons
-    FOUND_GOODS = 'found_goods',
-    SUPPLIER_BONUS = 'supplier_bonus',
-    RETURNED_GOODS = 'returned_goods',
+    FOUND_GOODS = 'foundGoods',
+    SUPPLIER_BONUS = 'supplierBonus',
+    RETURNED_GOODS = 'returnedGoods',
 
     // General
-    PERIODIC_INVENTORY_CHECK = 'periodic_inventory_check',
+    PERIODIC_INVENTORY_CHECK = 'periodicInventoryCheck',
     OTHER = 'other',
 }

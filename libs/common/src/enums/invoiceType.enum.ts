@@ -1,7 +1,7 @@
 export enum InvoiceType {
     IMPORT = 'import',
-    RETURN_IMPORT = 'return_import',
+    RETURN_IMPORT = 'returnImport',
     SELLING = 'selling',
-    RETURN_SELLING = 'return_selling',
-    STOCK_ADJUSTMENT = 'stock_adjustment',
+    RETURN_SELLING = 'returnSelling',
+    STOCK_ADJUSTMENT = 'stockAdjustment',
 }

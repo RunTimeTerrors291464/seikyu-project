@@ -12,7 +12,7 @@ export class FixImportInvoiceTableV21771774644340 implements MigrationInterface 
                 CASE "status"
                     WHEN 0 THEN 'draft'
                     WHEN 1 THEN 'confirmed'
-                    WHEN 2 THEN 'partially_returned'
+                    WHEN 2 THEN 'partiallyReturned'
                     WHEN 3 THEN 'returned'
                     ELSE 'draft'
                 END
@@ -32,7 +32,7 @@ export class FixImportInvoiceTableV21771774644340 implements MigrationInterface 
                 CASE "status"
                     WHEN 'draft' THEN 0
                     WHEN 'confirmed' THEN 1
-                    WHEN 'partially_returned' THEN 2
+                    WHEN 'partiallyReturned' THEN 2
                     WHEN 'returned' THEN 3
                     ELSE 0
                 END
