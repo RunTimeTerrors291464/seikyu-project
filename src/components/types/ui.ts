@@ -35,6 +35,8 @@ export const ACCENT_STYLES = {
 };
 
 export const FIELD_KEYS: Record<string, keyof Dictionary> = {
+  sku: "sku",
+  isActive: "active",
   productDescription: "description",
   reorderThreshold: "reorderThreshold",
   productNames: "productNames",

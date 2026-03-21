@@ -37,7 +37,7 @@ export default function ProductHistoryCard({
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-text">
           <History className="h-4 w-4 text-muted" />
-          History
+          {dict.history}
         </h2>
 
         <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export default function ProductHistoryCard({
               )
             }
           >
-            {order === "asc" ? "Oldest" : "Newest"}
+            {order === "asc" ? dict.oldest : dict.newest}
           </Button>
         </div>
       </div>

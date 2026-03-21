@@ -10,21 +10,14 @@ import ProductTableToolbar from "@/features/products/components/ProductTableTool
 import { productColumns } from "@/features/products/table/productColumns";
 
 import { ProductStockFilter } from "@/components/types/ui";
-import {
-  PRODUCT_STOCK_STATUS_OPTIONS,
-} from "@/features/products/filters/productFilters";
+import { PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
 import { useDict } from "@/lib/lang/DictProvider";
 
 import { useTable } from "@/lib/table/useTable";
 
 import type { ProductQuery } from "@/features/products/services/product.service";
 
-import {
-  AlertTriangle,
-  Boxes,
-  DollarSign,
-  Package,
-} from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 
 import { useProductOverview, useProducts } from "@/features/products/hooks/useProducts";
 import { Product } from "@/features/products/types/product";
@@ -71,7 +64,7 @@ export default function ProductInventoryPage() {
 
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] =
-    useState(10);
+    useState(30);
 
   /* ---------------- QUERY ---------------- */
 

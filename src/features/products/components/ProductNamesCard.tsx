@@ -16,7 +16,7 @@ import { nameColumns } from "@/features/products/table/nameColumns";
 type Props = {
   names: string[];
   max?: number;
-
+  disabled?: boolean;
   onAdd: (name: string) => void;
   onRemove: (index: number) => void;
   onMakeDefault: (index: number) => void;
@@ -28,7 +28,8 @@ type Props = {
 
 export default function ProductNamesCard({
   names,
-  max = 5,
+  max = 8,
+  disabled,
   onAdd,
   onRemove,
   onMakeDefault,
@@ -66,6 +67,7 @@ export default function ProductNamesCard({
             <div className="ml-auto flex items-center gap-2 animate-shoot">
               <input
                 autoFocus
+                disabled={disabled}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -87,6 +89,7 @@ export default function ProductNamesCard({
               {canAdd && (
                 <button
                   onClick={handleAdd}
+                  disabled={disabled || names.length >= max}
                   className="h-8 rounded-md border border-border px-2 text-xs text-text hover:bg-hover transition"
                 >
                   {dict.add}
@@ -111,7 +114,7 @@ export default function ProductNamesCard({
             <div className="flex items-center gap-3 border-border justify-between">
               <Button
                 onClick={() => names.length < max && setAdding(true)}
-                disabled={names.length >= max}
+                disabled={disabled || names.length >= max}
                 accent="neutral"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -125,7 +128,10 @@ export default function ProductNamesCard({
         </div>
 
         {/* TABLE */}
-        <div className="grow rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div className={clsx(
+          "grow rounded-lg border border-border bg-card shadow-sm overflow-hidden",
+          disabled && "opacity-60 pointer-events-none"
+        )}>
           <DataTable<string>
             data={names}
             getRowId={(n, idx) => idx.toString()}

@@ -60,7 +60,7 @@ export default function HistoryGroupRow({
         {diff.defaultChanged && diff.nextDefault && (
           <div className="flex items-center gap-2 text-xs">
             <Crown className="h-3 w-3 text-warning" />
-            <span className="text-muted">{dict.newDefault}</span>
+            <span className="w-28 shrink-0 text-muted">{dict.newDefault}</span>
             <span className="font-medium text-text">
               {diff.nextDefault}
             </span>
@@ -123,8 +123,8 @@ export default function HistoryGroupRow({
   }
 
   return (
-    <div className="relative flex gap-3 pb-3">
-      <div className="relative flex gap-3 pb-3">
+    <div className="relative flex gap-3 pb-5">
+      <div className="relative flex gap-3 pb-5">
         {/* DOT */}
         <div
           className={`flex h-4 w-4 items-center justify-center rounded-full bg-card ring-2 ${meta.ring}`}

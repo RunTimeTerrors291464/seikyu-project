@@ -31,7 +31,7 @@ export default function TablePagination({
   dict
 }: Props) {
 
-  const rowOptions = [10, 25, 50, 100];
+  const rowOptions = [30, 50, 100];
 
   return (
 

@@ -53,7 +53,7 @@ export function filterProducts(
     }
 
     /* ACTIVE */
-    if (!booleanFilter(p.active, activeFilter)) {
+    if (!booleanFilter(p.isActive, activeFilter)) {
       return false;
     }
 

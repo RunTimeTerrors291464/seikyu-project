@@ -76,7 +76,6 @@
   "notFound": "Sản phẩm không tìm thấy",
   "edit": "Chỉnh sửa",
   "delete": "Xóa",
-  "confirmDeactivate": "Bạn có chắc chắn muốn vô hiệu hóa sản phẩm này?",
   "cancel": "Hủy",
   "confirm": "Xác nhận",
   "reorderThreshold": "Ngưỡng đặt hàng",
@@ -103,5 +102,14 @@
   "noDetailAvailable": "Chưa có thông tin chi tiết",
   "newDefault": "Mặc định mới",
   "addNewName": "Thêm tên mới",
-  "removeName": "Bỏ tên cũ"
+  "removeName": "Bỏ tên cũ",
+  "saving": "Đang lưu...",
+  "confirmSaveTitle": "Lưu thay đổi?",
+  "confirmSaveDescription": "Các thay đổi sẽ được áp dụng cho sản phẩm này.",
+  "confirmDeactivateTitle": "Ngừng kích hoạt sản phẩm?",
+  "confirmDeactivateDescription": "Sản phẩm sẽ bị vô hiệu hóa, mọi thay đổi chưa lưu sẽ bị hủy và ẩn khỏi danh sách hoạt động. Bạn có thể kích hoạt lại bất cứ lúc nào.",
+  "confirmActivateTitle": "Kích hoạt sản phẩm?",
+  "confirmActivateDescription": "Sản phẩm sẽ được kích hoạt lại.",
+  "activate": "Kích hoạt",
+  "deactivate": "Ngừng kích hoạt"
 }

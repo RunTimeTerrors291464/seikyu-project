@@ -1,178 +1,12 @@
 "use client";
 
-import { getProductById, getProductOverview, ProductQuery, productService } from "@/features/products/services/product.service";
+import { getProductOverview, ProductQuery, productService } from "@/features/products/services/product.service";
 import { useEffect, useState } from "react";
 import type { Product, ProductOverview } from "../types/product";
 
-
-export function useProductDetail(id: string) {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  /* ============================= */
-  /* FETCH */
-  /* ============================= */
-
-  useEffect(() => {
-    async function fetchProduct() {
-      setLoading(true);
-
-      try {
-        const data = await getProductById(id);
-        setProduct(data);
-      } catch (err) {
-        console.error("useProductDetail → fetch failed", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (id) fetchProduct();
-  }, [id]);
-
-  /* ============================= */
-  /* UPDATE (GENERIC) */
-  /* ============================= */
-
-  function update<K extends keyof Product>(
-    key: K,
-    value: Product[K]
-  ) {
-    setProduct((prev) =>
-      prev ? { ...prev, [key]: value } : prev
-    );
-  }
-
-  /* ============================= */
-  /* ACTIVE */
-  /* ============================= */
-
-  function toggleActive() {
-    setProduct((prev) =>
-      prev
-        ? { ...prev, isActive: !prev.isActive }
-        : prev
-    );
-  }
-
-  /* ============================= */
-  /* PRODUCT NAMES (string[]) */
-  /* ============================= */
-
-  function addName(name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-
-    setProduct((prev) => {
-      if (!prev) return prev;
-
-      const exists = prev.productNames.some(
-        (n) =>
-          n.toLowerCase() === trimmed.toLowerCase()
-      );
-
-      if (exists) return prev;
-
-      return {
-        ...prev,
-        productNames: [
-          ...prev.productNames,
-          trimmed,
-        ],
-      };
-    });
-  }
-
-  function removeName(index: number) {
-    setProduct((prev) =>
-      prev
-        ? {
-          ...prev,
-          productNames:
-            prev.productNames.filter(
-              (_, i) => i !== index
-            ),
-        }
-        : prev
-    );
-  }
-
-  function makeDefault(index: number) {
-    setProduct((prev) => {
-      if (!prev) return prev;
-
-      const target =
-        prev.productNames[index];
-
-      if (!target) return prev;
-
-      return {
-        ...prev,
-        productNames: [
-          target,
-          ...prev.productNames.filter(
-            (_, i) => i !== index
-          ),
-        ],
-      };
-    });
-  }
-
-  /* ============================= */
-  /* RETURN */
-  /* ============================= */
-
-  return {
-    product,
-    loading,
-
-    update,
-    toggleActive,
-
-    names: product?.productNames ?? [],
-
-    addName,
-    removeName,
-    makeDefault,
-  };
-
-
-}
-
-export function useProductOverview() {
-
-  const [data, setData] = useState<ProductOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-
-    async function load() {
-      try {
-        setLoading(true);
-
-        const res = await getProductOverview();
-        setData(res);
-
-      } catch (err) {
-        console.error("PRODUCT OVERVIEW ERROR", err);
-        setError("Failed to load overview");
-
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    load();
-
-  }, []);
-
-  return {
-    data,
-    loading,
-    error,
-  };
-}
+/* ============================= */
+/* HOOK: PRODUCTS LIST */
+/* ============================= */
 
 export function useProducts(query: ProductQuery) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -180,39 +14,72 @@ export function useProducts(query: ProductQuery) {
   const [loading, setLoading] = useState(true);
 
   /* ============================= */
-  /* FETCH */
+  /* FETCH LIST */
   /* ============================= */
 
   useEffect(() => {
     let isMounted = true;
 
     async function fetchProducts() {
+      console.log("[useProducts] fetch → start", query);
+
       setLoading(true);
 
       try {
-        const data =
-          await productService.getProducts(query);
+        const data = await productService.getProducts(query);
+
+        console.log("[useProducts] fetch → success", {
+          total: data.total,
+          count: data.products?.length,
+        });
 
         if (!isMounted) return;
 
         setProducts(data.products ?? []);
         setTotal(data.total ?? 0);
+
+        console.log("[useProducts] state updated");
       } catch (err) {
-        console.error(
-          "useProducts → fetch failed",
-          err
-        );
+        console.error("[useProducts] fetch → error", err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          console.log("[useProducts] fetch → end");
+        }
       }
     }
 
     fetchProducts();
 
     return () => {
+      console.log("[useProducts] cleanup → unmounted");
       isMounted = false;
     };
   }, [query]);
+
+  /* ============================= */
+  /* MANUAL REFRESH */
+  /* ============================= */
+
+  async function refresh() {
+    console.log("[useProducts] refresh → start", query);
+
+    try {
+      const data = await productService.getProducts(query);
+
+      console.log("[useProducts] refresh → success", {
+        total: data.total,
+        count: data.products?.length,
+      });
+
+      setProducts(data.products ?? []);
+      setTotal(data.total ?? 0);
+
+      console.log("[useProducts] refresh → state updated");
+    } catch (err) {
+      console.error("[useProducts] refresh → error", err);
+    }
+  }
 
   /* ============================= */
   /* RETURN */
@@ -222,14 +89,56 @@ export function useProducts(query: ProductQuery) {
     products,
     total,
     loading,
+    refresh,
+  };
+}
 
-    // manual refresh if needed
-    refresh: async () => {
-      const data =
-        await productService.getProducts(query);
+/* ============================= */
+/* HOOK: PRODUCT OVERVIEW */
+/* ============================= */
 
-      setProducts(data.products ?? []);
-      setTotal(data.total ?? 0);
-    },
+export function useProductOverview() {
+  const [data, setData] = useState<ProductOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  /* ============================= */
+  /* LOAD OVERVIEW */
+  /* ============================= */
+
+  useEffect(() => {
+    async function load() {
+      console.log("[useProductOverview] load → start");
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await getProductOverview();
+
+        console.log("[useProductOverview] load → success", res);
+
+        setData(res);
+      } catch (err) {
+        console.error("[useProductOverview] load → error", err);
+
+        setError("Failed to load overview");
+      } finally {
+        setLoading(false);
+        console.log("[useProductOverview] load → end");
+      }
+    }
+
+    load();
+  }, []);
+
+  /* ============================= */
+  /* RETURN */
+  /* ============================= */
+
+  return {
+    data,
+    loading,
+    error,
   };
 }

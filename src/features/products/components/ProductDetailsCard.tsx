@@ -11,6 +11,7 @@ type Props = {
   product: Product;
   update: (k: any, v: any) => void;
   dict: Dictionary;
+  disabled?: boolean;
 };
 
 
@@ -18,10 +19,12 @@ export default function ProductDetailsCard({
   product,
   update,
   dict,
+  disabled,
 }: Props) {
 
   const stock = getStockStatus(product, dict);
-
+  const isDisabled = disabled || !product.isActive;
+  const MAX_INT = 2147483647;
   return (
     <div className="card p-5 space-y-4 rounded-lg">
 
@@ -33,7 +36,23 @@ export default function ProductDetailsCard({
       <Field label={dict.sku} icon={<Barcode className="h-3 w-3" />}>
         <Input
           value={product.sku || ""}
-          onChange={(v) => update("sku", v)}
+          disabled={isDisabled}
+          onChange={(v) => {
+            const digits = v.replace(/\D/g, "");
+            update("sku", digits.slice(0, 13));
+          }}
+          onBlur={() => {
+            const sku = String(product.sku || "");
+            if (sku) update("sku", sku.padStart(13, "0"));
+          }}
+          onPaste={(e) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData("text");
+            const digits = text.replace(/\D/g, "").slice(0, 13);
+            update("sku", digits);
+          }}
+          inputMode="numeric"
+          maxLength={13}
         />
       </Field>
 
@@ -54,7 +73,8 @@ export default function ProductDetailsCard({
       <Field label={dict.unit} icon={<Ruler className="h-3 w-3" />}>
         <Input
           value={product.productUnitName || ""}
-          onChange={(v) => update("unit", v)}
+          onChange={(v) => update("productUnitId", v)}
+          disabled={isDisabled}
         />
       </Field>
 
@@ -66,9 +86,27 @@ export default function ProductDetailsCard({
         <Input
           type="number"
           value={product.importPrice || 0}
-          onChange={(v) =>
-            update("importPrice", Number(v))
-          }
+          disabled={isDisabled}
+          onChange={(v) => {
+            if (v === "") {
+              update("importPrice", 0);
+              return;
+            }
+
+            const num = Number(v);
+
+            // invalid number
+            if (isNaN(num)) return;
+
+            // exceed max
+            if (num > MAX_INT) return;
+
+            // more than 2 decimal places
+            const decimalPart = v.split(".")[1];
+            if (decimalPart && decimalPart.length > 2) return;
+
+            update("importPrice", num);
+          }}
         />
       </Field>
 
@@ -80,9 +118,27 @@ export default function ProductDetailsCard({
         <Input
           type="number"
           value={product.sellingPrice || 0}
-          onChange={(v) =>
-            update("sellingPrice", Number(v))
-          }
+          disabled={isDisabled}
+          onChange={(v) => {
+            if (v === "") {
+              update("importPrice", 0);
+              return;
+            }
+
+            const num = Number(v);
+
+            // invalid number
+            if (isNaN(num)) return;
+
+            // exceed max
+            if (num > MAX_INT) return;
+
+            // more than 2 decimal places
+            const decimalPart = v.split(".")[1];
+            if (decimalPart && decimalPart.length > 2) return;
+
+            update("importPrice", num);
+          }}
         />
       </Field>
 
@@ -93,10 +149,27 @@ export default function ProductDetailsCard({
       >
         <Input
           type="number"
+          disabled={isDisabled}
           value={product.reorderThreshold || 0}
-          onChange={(v) =>
-            update("reorderThreshold", Number(v))
-          }
+          onChange={(v) => {
+            if (v === "") {
+              update("reorderThreshold", 0);
+              return;
+            }
+
+            const num = Number(v);
+
+            // invalid
+            if (isNaN(num)) return;
+
+            // decimal not allowed
+            if (!Number.isInteger(num)) return;
+
+            // exceed max
+            if (num > MAX_INT) return;
+
+            update("reorderThreshold", num);
+          }}
         />
       </Field>
 
@@ -106,8 +179,9 @@ export default function ProductDetailsCard({
         icon={<Ruler className="h-3 w-3" />} // or change icon if you want
       >
         <Textarea
+          disabled={isDisabled}
           value={product.productDescription || ""}
-          onChange={(v) => update("description", v)}
+          onChange={(v) => update("productDescription", v)}
           placeholder={dict.descriptionPlaceholder}
         />
       </Field>

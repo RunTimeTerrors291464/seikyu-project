@@ -76,7 +76,6 @@
   "notFound": "Product not found",
   "edit": "Edit",
   "delete": "Delete",
-  "confirmDeactivate": "Are you sure you want to deactivate this product?",
   "cancel": "Cancel",
   "confirm": "Confirm",
   "reorderThreshold": "Reorder Threshold",
@@ -103,5 +102,14 @@
   "noDetailAvailable": "No detail available",
   "newDefault": "New default",
   "addNewName": "Added New name",
-  "removeName": "Removed name"
+  "removeName": "Removed name",
+  "saving": "Saving...",
+  "confirmSaveTitle": "Save changes?",
+  "confirmSaveDescription": "Your changes will be applied to this product.",
+  "confirmDeactivateTitle": "Deactivate product?",
+  "confirmDeactivateDescription": "This product will be marked as inactive, all unsaved changes will be discarded and hidden from active listings. You can reactivate it at any time.",
+  "confirmActivateTitle": "Activate product?",
+  "confirmActivateDescription": "This product will be available again.",
+  "activate": "Activate",
+  "deactivate": "Deactivate"
 }

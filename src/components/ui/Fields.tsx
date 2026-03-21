@@ -62,6 +62,10 @@ type InputProps = {
   placeholder?: string;
   error?: boolean;
   disabled?: boolean;
+  onBlur?: () => void;
+  onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  maxLength?: number;
 };
 
 export function Input({
@@ -71,6 +75,10 @@ export function Input({
   placeholder,
   error,
   disabled,
+  onBlur,
+  onPaste,
+  inputMode,
+  maxLength,
 }: InputProps) {
   return (
     <input
@@ -78,11 +86,14 @@ export function Input({
       value={value}
       placeholder={placeholder}
       disabled={disabled}
+      inputMode={inputMode}
+      maxLength={maxLength}
+      onBlur={onBlur}
+      onPaste={onPaste}
       onChange={(e) => onChange(e.target.value)}
       className={clsx(
         "h-9 w-full rounded-md border bg-card px-3 text-sm text-text",
         "outline-none transition-colors duration-150",
-
         "placeholder:text-muted",
 
         /* base border */
@@ -135,7 +146,6 @@ type StatDisplayProps = {
 export function StatDisplay({
   value,
   status,
-  label,
   accent = "neutral" as Accent,
 }: StatDisplayProps) {
 
@@ -153,7 +163,6 @@ export function StatDisplay({
 
       <StatusPill
         status={Number(status) as ProductStockStatus}
-        label={label}
       />
     </div>
   );
@@ -165,16 +174,19 @@ export function Textarea({
   value,
   onChange,
   placeholder,
+  disabled = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <textarea
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
       rows={3}
       className={clsx(
         "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-text",
@@ -187,7 +199,10 @@ export function Textarea({
         "hover:bg-hover",
 
         /* focus */
-        "focus:border-primary"
+        "focus:border-primary",
+
+        /* disabled */
+        disabled && "opacity-60 cursor-not-allowed bg-hover"
       )}
     />
   );
