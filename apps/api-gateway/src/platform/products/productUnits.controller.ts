@@ -25,7 +25,11 @@ import {
     EditProductUnitRequestDto,
     GetListOfProductUnitRequestDto,
 } from '@app/common/dtos/platform/products/crudProductUnitRequest.dto';
-import { ProductUnitResponseDto, GetListOfProductUnitResponseDto } from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
+import {
+    ProductUnitResponseDto,
+    ProductUnitResponseDtoWithHistory,
+    GetListOfProductUnitResponseDto,
+} from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
 import {
     ProductUnitHistoryItemResponseDto,
     GetProductUnitHistoryByVersionResponseDto,
@@ -84,11 +88,11 @@ export class ProductUnitsController {
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a product unit' })
     @ApiBody({ type: EditProductUnitRequestDto })
-    @ApiResponse({ status: 200, description: 'A product unit has been edited successfully.', type: ProductUnitResponseDto })
+    @ApiResponse({ status: 200, description: 'A product unit has been edited successfully.', type: ProductUnitResponseDtoWithHistory })
     @HttpCode(HttpStatus.OK)
-    async editProductUnit(@Body() dto: EditProductUnitRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
+    async editProductUnit(@Body() dto: EditProductUnitRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDtoWithHistory> {
         try {
-            const result: ProductUnitResponseDto = await firstValueFrom(
+            const result: ProductUnitResponseDtoWithHistory = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.editProductUnit' }, { dto, user })
             );
 
@@ -98,7 +102,7 @@ export class ProductUnitsController {
                 actionUserId: user.id,
                 action: LogCode.EDIT_PRODUCT_UNIT,
                 referenceType: ReferenceType.PRODUCT_UNIT,
-                referenceId: result.id,
+                referenceId: result.productUnit.id,
             });
 
             return result;
@@ -153,12 +157,12 @@ export class ProductUnitsController {
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Deactivate a product unit' })
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A product unit has been deactivated successfully.', type: ProductUnitResponseDto })
+    @ApiResponse({ status: 200, description: 'A product unit has been deactivated successfully.', type: ProductUnitResponseDtoWithHistory })
     @HttpCode(HttpStatus.OK)
-    async deactivateProductUnit(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
+    async deactivateProductUnit(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDtoWithHistory> {
         try {
-            const result: ProductUnitResponseDto = await firstValueFrom(
-                this.platformService.send({ cmd: 'products.deactivateProductUnit' }, { id })
+            const result: ProductUnitResponseDtoWithHistory = await firstValueFrom(
+                this.platformService.send({ cmd: 'products.deactivateProductUnit' }, { id, user })
             );
 
             // Log the result.
@@ -167,7 +171,7 @@ export class ProductUnitsController {
                 actionUserId: user.id,
                 action: LogCode.DEACTIVATE_PRODUCT_UNIT,
                 referenceType: ReferenceType.PRODUCT_UNIT,
-                referenceId: result.id,
+                referenceId: result.productUnit.id,
             });
 
             return result;
@@ -183,12 +187,12 @@ export class ProductUnitsController {
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Activate a product unit' })
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A product unit has been activated successfully.', type: ProductUnitResponseDto })
+    @ApiResponse({ status: 200, description: 'A product unit has been activated successfully.', type: ProductUnitResponseDtoWithHistory })
     @HttpCode(HttpStatus.OK)
-    async activateProductUnit(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
+    async activateProductUnit(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductUnitResponseDtoWithHistory> {
         try {
-            const result: ProductUnitResponseDto = await firstValueFrom(
-                this.platformService.send({ cmd: 'products.activateProductUnit' }, { id })
+            const result: ProductUnitResponseDtoWithHistory = await firstValueFrom(
+                this.platformService.send({ cmd: 'products.activateProductUnit' }, { id, user })
             );
 
             // Log the result.
@@ -197,7 +201,7 @@ export class ProductUnitsController {
                 actionUserId: user.id,
                 action: LogCode.ACTIVATE_PRODUCT_UNIT,
                 referenceType: ReferenceType.PRODUCT_UNIT,
-                referenceId: result.id,
+                referenceId: result.productUnit.id,
             });
 
             return result;

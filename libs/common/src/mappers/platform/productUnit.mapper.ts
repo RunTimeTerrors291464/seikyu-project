@@ -2,9 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 // Import product unit entities.
 import { ProductUnitsEntity } from 'apps/platform/src/products/entities/productUnits.entity';
+import { ProductUnitsHistoryEntity } from 'apps/platform/src/products/entities/history/productUnitsHistory.entity';
 
 // Import DTOs.
-import { ProductUnitResponseDto } from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
+import {
+    ProductUnitResponseDto,
+    ProductUnitResponseDtoWithHistory,
+} from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
 import { ProductUnitSnapshotDto, ProductUnitChangeEventDto, ProductUnitChangedField } from '@app/common/dtos/platform/products/history/snapshot/productUnitSnapshot.dto';
 
 @Injectable()
@@ -20,6 +24,26 @@ export class ProductUnitMapper {
             isActive: productUnitEntity.active,
             createdAt: productUnitEntity.createdAt,
             updatedAt: productUnitEntity.updatedAt,
+        };
+    }
+
+    // FROM: ProductUnitsEntity + ProductUnitsHistoryEntity
+    // TO: ProductUnitResponseDtoWithHistory
+    toProductUnitResponseDtoWithHistory(
+        productUnitEntity: ProductUnitsEntity,
+        history: ProductUnitsHistoryEntity,
+        createdByUsername: string,
+    ): ProductUnitResponseDtoWithHistory {
+        return {
+            productUnit: this.toProductUnitResponseDto(productUnitEntity),
+            history: {
+                id: history.id,
+                version: history.version,
+                createdBy: history.createdBy,
+                createdByUsername,
+                createdAt: history.createdAt,
+                eventSummary: history.eventSummary,
+            },
         };
     }
 

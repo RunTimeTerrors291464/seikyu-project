@@ -77,7 +77,10 @@ export class ProductUnitsRepository {
     }
 
     // Edit a product unit.
-    async editProductUnit(productUnit: ProductUnitsEntity, dto: EditProductUnitRequestDto, user: AccessTokenPayload): Promise<ProductUnitsEntity> {
+    async editProductUnit(productUnit: ProductUnitsEntity, dto: EditProductUnitRequestDto, user: AccessTokenPayload): Promise<{
+        productUnit: ProductUnitsEntity,
+        history: ProductUnitsHistoryEntity,
+    }> {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
 
             // Snapshot state BEFORE changes to compute change events later.
@@ -98,7 +101,7 @@ export class ProductUnitsRepository {
 
             const isSnapshot = nextVersion % 5 === 0;
 
-            await transactionalManager.save(ProductUnitsHistoryEntity, {
+            const newHistory = await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: updatedProductUnit,
                 version: nextVersion,
                 createdBy: user.id,
@@ -111,8 +114,7 @@ export class ProductUnitsRepository {
             // Clean up old product unit history versions if exceeding 16 versions.
             await this.cleanupOldProductUnitHistoryVersions(productUnit.id, transactionalManager);
 
-            // Return the updated product unit.
-            return updatedProductUnit;
+            return { productUnit: updatedProductUnit, history: newHistory };
         });
     }
 
@@ -170,7 +172,10 @@ export class ProductUnitsRepository {
     }
 
     // Deactivate a product unit.
-    async deactivateProductUnit(productUnit: ProductUnitsEntity, user: AccessTokenPayload): Promise<ProductUnitsEntity> {
+    async deactivateProductUnit(productUnit: ProductUnitsEntity, user: AccessTokenPayload): Promise<{
+        productUnit: ProductUnitsEntity,
+        history: ProductUnitsHistoryEntity,
+    }> {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
 
             productUnit.active = false;
@@ -183,7 +188,7 @@ export class ProductUnitsRepository {
             const eventSummary = [ProductUnitChangedField.ACTIVE];
             const isSnapshot = nextVersion % 5 === 0;
 
-            await transactionalManager.save(ProductUnitsHistoryEntity, {
+            const newHistory = await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: updatedProductUnit,
                 version: nextVersion,
                 createdBy: user.id,
@@ -195,12 +200,15 @@ export class ProductUnitsRepository {
 
             await this.cleanupOldProductUnitHistoryVersions(productUnit.id, transactionalManager);
 
-            return updatedProductUnit;
+            return { productUnit: updatedProductUnit, history: newHistory };
         });
     }
 
     // Activate a product unit.
-    async activateProductUnit(productUnit: ProductUnitsEntity, user: AccessTokenPayload): Promise<ProductUnitsEntity> {
+    async activateProductUnit(productUnit: ProductUnitsEntity, user: AccessTokenPayload): Promise<{
+        productUnit: ProductUnitsEntity,
+        history: ProductUnitsHistoryEntity,
+    }> {
         return await this.productUnitsRepository.manager.transaction(async (transactionalManager) => {
 
             productUnit.active = true;
@@ -213,7 +221,7 @@ export class ProductUnitsRepository {
             const eventSummary = [ProductUnitChangedField.ACTIVE];
             const isSnapshot = nextVersion % 5 === 0;
 
-            await transactionalManager.save(ProductUnitsHistoryEntity, {
+            const newHistory = await transactionalManager.save(ProductUnitsHistoryEntity, {
                 productUnit: updatedProductUnit,
                 version: nextVersion,
                 createdBy: user.id,
@@ -225,7 +233,7 @@ export class ProductUnitsRepository {
 
             await this.cleanupOldProductUnitHistoryVersions(productUnit.id, transactionalManager);
 
-            return updatedProductUnit;
+            return { productUnit: updatedProductUnit, history: newHistory };
         });
     }
 

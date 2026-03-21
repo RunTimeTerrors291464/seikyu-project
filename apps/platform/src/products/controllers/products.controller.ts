@@ -18,6 +18,7 @@ import {
     GetListOfProductResponseDto,
     ProductResponseDto,
     ProductCashierResponseDto,
+    ProductResponseDtoWithHistory,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
 import {
     GetProductHistoryListRequestDto,
@@ -48,7 +49,7 @@ export class ProductsController {
 
     // Edit a product.
     @MessagePattern({ cmd: 'products.editProduct' })
-    async editProduct(@Payload() data: { dto: EditProductRequestDto, user: AccessTokenPayload }): Promise<ProductResponseDto> {
+    async editProduct(@Payload() data: { dto: EditProductRequestDto, user: AccessTokenPayload }): Promise<ProductResponseDtoWithHistory> {
         return this.productsService.editProduct(data.dto, data.user);
     }
 
@@ -84,13 +85,13 @@ export class ProductsController {
 
     // Activate a product.
     @MessagePattern({ cmd: 'products.activateProduct' })
-    async activateProduct(@Payload() data: { id: string, user: AccessTokenPayload }): Promise<ProductResponseDto> {
+    async activateProduct(@Payload() data: { id: string, user: AccessTokenPayload }): Promise<ProductResponseDtoWithHistory> {
         return this.productsService.activateProduct(data.id, data.user);
     }
 
     // Deactivate a product.
     @MessagePattern({ cmd: 'products.deactivateProduct' })
-    async deactivateProduct(@Payload() data: { id: string, user: AccessTokenPayload }): Promise<ProductResponseDto> {
+    async deactivateProduct(@Payload() data: { id: string, user: AccessTokenPayload }): Promise<ProductResponseDtoWithHistory> {
         return this.productsService.deactivateProduct(data.id, data.user);
     }
 

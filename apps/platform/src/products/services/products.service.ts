@@ -24,6 +24,7 @@ import {
 import {
     ProductResponseDto,
     ProductCashierResponseDto,
+    ProductResponseDtoWithHistory,
     GetListOfProductResponseDto,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
 import {
@@ -72,6 +73,12 @@ export class ProductsService {
         return product;
     }
 
+    // Get the username of the user who created the product.
+    private async getCreatedByUsername(userId: string): Promise<string> {
+        const userResult = await this.usersRepository.getUserById(userId);
+        return userResult ? userResult[0].username : '[UNKNOWN] USER';
+    }
+
     // --- APIs ---
     // Create a new product.
     @HandleServiceError(ErrorCode.CREATE_PRODUCT_SERVICE)
@@ -99,7 +106,7 @@ export class ProductsService {
 
     // Edit a product.
     @HandleServiceError(ErrorCode.EDIT_PRODUCT_SERVICE)
-    async editProduct(dto: EditProductRequestDto, user: AccessTokenPayload): Promise<ProductResponseDto> {
+    async editProduct(dto: EditProductRequestDto, user: AccessTokenPayload): Promise<ProductResponseDtoWithHistory> {
 
         // Check if the product already exists and active.
         const product = await this.getProductById(dto.id);
@@ -126,7 +133,9 @@ export class ProductsService {
 
         // Edit the product.
         const updatedProduct = await this.productsRepository.editProduct(product, dto, user);
-        return this.productMapper.toProductResponseDto(updatedProduct);
+        const createdByUsername = await this.getCreatedByUsername(updatedProduct.history.createdBy);
+
+        return this.productMapper.toProductResponseDtoWithHistory(updatedProduct.product, updatedProduct.history, createdByUsername);
     }
 
     // Get a product by id.
@@ -231,7 +240,7 @@ export class ProductsService {
 
     // Activate a product.
     @HandleServiceError(ErrorCode.ACTIVATE_PRODUCT_SERVICE)
-    async activateProduct(id: string, user: AccessTokenPayload): Promise<ProductResponseDto> {
+    async activateProduct(id: string, user: AccessTokenPayload): Promise<ProductResponseDtoWithHistory> {
 
         // Check if the product already exists.
         const product = await this.getProductById(id);
@@ -242,12 +251,14 @@ export class ProductsService {
 
         // Activate the product.
         const updatedProduct = await this.productsRepository.activateProduct(product, user);
-        return this.productMapper.toProductResponseDto(updatedProduct);
+        const createdByUsername = await this.getCreatedByUsername(updatedProduct.history.createdBy);
+
+        return this.productMapper.toProductResponseDtoWithHistory(updatedProduct.product, updatedProduct.history, createdByUsername);
     }
 
     // Deactivate a product.
     @HandleServiceError(ErrorCode.DEACTIVATE_PRODUCT_SERVICE)
-    async deactivateProduct(id: string, user: AccessTokenPayload): Promise<ProductResponseDto> {
+    async deactivateProduct(id: string, user: AccessTokenPayload): Promise<ProductResponseDtoWithHistory> {
 
         // Check if the product already exists.
         const product = await this.getProductById(id);
@@ -258,7 +269,9 @@ export class ProductsService {
 
         // Deactivate the product.
         const updatedProduct = await this.productsRepository.deactivateProduct(product, user);
-        return this.productMapper.toProductResponseDto(updatedProduct);
+        const createdByUsername = await this.getCreatedByUsername(updatedProduct.history.createdBy);
+        
+        return this.productMapper.toProductResponseDtoWithHistory(updatedProduct.product, updatedProduct.history, createdByUsername);
     }
 
     // --- History APIs ---
@@ -276,8 +289,7 @@ export class ProductsService {
         // Get the username of the user who created each history entry.
         const historyWithUsernames = await Promise.all(
             historyList.map(async (history) => {
-                const userResult = await this.usersRepository.getUserById(history.createdBy);
-                const createdByUsername = userResult ? userResult[0].username : '[UNKNOWN] USER';
+                const createdByUsername = await this.getCreatedByUsername(history.createdBy);
 
                 return {
                     id: history.id,
@@ -306,8 +318,7 @@ export class ProductsService {
         if (!history) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, `The product version ${dto.version} is not found.`);
 
         // Get the username of the user who created this version.
-        const userResult = await this.usersRepository.getUserById(history.createdBy);
-        const createdByUsername = userResult ? userResult[0].username : '[UNKNOWN] USER';
+        const createdByUsername = await this.getCreatedByUsername(history.createdBy);
 
         // Return the history response.
         return {

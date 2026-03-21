@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+// Import DTOs.
+import { ProductHistoryItemResponseDto } from './history/crudProduct.dto';
+
 export class ProductResponseDto {
 
     @ApiProperty({
@@ -88,6 +91,44 @@ export class ProductResponseDto {
         example: '2024-01-16T14:45:00Z',
     })
     updatedAt: Date;
+}
+
+export class ProductResponseDtoWithHistory {
+    @ApiProperty({
+        description: 'The product data',
+        type: ProductResponseDto,
+        example: {
+            id: '1f8fe28f-3312-476a-bcc8-de9fefc948a4',
+            sku: '1234567890123',
+            productNames: ['Product Name 1', 'Product Name 2'],
+            productUnitId: 'ade95cfd-1121-474c-a19f-fd6ae10a6e4f',
+            productUnitName: 'kg',
+            productDescription: 'Detailed description of the product',
+            importPrice: 100.50,
+            sellingPrice: 111.75,
+            reorderThreshold: 10,
+            inventoryStock: 0,
+            isActive: true,
+            stockStatus: 2,
+            createdAt: '2026-03-21T13:39:48.396Z',
+            updatedAt: '2026-03-21T13:40:22.818Z',
+        }
+    })
+    product: ProductResponseDto;
+
+    @ApiProperty({
+        description: 'The history record of the changes',
+        type: ProductHistoryItemResponseDto,
+        example: {
+            id: '838bb56a-e445-4357-a804-54431c616762',
+            version: 2,
+            createdBy: '5efa7fdb-fdda-465c-9dcd-ee0d7d16a3f9',
+            createdByUsername: 'johndoe',
+            createdAt: '2026-03-21T13:40:22.818Z',
+            eventSummary: ['sellingPrice'],
+        }
+    })
+    history: ProductHistoryItemResponseDto;
 }
 
 export class ProductCashierResponseDto {

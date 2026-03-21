@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 // Import product entities.
 import { ProductsEntity } from 'apps/platform/src/products/entities/products.entity';
+import { ProductsHistoryEntity } from 'apps/platform/src/products/entities/history/productsHistory.entity';
 
 // Import DTOs.
 import {
     ProductResponseDto,
     ProductCashierResponseDto,
+    ProductResponseDtoWithHistory,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
 import { ProductSnapshotDto, ProductChangeEventDto, ProductChangedField } from '@app/common/dtos/platform/products/history/snapshot/productSnapshot.dto';
 
@@ -31,6 +33,22 @@ export class ProductMapper {
             stockStatus: productEntity.stockStatus,
             createdAt: productEntity.createdAt,
             updatedAt: productEntity.updatedAt,
+        };
+    }
+
+    // FROM: ProductsEntity + ProductsHistoryEntity
+    // TO: ProductResponseDtoWithHistory
+    toProductResponseDtoWithHistory(productEntity: ProductsEntity, history: ProductsHistoryEntity, createdByUsername: string): ProductResponseDtoWithHistory {
+        return {
+            product: this.toProductResponseDto(productEntity),
+            history: {
+                id: history.id,
+                version: history.version,
+                createdBy: history.createdBy,
+                createdByUsername: createdByUsername,
+                createdAt: history.createdAt,
+                eventSummary: history.eventSummary,
+            },
         };
     }
 

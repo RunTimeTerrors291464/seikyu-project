@@ -29,6 +29,7 @@ import {
     ProductResponseDto,
     GetListOfProductResponseDto,
     ProductCashierResponseDto,
+    ProductResponseDtoWithHistory,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
 import {
     ProductHistoryItemResponseDto,
@@ -90,11 +91,11 @@ export class ProductsController {
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a product' })
     @ApiBody({ type: EditProductRequestDto })
-    @ApiResponse({ status: 200, description: 'A product has been edited successfully.', type: ProductResponseDto })
+    @ApiResponse({ status: 200, description: 'A product has been edited successfully.', type: ProductResponseDtoWithHistory })
     @HttpCode(HttpStatus.OK)
-    async editProduct(@Body() dto: EditProductRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDto> {
+    async editProduct(@Body() dto: EditProductRequestDto, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDtoWithHistory> {
         try {
-            const result: ProductResponseDto = await firstValueFrom(
+            const result: ProductResponseDtoWithHistory = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.editProduct' }, { dto, user })
             );
 
@@ -104,7 +105,7 @@ export class ProductsController {
                 actionUserId: user.id,
                 action: LogCode.EDIT_PRODUCT,
                 referenceType: ReferenceType.PRODUCT,
-                referenceId: result.id,
+                referenceId: result.product.id,
             });
 
             return result;
@@ -204,11 +205,11 @@ export class ProductsController {
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Deactivate a product' })
     @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A product has been deactivated successfully.', type: ProductResponseDto })
+    @ApiResponse({ status: 200, description: 'A product has been deactivated successfully.', type: ProductResponseDtoWithHistory })
     @HttpCode(HttpStatus.OK)
-    async deactivateProduct(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDto> {
+    async deactivateProduct(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDtoWithHistory> {
         try {
-            const result: ProductResponseDto = await firstValueFrom(
+            const result: ProductResponseDtoWithHistory = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.deactivateProduct' }, { id, user })
             );
 
@@ -218,7 +219,7 @@ export class ProductsController {
                 actionUserId: user.id,
                 action: LogCode.DEACTIVATE_PRODUCT,
                 referenceType: ReferenceType.PRODUCT,
-                referenceId: result.id,
+                referenceId: result.product.id,
             });
 
             return result;
@@ -234,11 +235,11 @@ export class ProductsController {
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Activate a product' })
     @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A product has been activated successfully.', type: ProductResponseDto })
+    @ApiResponse({ status: 200, description: 'A product has been activated successfully.', type: ProductResponseDtoWithHistory })
     @HttpCode(HttpStatus.OK)
-    async activateProduct(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDto> {
+    async activateProduct(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDtoWithHistory> {
         try {
-            const result: ProductResponseDto = await firstValueFrom(
+            const result: ProductResponseDtoWithHistory = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.activateProduct' }, { id, user })
             );
 
@@ -248,7 +249,7 @@ export class ProductsController {
                 actionUserId: user.id,
                 action: LogCode.ACTIVATE_PRODUCT,
                 referenceType: ReferenceType.PRODUCT,
-                referenceId: result.id,
+                referenceId: result.product.id,
             });
 
             return result;

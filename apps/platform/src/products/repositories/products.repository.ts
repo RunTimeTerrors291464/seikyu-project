@@ -144,7 +144,10 @@ export class ProductsRepository {
     }
 
     // Edit a product.
-    async editProduct(productEntity: ProductsEntity, dto: EditProductRequestDto, user: AccessTokenPayload): Promise<ProductsEntity> {
+    async editProduct(productEntity: ProductsEntity, dto: EditProductRequestDto, user: AccessTokenPayload): Promise<{
+        product: ProductsEntity,
+        history: ProductsHistoryEntity,
+    }> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
             const { productNames, productUnitId, ...productData } = dto;
 
@@ -200,7 +203,7 @@ export class ProductsRepository {
             const isSnapshot = nextVersion % 5 === 0;
 
             // Create a new product history entry.
-            await transactionalManager.save(ProductsHistoryEntity, {
+            const newHistory = await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: nextVersion,
                 createdBy: user.id,
@@ -213,7 +216,7 @@ export class ProductsRepository {
             // Clean up old product history versions if exceeding 10.
             await this.cleanupOldProductHistoryVersions(productEntity.id, transactionalManager);
 
-            return productToReturn;
+            return { product: productToReturn, history: newHistory };
         });
     }
 
@@ -425,7 +428,10 @@ export class ProductsRepository {
     }
 
     // Activate a product.
-    async activateProduct(productEntity: ProductsEntity, user: AccessTokenPayload): Promise<ProductsEntity> {
+    async activateProduct(productEntity: ProductsEntity, user: AccessTokenPayload): Promise<{
+        product: ProductsEntity,
+        history: ProductsHistoryEntity,
+    }> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
             productEntity.active = true;
             await transactionalManager.save(ProductsEntity, productEntity);
@@ -438,6 +444,7 @@ export class ProductsRepository {
 
             const productToReturn = productWithRelations || productEntity;
 
+            // --- History operations ---
             // Get the latest version from history using transactionalManager.
             const currentVersion = await this.getLatestHistoryVersion(productEntity.id, transactionalManager);
             const nextVersion = currentVersion + 1;
@@ -447,7 +454,7 @@ export class ProductsRepository {
             const isSnapshot = nextVersion % 5 === 0;
 
             // Create a new product history entry.
-            await transactionalManager.save(ProductsHistoryEntity, {
+            const newHistory = await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: nextVersion,
                 createdBy: user.id,
@@ -460,12 +467,15 @@ export class ProductsRepository {
             // Clean up old product history versions if exceeding 16.
             await this.cleanupOldProductHistoryVersions(productEntity.id, transactionalManager);
 
-            return productToReturn;
+            return { product: productToReturn, history: newHistory };
         });
     }
 
     // Deactivate a product.
-    async deactivateProduct(productEntity: ProductsEntity, user: AccessTokenPayload): Promise<ProductsEntity> {
+    async deactivateProduct(productEntity: ProductsEntity, user: AccessTokenPayload): Promise<{
+        product: ProductsEntity,
+        history: ProductsHistoryEntity,
+    }> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
             productEntity.active = false;
             await transactionalManager.save(ProductsEntity, productEntity);
@@ -486,8 +496,9 @@ export class ProductsRepository {
             const eventSummary = [ProductChangedField.ACTIVE];
             const isSnapshot = nextVersion % 5 === 0;
 
+            // --- History operations ---
             // Create a new product history entry.
-            await transactionalManager.save(ProductsHistoryEntity, {
+            const newHistory = await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
                 version: nextVersion,
                 createdBy: user.id,
@@ -500,7 +511,7 @@ export class ProductsRepository {
             // Clean up old product history versions if exceeding 16.
             await this.cleanupOldProductHistoryVersions(productEntity.id, transactionalManager);
 
-            return productToReturn;
+            return { product: productToReturn, history: newHistory };
         });
     }
 

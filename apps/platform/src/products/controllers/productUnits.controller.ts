@@ -14,6 +14,7 @@ import {
 } from '@app/common/dtos/platform/products/crudProductUnitRequest.dto';
 import {
     ProductUnitResponseDto,
+    ProductUnitResponseDtoWithHistory,
     GetListOfProductUnitResponseDto,
 } from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
@@ -38,7 +39,7 @@ export class ProductUnitsController {
 
     // Edit a product unit.
     @MessagePattern({ cmd: 'products.editProductUnit' })
-    async editProductUnit(data: { dto: EditProductUnitRequestDto; user: AccessTokenPayload }): Promise<ProductUnitResponseDto> {
+    async editProductUnit(data: { dto: EditProductUnitRequestDto; user: AccessTokenPayload }): Promise<ProductUnitResponseDtoWithHistory> {
         return this.productUnitsService.editProductUnit(data.dto, data.user);
     }
 
@@ -56,13 +57,13 @@ export class ProductUnitsController {
 
     // Deactivate a product unit.
     @MessagePattern({ cmd: 'products.deactivateProductUnit' })
-    async deactivateProductUnit(data: { id: string; user: AccessTokenPayload }): Promise<ProductUnitResponseDto> {
+    async deactivateProductUnit(data: { id: string; user: AccessTokenPayload }): Promise<ProductUnitResponseDtoWithHistory> {
         return this.productUnitsService.deactivateProductUnit(data.id, data.user);
     }
 
     // Activate a product unit.
     @MessagePattern({ cmd: 'products.activateProductUnit' })
-    async activateProductUnit(data: { id: string; user: AccessTokenPayload }): Promise<ProductUnitResponseDto> {
+    async activateProductUnit(data: { id: string; user: AccessTokenPayload }): Promise<ProductUnitResponseDtoWithHistory> {
         return this.productUnitsService.activateProductUnit(data.id, data.user);
     }
 

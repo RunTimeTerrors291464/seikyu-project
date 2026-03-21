@@ -18,7 +18,11 @@ import {
     EditProductUnitRequestDto,
     GetListOfProductUnitRequestDto,
 } from '@app/common/dtos/platform/products/crudProductUnitRequest.dto';
-import { GetListOfProductUnitResponseDto, ProductUnitResponseDto } from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
+import {
+    GetListOfProductUnitResponseDto,
+    ProductUnitResponseDto,
+    ProductUnitResponseDtoWithHistory,
+} from '@app/common/dtos/platform/products/crudProductunitResponse.dto';
 import {
     GetProductUnitHistoryListRequestDto,
     GetProductUnitHistoryByVersionRequestDto,
@@ -54,6 +58,13 @@ export class ProductUnitsService {
         return productUnit;
     }
 
+    // Get the username of the user who created the product unit.
+    private async getCreatedByUsername(userId: string): Promise<string> {
+        const userResult = await this.usersRepository.getUserById(userId);
+        return userResult ? userResult[0].username : '[UNKNOWN] USER';
+    }
+
+
     // --- APIs ---
     // Create a new product unit.
     @HandleServiceError(ErrorCode.CREATE_PRODUCT_UNIT_SERVICE)
@@ -70,7 +81,7 @@ export class ProductUnitsService {
 
     // Edit a product unit.
     @HandleServiceError(ErrorCode.EDIT_PRODUCT_UNIT_SERVICE)
-    async editProductUnit(dto: EditProductUnitRequestDto, user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
+    async editProductUnit(dto: EditProductUnitRequestDto, user: AccessTokenPayload): Promise<ProductUnitResponseDtoWithHistory> {
 
         // Check if the product unit already exists.
         const productUnit = await this.getProductUnitById(dto.id);
@@ -78,13 +89,16 @@ export class ProductUnitsService {
 
         // Check if the product unit name is already taken.
         if (dto.unitName) {
-            const productUnit = await this.getProductUnitByUnitName(dto.unitName);
-            if (productUnit) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_UNIT_NAME_ALREADY_EXISTS, 'The product unit name is already taken.');
+            const existingByName = await this.getProductUnitByUnitName(dto.unitName);
+            if (existingByName && existingByName.id !== dto.id) {
+                throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_UNIT_NAME_ALREADY_EXISTS, 'The product unit name is already taken.');
+            }
         }
 
         // Edit the product unit.
-        const updatedProductUnit = await this.productUnitsRepository.editProductUnit(productUnit, dto, user);
-        return this.productUnitMapper.toProductUnitResponseDto(updatedProductUnit);
+        const updated = await this.productUnitsRepository.editProductUnit(productUnit, dto, user);
+        const createdByUsername = await this.getCreatedByUsername(updated.history.createdBy);
+        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(updated.productUnit, updated.history, createdByUsername);
     }
 
     // Get a product unit by id.
@@ -110,7 +124,7 @@ export class ProductUnitsService {
 
     // Deactivate a product unit.
     @HandleServiceError(ErrorCode.DEACTIVATE_PRODUCT_UNIT_SERVICE)
-    async deactivateProductUnit(id: string, user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
+    async deactivateProductUnit(id: string, user: AccessTokenPayload): Promise<ProductUnitResponseDtoWithHistory> {
 
         // Check if the product unit already exists.
         const productUnit = await this.getProductUnitById(id);
@@ -120,13 +134,14 @@ export class ProductUnitsService {
         if (!productUnit.active) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_UNIT_ALREADY_DEACTIVATED, 'The product unit is already deactivated.');
 
         // Deactivate the product unit.
-        const updatedProductUnit = await this.productUnitsRepository.deactivateProductUnit(productUnit, user);
-        return this.productUnitMapper.toProductUnitResponseDto(updatedProductUnit);
+        const updated = await this.productUnitsRepository.deactivateProductUnit(productUnit, user);
+        const createdByUsername = await this.getCreatedByUsername(updated.history.createdBy);
+        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(updated.productUnit, updated.history, createdByUsername);
     }
 
     // Activate a product unit.
     @HandleServiceError(ErrorCode.ACTIVATE_PRODUCT_UNIT_SERVICE)
-    async activateProductUnit(id: string, user: AccessTokenPayload): Promise<ProductUnitResponseDto> {
+    async activateProductUnit(id: string, user: AccessTokenPayload): Promise<ProductUnitResponseDtoWithHistory> {
 
         // Check if the product unit already exists.
         const productUnit = await this.getProductUnitById(id);
@@ -136,8 +151,9 @@ export class ProductUnitsService {
         if (productUnit.active) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_UNIT_ALREADY_ACTIVATED, 'The product unit is already activated.');
 
         // Activate the product unit.
-        const updatedProductUnit = await this.productUnitsRepository.activateProductUnit(productUnit, user);
-        return this.productUnitMapper.toProductUnitResponseDto(updatedProductUnit);
+        const updated = await this.productUnitsRepository.activateProductUnit(productUnit, user);
+        const createdByUsername = await this.getCreatedByUsername(updated.history.createdBy);
+        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(updated.productUnit, updated.history, createdByUsername);
     }
 
     // --- History APIs ---
