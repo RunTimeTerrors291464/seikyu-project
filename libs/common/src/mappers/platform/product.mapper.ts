@@ -40,7 +40,7 @@ export class ProductMapper {
         return {
             id: productEntity.id,
             sku: productEntity.sku,
-            productName: productEntity.productNames.map(pn => pn.name),
+            productNames: productEntity.productNames.map(pn => pn.name),
             unitName: productEntity.productUnit.unitName,
             productDescription: productEntity.productDescription || null,
             sellingPrice: productEntity.sellingPrice,

@@ -113,8 +113,8 @@ export class ProductsService {
         }
 
         // If edit the product names, check if the product names has maximum 8 names.
-        if (dto.productName) {
-            if (dto.productName.length > 8) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_PRODUCT_NAMES, 'The product names has maximum 8 names.');
+        if (dto.productNames) {
+            if (dto.productNames.length > 8) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_PRODUCT_NAMES, 'The product names has maximum 8 names.');
         }
 
         // Check if the product unit exists and active.

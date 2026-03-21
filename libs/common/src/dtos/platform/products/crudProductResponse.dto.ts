@@ -109,7 +109,7 @@ export class ProductCashierResponseDto {
         example: ['Product Name EN', 'Tên Sản Phẩm VI'],
         type: [String],
     })
-    productName: string[];
+    productNames: string[];
 
     @ApiProperty({
         description: 'Product unit name',

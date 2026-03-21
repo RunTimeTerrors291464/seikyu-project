@@ -115,7 +115,7 @@ export class EditProductRequestDto {
     @IsOptional()
     @IsArray()
     @IsString({ each: true })
-    productName?: string[];
+    productNames?: string[];
 
     @ApiPropertyOptional({
         description: 'The unique identifier of the product unit',

@@ -146,7 +146,7 @@ export class ProductsRepository {
     // Edit a product.
     async editProduct(productEntity: ProductsEntity, dto: EditProductRequestDto, user: AccessTokenPayload): Promise<ProductsEntity> {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
-            const { productName, productUnitId, ...productData } = dto;
+            const { productNames, productUnitId, ...productData } = dto;
 
             if (productUnitId) {
                 productData['productUnit'] = { id: productUnitId };
@@ -159,18 +159,18 @@ export class ProductsRepository {
             });
             const previousSnapshot = previousProductState ? this.productMapper.toProductSnapshotDto(previousProductState) : null;
 
-            // Merge product data without productName.
+            // Merge product data without productNames.
             this.productsRepository.merge(productEntity, productData);
             const updatedProductEntity: ProductsEntity = await transactionalManager.save(ProductsEntity, productEntity);
 
             // Update product names if provided.
-            if (productName !== undefined) {
+            if (productNames !== undefined) {
                 // Delete existing product names.
                 await transactionalManager.delete(ProductNamesEntity, { product: { id: productEntity.id } });
 
                 // Create and save new product names if array is not empty.
-                if (productName.length > 0) {
-                    const productNameEntities = productName.map(name => this.productNamesRepository.create({ name, product: updatedProductEntity }));
+                if (productNames.length > 0) {
+                    const productNameEntities = productNames.map(name => this.productNamesRepository.create({ name, product: updatedProductEntity }));
                     const savedProductNames = await transactionalManager.save(ProductNamesEntity, productNameEntities);
                     updatedProductEntity.productNames = savedProductNames;
                 } else {
