@@ -90,7 +90,7 @@ export class GetListOfProductUnitRequestDto {
     })
     @IsOptional()
     @IsString()
-    active?: 'true' | 'false' | 'all' = 'all';
+    isActive?: 'true' | 'false' | 'all' = 'all';
 
     @ApiPropertyOptional({
         description: 'Sort by field: "unitName", "createdAt", or "updatedAt"',

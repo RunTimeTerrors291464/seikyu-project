@@ -237,7 +237,7 @@ export class GetListOfProductRequestDto {
     })
     @IsIn(["true", "false", "all"])
     @IsOptional()
-    active?: "true" | "false" | "all";
+    isActive?: "true" | "false" | "all";
 
     @ApiPropertyOptional({
         description: 'Filter by stock status',

@@ -326,7 +326,7 @@ export class ProductsRepository {
 
     // Get a list of products.
     async getListOfProducts(dto: GetListOfProductRequestDto): Promise<{ products: ProductsEntity[], total: number }> {
-        const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', active, stockStatus } = dto;
+        const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', isActive, stockStatus } = dto;
 
         // Handle productName search separately.
         let filterBySku: string[] | null = null;
@@ -370,9 +370,9 @@ export class ProductsRepository {
                 }
             }
 
-            if (active !== undefined && active !== 'all') {
-                const isActive = active === 'true';
-                qb.andWhere('product.active = :active', { active: isActive });
+            if (isActive !== undefined && isActive !== 'all') {
+                const activeBool = isActive === 'true';
+                qb.andWhere('product.active = :active', { active: activeBool });
             }
 
             if (stockStatus !== undefined && stockStatus !== 'all') {

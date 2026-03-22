@@ -134,7 +134,7 @@ export class ProductUnitsRepository {
 
     // Get a list of product units.
     async getListOfProductUnits(dto: GetListOfProductUnitRequestDto): Promise<{ data: ProductUnitsEntity[], total: number }> {
-        const { page = 1, limit = 10, search, active = 'all', sortBy, sortOrder = 'asc' } = dto;
+        const { page = 1, limit = 10, search, isActive = 'all', sortBy, sortOrder = 'asc' } = dto;
 
         // Create query builder.
         const queryBuilder = this.productUnitsRepository.createQueryBuilder('productUnit');
@@ -146,9 +146,9 @@ export class ProductUnitsRepository {
         }
 
         // Apply active status filter.
-        if (active && active !== 'all') {
+        if (isActive && isActive !== 'all') {
             queryBuilder.andWhere('productUnit.active = :active', {
-                active: active === 'true',
+                active: isActive === 'true',
             });
         }
 
