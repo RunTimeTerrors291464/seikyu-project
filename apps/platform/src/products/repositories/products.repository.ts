@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Repository, In, ILike } from 'typeorm';
+import { Repository, In, ILike, SelectQueryBuilder } from 'typeorm';
 
 // Import entities.
 import { InjectRepository } from '@nestjs/typeorm';
@@ -325,12 +325,8 @@ export class ProductsRepository {
     }
 
     // Get a list of products.
-    async getListOfProducts(dto: GetListOfProductRequestDto): Promise<ProductsEntity[]> {
+    async getListOfProducts(dto: GetListOfProductRequestDto): Promise<{ products: ProductsEntity[], total: number }> {
         const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', active, stockStatus } = dto;
-
-        // Create query builder.
-        const queryBuilder = this.productsRepository.createQueryBuilder('product');
-        queryBuilder.leftJoinAndSelect('product.productUnit', 'productUnit');
 
         // Handle productName search separately.
         let filterBySku: string[] | null = null;
@@ -342,51 +338,62 @@ export class ProductsRepository {
             filterBySku = [...new Set(matchingNames.map(n => n.product.sku))];
 
             if (filterBySku.length === 0) {
-                return [];
+                return { products: [], total: 0 };
             }
-            queryBuilder.andWhere('product.sku IN (:...skus)', { skus: filterBySku });
         }
 
-        // Apply other search filters.
-        if (search && searchBy && searchBy !== 'productName') {
-            if (searchBy === 'sku') {
-                queryBuilder.andWhere('product.sku ILIKE :search', { search: `${search}%` });
+        // Apply filters to the query builder.
+        const applyFilters = (qb: SelectQueryBuilder<ProductsEntity>) => {
+            if (filterBySku) {
+                qb.andWhere('product.sku IN (:...skus)', { skus: filterBySku });
+            }
 
-            } else if (searchBy === 'importPrice') {
-                const searchNum = parseFloat(search);
-                if (!isNaN(searchNum)) {
-                    queryBuilder.andWhere(
-                        'product.importPrice >= :minPrice AND product.importPrice <= :maxPrice',
-                        { minPrice: searchNum, maxPrice: searchNum + 1 }
-                    );
+            if (search && searchBy && searchBy !== 'productName') {
+                if (searchBy === 'sku') {
+                    qb.andWhere('product.sku ILIKE :search', { search: `${search}%` });
+                } else if (searchBy === 'importPrice') {
+                    const searchNum = parseFloat(search);
+                    if (!isNaN(searchNum)) {
+                        qb.andWhere(
+                            'product.importPrice >= :minPrice AND product.importPrice <= :maxPrice',
+                            { minPrice: searchNum, maxPrice: searchNum + 1 },
+                        );
+                    }
+                } else if (searchBy === 'sellingPrice') {
+                    const searchNum = parseFloat(search);
+                    if (!isNaN(searchNum)) {
+                        qb.andWhere(
+                            'product.sellingPrice >= :minPrice AND product.sellingPrice <= :maxPrice',
+                            { minPrice: searchNum, maxPrice: searchNum + 1 },
+                        );
+                    }
                 }
+            }
 
-            } else if (searchBy === 'sellingPrice') {
-                const searchNum = parseFloat(search);
-                if (!isNaN(searchNum)) {
-                    queryBuilder.andWhere(
-                        'product.sellingPrice >= :minPrice AND product.sellingPrice <= :maxPrice',
-                        { minPrice: searchNum, maxPrice: searchNum + 1 }
-                    );
+            if (active !== undefined && active !== 'all') {
+                const isActive = active === 'true';
+                qb.andWhere('product.active = :active', { active: isActive });
+            }
+
+            if (stockStatus !== undefined && stockStatus !== 'all') {
+                const status = parseInt(stockStatus);
+                if (!isNaN(status)) {
+                    qb.andWhere('product.stockStatus = :stockStatus', { stockStatus: status });
                 }
             }
-        }
+        };
 
-        // Apply active filter.
-        if (active !== undefined && active !== 'all') {
-            const isActive = active === 'true';
-            queryBuilder.andWhere('product.active = :active', { active: isActive });
-        }
+        let countQueryBuilder = this.productsRepository
+            .createQueryBuilder('product')
+            .leftJoin('product.productUnit', 'productUnit');
+        applyFilters(countQueryBuilder);
+        const total = await countQueryBuilder.getCount();
 
-        // Apply stock status filter.
-        if (stockStatus !== undefined && stockStatus !== 'all') {
-            const status = parseInt(stockStatus);
-            if (!isNaN(status)) {
-                queryBuilder.andWhere('product.stockStatus = :stockStatus', { stockStatus: status });
-            }
-        }
+        let queryBuilder = this.productsRepository
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.productUnit', 'productUnit');
+        applyFilters(queryBuilder);
 
-        // Apply sorting.
         const sortField = sortBy === 'unit' ? 'productUnit.unitName'
             : sortBy === 'importPrice' ? 'product.importPrice'
                 : sortBy === 'sellingPrice' ? 'product.sellingPrice'
@@ -396,12 +403,10 @@ export class ProductsRepository {
                                 : 'product.createdAt';
         queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');
 
-        // Apply pagination.
         queryBuilder.skip((page - 1) * limit).take(limit);
 
         const products = await queryBuilder.getMany();
 
-        // Load productNames separately.
         if (products.length > 0) {
             const ids = products.map(p => p.id);
             const productNames = await this.productNamesRepository.find({
@@ -409,7 +414,6 @@ export class ProductsRepository {
                 relations: ['product'],
             });
 
-            // Map names to products.
             const namesMap = new Map<string, ProductNamesEntity[]>();
             productNames.forEach(name => {
                 if (!namesMap.has(name.product.id)) {
@@ -423,8 +427,7 @@ export class ProductsRepository {
             });
         }
 
-        // Return product entities.
-        return products;
+        return { products, total };
     }
 
     // Activate a product.

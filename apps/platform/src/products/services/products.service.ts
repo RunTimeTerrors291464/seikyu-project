@@ -165,10 +165,7 @@ export class ProductsService {
     // Get a list of products with pagination and filters.
     @HandleServiceError(ErrorCode.GET_PRODUCTS_SERVICE)
     async getListOfProducts(dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
-        const products = await this.productsRepository.getListOfProducts(dto);
-
-        // Count total products.
-        const total = products.length;
+        const { products, total } = await this.productsRepository.getListOfProducts(dto);
 
         const productDtos: ProductResponseDto[] = products.map((product) =>
             this.productMapper.toProductResponseDto(product)
