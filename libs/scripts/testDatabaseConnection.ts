@@ -2,8 +2,22 @@ import { Client } from 'pg';
 import Redis from 'ioredis';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+// ─── SSL helper ──────────────────────────────────────────────────────────────
+function buildSslOptions(): false | { rejectUnauthorized: boolean; ca: string } {
+    if (process.env.DB_SSL !== 'true') return false;
+
+    const certPath = process.env.DB_SSL_CERT || '/certs/global-bundle.pem';
+
+    if (!fs.existsSync(certPath)) {
+        throw new Error(`DB_SSL is enabled but cert file not found: ${certPath}`);
+    }
+
+    return { rejectUnauthorized: true, ca: fs.readFileSync(certPath).toString() };
+}
 
 // ─── Timeout helper ──────────────────────────────────────────────────────────
 const CONNECT_TIMEOUT_MS = 5_000;
@@ -106,17 +120,27 @@ async function testPostgres(cfg: DbConfig): Promise<boolean> {
     const password = process.env[`DB_PASSWORD_${cfg.envKey}`];
     const database = process.env[`DB_DATABASE_${cfg.envKey}`];
 
+    let ssl: false | { rejectUnauthorized: boolean; ca: string };
+    try {
+        ssl = buildSslOptions();
+    } catch (err: unknown) {
+        fail(`[${cfg.label}] SSL config error: ${(err as Error).message}`);
+        return false;
+    }
+
     const client = new Client({
         host,
         port,
         user,
         password,
         database,
+        ssl: ssl || undefined,
         connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
     });
 
     try {
-        info(`Connecting to ${host}:${port}/${database}`);
+        const sslLabel = ssl ? `${c.yellow}SSL on${c.reset}` : `${c.dim}SSL off${c.reset}`;
+        info(`Connecting to ${host}:${port}/${database} [${sslLabel}]`);
         await withTimeout(client.connect(), CONNECT_TIMEOUT_MS, `PostgreSQL ${host}:${port}/${database}`);
         ok('Connected');
 
