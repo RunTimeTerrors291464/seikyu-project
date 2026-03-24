@@ -5,6 +5,21 @@ import * as path from 'path';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
+// ─── Timeout helper ──────────────────────────────────────────────────────────
+const CONNECT_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+            setTimeout(
+                () => reject(new Error(`Connection timed out after ${ms / 1000}s — ${label} is unreachable`)),
+                ms,
+            ),
+        ),
+    ]);
+}
+
 // ─── Colours ────────────────────────────────────────────────────────────────
 const c = {
     reset: '\x1b[0m',
@@ -28,18 +43,24 @@ const REDIS_MOCK_KEY = '__seikyu_connection_test__';
 async function testRedis(): Promise<boolean> {
     section('Redis');
 
+    const redisHost = process.env.REDIS_HOST || '127.0.0.1';
+    const redisPort = parseInt(process.env.REDIS_PORT || '6379');
+
     const redis = new Redis({
-        host: process.env.REDIS_HOST || '127.0.0.1',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
+        host: redisHost,
+        port: redisPort,
         password: process.env.REDIS_PASSWORD || undefined,
         db: parseInt(process.env.REDIS_DB || '0'),
         lazyConnect: true,
-        connectTimeout: 5000,
+        connectTimeout: CONNECT_TIMEOUT_MS,
+        // Disable auto-retry so the timeout fires cleanly instead of looping.
+        retryStrategy: () => null,
+        maxRetriesPerRequest: 0,
     });
 
     try {
-        info(`Connecting to ${process.env.REDIS_HOST}:${process.env.REDIS_PORT} (db ${process.env.REDIS_DB ?? 0})`);
-        await redis.connect();
+        info(`Connecting to ${redisHost}:${redisPort} (db ${process.env.REDIS_DB ?? 0})`);
+        await withTimeout(redis.connect(), CONNECT_TIMEOUT_MS, `Redis ${redisHost}:${redisPort}`);
         ok('Connected');
 
         // mock write
@@ -85,11 +106,18 @@ async function testPostgres(cfg: DbConfig): Promise<boolean> {
     const password = process.env[`DB_PASSWORD_${cfg.envKey}`];
     const database = process.env[`DB_DATABASE_${cfg.envKey}`];
 
-    const client = new Client({ host, port, user, password, database, connectionTimeoutMillis: 5000 });
+    const client = new Client({
+        host,
+        port,
+        user,
+        password,
+        database,
+        connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+    });
 
     try {
         info(`Connecting to ${host}:${port}/${database}`);
-        await client.connect();
+        await withTimeout(client.connect(), CONNECT_TIMEOUT_MS, `PostgreSQL ${host}:${port}/${database}`);
         ok('Connected');
 
         // mock: create temp table & insert
