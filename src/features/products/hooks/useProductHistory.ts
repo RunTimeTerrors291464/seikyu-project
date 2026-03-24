@@ -60,10 +60,7 @@ export function useProductHistory(productId: string) {
     setLoadingMap((prev) => ({ ...prev, [version]: true }));
 
     try {
-      const data = await getProductHistoryDetail(
-        productId,
-        version
-      );
+      const data = await getProductHistoryDetail(productId, version);
 
       setDetailMap((prev) => ({
         ...prev,
@@ -90,5 +87,6 @@ export function useProductHistory(productId: string) {
     loadingMap,
 
     fetchDetail,
+    setHistory,
   };
 }

@@ -72,8 +72,8 @@ export type ProductQuery = {
   | "updatedAt"
   | "status";
   sortOrder?: "asc" | "desc";
-  isActive?: "true" | "false";
-  stockStatus?: "0" | "1" | "2";
+  isActive: "true" | "false" | "all";
+  stockStatus: "0" | "1" | "2" | "all";
 };
 
 /* ============================= */
@@ -217,9 +217,11 @@ export const getProductHistoryDetail = async (
 /* ACTIVE DEACTIVE */
 /* ============================= */
 export const deactivateProduct = async (id: string) => {
-  return apiClient.patch(`/products/${id}/deactivate`);
+  const res = await apiClient.patch(`/products/${id}/deactivate`);
+  return res.data;
 };
 
 export const activateProduct = async (id: string) => {
-  return apiClient.patch(`/products/${id}/activate`);
+  const res = await apiClient.patch(`/products/${id}/activate`);
+  return res.data;
 };

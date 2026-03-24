@@ -111,5 +111,8 @@
   "confirmActivateTitle": "Kích hoạt sản phẩm?",
   "confirmActivateDescription": "Sản phẩm sẽ được kích hoạt lại.",
   "activate": "Kích hoạt",
-  "deactivate": "Ngừng kích hoạt"
+  "deactivate": "Ngừng kích hoạt",
+  "close": "Đóng",
+  "editName": "Chỉnh sửa tên",
+  "noUnit": "Không có đơn vị"
 }

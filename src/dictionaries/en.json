@@ -111,5 +111,8 @@
   "confirmActivateTitle": "Activate product?",
   "confirmActivateDescription": "This product will be available again.",
   "activate": "Activate",
-  "deactivate": "Deactivate"
+  "deactivate": "Deactivate",
+  "close": "Close",
+  "editName": "Edit name",
+  "noUnit": "No unit"
 }

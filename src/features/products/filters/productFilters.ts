@@ -1,4 +1,4 @@
-import { ProductStockFilter } from "@/components/types/ui";
+import { ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
 import { Dictionary } from "@/lib/lang/i18n";
 import { booleanFilter, textFilter } from "@/lib/table/filter";
 import { Product } from "../types/product";
@@ -22,6 +22,24 @@ export const PRODUCT_STOCK_STATUS_OPTIONS: {
     {
       value: 2,
       dictKey: "outOfStock",
+    },
+  ];
+
+export const PRODUCT_STATUS_OPTIONS: {
+  value: ProductStatusFilter;
+  dictKey: keyof Dictionary;
+}[] = [
+    {
+      value: "all",
+      dictKey: "all",
+    },
+    {
+      value: true,
+      dictKey: "active",
+    },
+    {
+      value: false,
+      dictKey: "inactive",
     },
   ];
 

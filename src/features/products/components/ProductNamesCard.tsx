@@ -2,7 +2,7 @@
 
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
-import { Plus } from "lucide-react";
+import { Edit2, Plus } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Buttons";
@@ -40,7 +40,9 @@ export default function ProductNamesCard({
   const [value, setValue] = useState("");
 
   const trimmed = value.trim();
-  const isDuplicate = names.some(
+  const safeNames = names ?? [];
+
+  const isDuplicate = safeNames.some(
     (n) => n.toLowerCase() === trimmed.toLowerCase()
   );
 
@@ -59,8 +61,9 @@ export default function ProductNamesCard({
       <div className="flex flex-col gap-4 p-4 w-full">
         {/* HEADER */}
         <div className="flex items-center gap-2 border-border justify-between">
-          <span className="text-sm font-semibold text-text">
-            {dict.productNames}
+          <span className="flex items-center text-sm font-semibold text-text gap-2">
+            <Edit2 className="w-3 h-3" />
+            {dict.productName}
           </span>
 
           {adding ? (
@@ -89,7 +92,7 @@ export default function ProductNamesCard({
               {canAdd && (
                 <button
                   onClick={handleAdd}
-                  disabled={disabled || names.length >= max}
+                  disabled={disabled || safeNames.length >= max}
                   className="h-8 rounded-md border border-border px-2 text-xs text-text hover:bg-hover transition"
                 >
                   {dict.add}
@@ -113,15 +116,15 @@ export default function ProductNamesCard({
           ) : (
             <div className="flex items-center gap-3 border-border justify-between">
               <Button
-                onClick={() => names.length < max && setAdding(true)}
-                disabled={disabled || names.length >= max}
+                onClick={() => safeNames.length < max && setAdding(true)}
+                disabled={disabled || safeNames.length >= max}
                 accent="neutral"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {dict.add}
               </Button>
               <span className="text-sm text-text">
-                {names.length}/{max}
+                {safeNames.length}/{max}
               </span>
             </div>
           )}
@@ -129,12 +132,12 @@ export default function ProductNamesCard({
 
         {/* TABLE */}
         <div className={clsx(
-          "grow rounded-lg border border-border bg-card shadow-sm overflow-hidden",
+          "grow bg-card shadow-sm overflow-hidden",
           disabled && "opacity-60 pointer-events-none"
         )}>
           <DataTable<string>
-            data={names}
-            getRowId={(n, idx) => idx.toString()}
+            data={safeNames}
+            getRowId={(idx) => idx.toString()}
             showIndex
             maxHeight="fill"
             columns={nameColumns(dict, { onRemove, onMakeDefault })}

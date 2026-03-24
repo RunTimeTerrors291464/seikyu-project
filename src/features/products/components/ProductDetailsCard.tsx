@@ -1,11 +1,13 @@
 "use client";
 
-import { AlertTriangle, Barcode, DollarSign, Ruler, Warehouse } from "lucide-react";
+import { AlertTriangle, Barcode, DollarSign, Edit2, Ruler, Warehouse } from "lucide-react";
 
 import { Accent } from "@/components/types/ui";
-import { Field, Input, StatDisplay, Textarea } from "@/components/ui/Fields";
+import { Field, Input, SelectButton, StatDisplay, Textarea } from "@/components/ui/Fields";
 import { Dictionary } from "@/lib/lang/i18n";
+import { useState } from "react";
 import { Product } from "../types/product";
+import UnitPickerPopup from "./UnitPickerPopup";
 
 type Props = {
   product: Product;
@@ -23,14 +25,15 @@ export default function ProductDetailsCard({
 }: Props) {
 
   const stock = getStockStatus(product, dict);
+  const [unitOpen, setUnitOpen] = useState(false);
   const isDisabled = disabled || !product.isActive;
   const MAX_INT = 2147483647;
   return (
     <div className="card p-5 space-y-4 rounded-lg">
-
-      <h2 className="text-sm font-semibold text-text">
+      <span className="flex items-center text-sm font-semibold text-text gap-2">
+        <Edit2 className="w-3 h-3" />
         {dict.productDetails}
-      </h2>
+      </span>
 
       {/* SKU */}
       <Field label={dict.sku} icon={<Barcode className="h-3 w-3" />}>
@@ -71,12 +74,22 @@ export default function ProductDetailsCard({
 
       {/* UNIT */}
       <Field label={dict.unit} icon={<Ruler className="h-3 w-3" />}>
-        <Input
-          value={product.productUnitName || ""}
-          onChange={(v) => update("productUnitId", v)}
+        <SelectButton
+          value={product.productUnitName}
           disabled={isDisabled}
+          onClick={() => setUnitOpen(true)}
         />
       </Field>
+
+      <UnitPickerPopup
+        open={unitOpen}
+        selectedUnitId={product.productUnitId}
+        onClose={() => setUnitOpen(false)}
+        onSelect={(unit) => {
+          update("productUnitId", unit.id);
+          update("productUnitName", unit.unitName);
+        }}
+      />
 
       {/* IMPORT PRICE */}
       <Field
@@ -121,7 +134,7 @@ export default function ProductDetailsCard({
           disabled={isDisabled}
           onChange={(v) => {
             if (v === "") {
-              update("importPrice", 0);
+              update("sellingPrice", 0);
               return;
             }
 
@@ -137,7 +150,7 @@ export default function ProductDetailsCard({
             const decimalPart = v.split(".")[1];
             if (decimalPart && decimalPart.length > 2) return;
 
-            update("importPrice", num);
+            update("sellingPrice", num);
           }}
         />
       </Field>
@@ -176,7 +189,7 @@ export default function ProductDetailsCard({
       {/* DESCRIPTION */}
       <Field
         label={dict.description}
-        icon={<Ruler className="h-3 w-3" />} // or change icon if you want
+        icon={<Ruler className="h-3 w-3" />}
       >
         <Textarea
           disabled={isDisabled}

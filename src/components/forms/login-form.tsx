@@ -54,7 +54,16 @@ export default function LoginForm() {
 
       const data = await login(values);
 
+      // store refresh token
+      localStorage.setItem("refresh_token", data.refreshToken);
+
+      // store user
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // update Zustand
       loginStore(data.accessToken, data.user);
+
+      // redirect
       router.push("/dashboard");
 
     } catch (err: any) {

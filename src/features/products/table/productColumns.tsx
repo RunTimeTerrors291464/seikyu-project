@@ -2,7 +2,7 @@ import type { Column } from "@/components/ui/DataTable";
 import ActivePill from "@/features/products/components/ActivePill";
 import StatusPill from "@/features/products/components/StockStatusPill";
 import { Dictionary } from "@/lib/lang/i18n";
-import { Barcode, CircleEllipsis, CirclePower, DollarSign, Warehouse } from "lucide-react";
+import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { Product } from "../types/product";
 
@@ -30,7 +30,7 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       id: "name",
       header: dict.productName,
       sortable: true,
-
+      icon: <Edit2 className="h-3.5 w-3.5" />,
       sortAccessor: (p) =>
         (p.productNames?.[0] ?? "").toLowerCase(),
 
@@ -42,7 +42,8 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       id: "unit",
       header: dict.unit,
       field: "productUnitName",
-      sortable: true
+      sortable: true,
+      icon: <Ruler className="h-3.5 w-3.5" />,
     },
 
     {

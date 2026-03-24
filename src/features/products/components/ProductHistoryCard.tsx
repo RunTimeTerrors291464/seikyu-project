@@ -4,24 +4,27 @@ import Button from "@/components/ui/Buttons";
 import { useDict } from "@/lib/lang/DictProvider";
 import { ArrowDown, ArrowUp, History } from "lucide-react";
 import { useState } from "react";
-import { useProductHistory } from "../hooks/useProductHistory";
+import { ProductHistoryDetail, ProductHistoryItem } from "../types/product";
 import HistoryGroupRow from "./HistoryGroupRow";
 
 type Props = {
-  productId: string;
+  history: ProductHistoryItem[];
+  loading: boolean;
+  detailMap: Record<number, ProductHistoryDetail>;
+  loadingMap: Record<number, boolean>;
+  fetchDetail: (version: number) => void;
 };
 
 export default function ProductHistoryCard({
-  productId,
+  history,
+  loading,
+  detailMap,
+  loadingMap,
+  fetchDetail,
 }: Props) {
+  const dict = useDict();
 
-  const dict = useDict()
-
-  const { history, loading } =
-    useProductHistory(productId);
-
-  const [order, setOrder] =
-    useState<"asc" | "desc">("desc");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
 
   const sorted = [...history].sort((a, b) =>
     order === "asc"
@@ -40,24 +43,20 @@ export default function ProductHistoryCard({
           {dict.history}
         </h2>
 
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() =>
-              setOrder((o) =>
-                o === "asc" ? "desc" : "asc"
-              )
-            }
-            icon={
-              order === "asc" ? (
-                <ArrowUp className="h-3 w-3" />
-              ) : (
-                <ArrowDown className="h-3 w-3" />
-              )
-            }
-          >
-            {order === "asc" ? dict.oldest : dict.newest}
-          </Button>
-        </div>
+        <Button
+          onClick={() =>
+            setOrder((o) => (o === "asc" ? "desc" : "asc"))
+          }
+          icon={
+            order === "asc" ? (
+              <ArrowUp className="h-3 w-3" />
+            ) : (
+              <ArrowDown className="h-3 w-3" />
+            )
+          }
+        >
+          {order === "asc" ? dict.oldest : dict.newest}
+        </Button>
       </div>
 
       {/* BODY */}
@@ -71,16 +70,16 @@ export default function ProductHistoryCard({
             {dict.noHistory}
           </div>
         ) : (
-          <div className="space-y-0">
-            {sorted.map((group, index) => (
-              <HistoryGroupRow
-                key={group.id}
-                group={group}
-                productId={productId}
-                isLast={index === sorted.length - 1}
-              />
-            ))}
-          </div>
+          sorted.map((group, index) => (
+            <HistoryGroupRow
+              key={group.id}
+              group={group}
+              isLast={index === sorted.length - 1}
+              detailMap={detailMap}
+              loadingMap={loadingMap}
+              fetchDetail={fetchDetail}
+            />
+          ))
         )}
       </div>
     </div>

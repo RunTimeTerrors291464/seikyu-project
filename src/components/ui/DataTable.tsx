@@ -1,5 +1,6 @@
 "use client";
 
+import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import React from "react";
@@ -30,6 +31,8 @@ export type DataTableProps<T> = {
   columns: Column<T>[];
   data: T[];
 
+  loading?: boolean;
+
   getRowId?: (row: T, index: number) => string | number;
 
   showIndex?: boolean;
@@ -49,6 +52,7 @@ export type DataTableProps<T> = {
 export default function DataTable<T>({
   columns,
   data,
+  loading,
   getRowId,
   showIndex = false,
   className,
@@ -59,15 +63,15 @@ export default function DataTable<T>({
   onSort,
 }: DataTableProps<T>) {
   const isFill = maxHeight === "fill";
-
+  const dict = useDict()
   return (
     <div
       className={clsx(
-        "w-full overflow-auto rounded-lg border-border bg-card",
-        isFill && "h-full",
+        "overflow-auto rounded-lg border-border bg-card border",
+        isFill && "h-full min-h-0",
         className
       )}
-      style={maxHeight && !isFill ? { maxHeight } : undefined}
+    // style={maxHeight && !isFill ? { maxHeight } : undefined}
     >
       <table className="w-full table-fixed border-collapse text-sm">
 
@@ -134,7 +138,16 @@ export default function DataTable<T>({
         {/* BODY */}
         <tbody>
 
-          {data.length === 0 ? (
+          {loading ? (
+            <tr>
+              <td
+                colSpan={(showIndex ? 1 : 0) + columns.length}
+                className="py-10 text-center text-muted"
+              >
+                {dict.loading}
+              </td>
+            </tr>
+          ) : data.length === 0 ? (
             <tr>
               <td
                 colSpan={(showIndex ? 1 : 0) + columns.length}

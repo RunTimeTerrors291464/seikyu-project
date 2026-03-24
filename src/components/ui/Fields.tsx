@@ -207,3 +207,59 @@ export function Textarea({
     />
   );
 }
+
+/* ───────────────── Button ───────────────── */
+
+type SelectButtonProps = {
+  value?: string;
+  placeholder?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+};
+
+export function SelectButton({
+  value,
+  placeholder,
+  onClick,
+  disabled,
+}: SelectButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        "h-9 w-full rounded-md border px-3 text-sm text-left",
+        "flex items-center gap-2",
+        "transition-colors duration-150",
+
+        /* base */
+        "bg-card text-text border-border",
+
+        /* hover */
+        !disabled && "hover:bg-hover cursor-pointer",
+
+        /* focus */
+        "focus:border-primary outline-none",
+
+        /* disabled */
+        disabled && "opacity-60 cursor-not-allowed bg-hover"
+      )}
+    >
+      {/* value / placeholder */}
+      <span
+        className={clsx(
+          "truncate",
+          !value && "text-muted"
+        )}
+      >
+        {value || placeholder}
+      </span>
+
+      {/* right icon */}
+      <span className="ml-auto text-muted text-xs">
+        ▼
+      </span>
+    </button>
+  );
+}

@@ -80,20 +80,26 @@ export function Sidebar() {
   ];
 
   function usePersistedOpen(id: string, initial: boolean) {
-    const [open, setOpen] = useState(() => {
-      if (typeof window === "undefined") return initial;
-
-      const raw = localStorage.getItem(`sidebar-open:${id}`);
-      if (raw !== null) return raw === "1";
-
-      return initial;
-    });
+    const [open, setOpen] = useState(initial);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+      setMounted(true);
+
+      try {
+        const raw = localStorage.getItem(`sidebar-open:${id}`);
+        if (raw !== null) {
+          setOpen(raw === "1");
+        }
+      } catch { }
+    }, [id]);
+
+    useEffect(() => {
+      if (!mounted) return;
       try {
         localStorage.setItem(`sidebar-open:${id}`, open ? "1" : "0");
       } catch { }
-    }, [id, open]);
+    }, [id, open, mounted]);
 
     return [open, setOpen] as const;
   }

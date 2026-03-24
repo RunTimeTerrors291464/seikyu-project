@@ -51,6 +51,11 @@ export type ProductStockFilter =
   | "all"
   | ProductStockStatus;
 
+export type ProductStatusFilter =
+  | "all"
+  | true
+  | false;
+
 
 // Helper
 

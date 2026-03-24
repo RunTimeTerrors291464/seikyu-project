@@ -1,162 +1,141 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import DataTable from "@/components/ui/DataTable";
 import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
 
-import ProductTableToolbar from "@/features/products/components/ProductTableToolbar";
 import { productColumns } from "@/features/products/table/productColumns";
 
-import { ProductStockFilter } from "@/components/types/ui";
-import { PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
+import { ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
+import { PRODUCT_STATUS_OPTIONS, PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
 import { useDict } from "@/lib/lang/DictProvider";
 
-import { useTable } from "@/lib/table/useTable";
+import { useProductTable } from "@/features/products/hooks/useProductTable";
 
 import type { ProductQuery } from "@/features/products/services/product.service";
 
-import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  DollarSign,
+  Package,
+} from "lucide-react";
 
-import { useProductOverview, useProducts } from "@/features/products/hooks/useProducts";
-import { Product } from "@/features/products/types/product";
-import useDebounce from "@/lib/hooks/useDebounce";
+import {
+  getProductOverview,
+  productService,
+} from "@/features/products/services/product.service";
+
+import ProductTableHeader from "@/features/products/components/ProductTableHeader";
 
 /* ============================= */
-/* Helper */
-/* ============================= */
-
-function mapStockFilterToApi(
-  filter: ProductStockFilter
-): "0" | "1" | "2" | undefined {
-  if (filter === "all") return undefined;
-
-  return String(filter) as "0" | "1" | "2";
-}
-/* ============================= */
-/* Page */
+/* PAGE */
 /* ============================= */
 
 export default function ProductInventoryPage() {
   const dict = useDict();
 
-  /* ---------------- SEARCH ---------------- */
+  /* ============================= */
+  /* UI STATE (LOCAL ONLY) */
+  /* ============================= */
 
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 500);
-
   const [searchRule, setSearchRule] =
     useState<"sku" | "productName">("sku");
 
-  /* ---------------- FILTERS ---------------- */
-
-  const [showFilters, setShowFilters] =
-    useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [statusFilter, setStatusFilter] =
     useState<ProductStockFilter>("all");
 
   const [activeFilter, setActiveFilter] =
-    useState<"all" | "active" | "inactive">("all");
+    useState<ProductStatusFilter>("all");
 
-  /* ---------------- PAGINATION ---------------- */
+  /* ============================= */
+  /* SERVER TABLE (SOURCE OF TRUTH) */
+  /* ============================= */
 
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] =
-    useState(30);
+  const table = useProductTable({
+    fetcher: productService.getProducts,
 
-  /* ---------------- QUERY ---------------- */
+    initialQuery: {
+      page: 1,
+      limit: 30,
+      search: undefined,
+      searchBy: undefined,
+      sortBy: "sku",
+      sortOrder: "asc",
+      stockStatus: "all",
+      isActive: "all",
+    } as ProductQuery,
+  });
 
-  const query: ProductQuery = useMemo(() => {
-    return {
-      page,
-      limit: rowsPerPage,
+  /* ============================= */
+  /* OVERVIEW */
+  /* ============================= */
 
-      search: debouncedSearch || undefined,
+  const [overview, setOverview] = useState<any>(null);
+  const [overviewLoading, setOverviewLoading] =
+    useState(true);
 
-      searchBy: debouncedSearch
-        ? searchRule
-        : undefined,
+  useEffect(() => {
+    let mounted = true;
 
-      stockStatus: mapStockFilterToApi(statusFilter),
+    getProductOverview()
+      .then((res) => {
+        if (mounted) setOverview(res);
+      })
+      .finally(() => setOverviewLoading(false));
 
-      isActive:
-        activeFilter === "all"
-          ? undefined
-          : activeFilter === "active"
-            ? "true"
-            : "false",
+    return () => {
+      mounted = false;
     };
-  }, [
-    page,
-    rowsPerPage,
-    debouncedSearch,
-    searchRule,
-    statusFilter,
-    activeFilter,
-  ]);
+  }, []);
 
-  /* ---------------- API ---------------- */
+  useEffect(() => {
+    table.setFilters({
+      search: search || undefined,
+      searchBy: search ? searchRule : undefined,
+    });
+  }, [search, searchRule]);
 
-  const { products, total, loading } =
-    useProducts(query);
+  /* ============================= */
+  /* RESET HANDLER (FIXED) */
+  /* ============================= */
 
-  /* ---------------- OVERVIEW ---------------- */
+  function handleReset() {
+    setSearch("");
+    setSearchRule("sku");
+    setStatusFilter("all");
+    setActiveFilter("all");
 
-  const {
-    data: overview,
-    loading: overviewLoading,
-  } = useProductOverview();
-
-  /* ---------------- TABLE ---------------- */
-
-  const columns = productColumns(dict);
-
-  const table = useTable<Product>(
-    products,
-    columns
-  );
+    table.resetQuery(); // must exist in hook
+  }
 
   /* ============================= */
   /* UI */
   /* ============================= */
 
   return (
-    <div className="flex grow flex-col space-y-6">
+    <div className="flex h-full flex-col gap-6 overflow-hidden max-h-[100vh]">
 
       {/* HEADER */}
-
-      <ProductTableToolbar
+      <ProductTableHeader
         dict={dict}
         search={search}
         searchRule={searchRule}
-
-        setSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-
+        setSearch={setSearch}
         setSearchRule={(v) => {
           setSearchRule(v);
-          setPage(1);
+          table.setPage(1);
         }}
-
-        toggleFilters={() =>
-          setShowFilters((v) => !v)
-        }
-
-        resetSearch={() => {
-          setSearch("");
-          setSearchRule("sku");
-          setStatusFilter("all");
-          setActiveFilter("all");
-          setPage(1);
-        }}
+        toggleFilters={() => setShowFilters((v) => !v)}
+        resetSearch={handleReset}
       />
 
       {/* KPI */}
-
       {overviewLoading ? (
         <div className="flex items-center justify-center py-6 text-sm text-muted">
           {dict.loadingProducts}
@@ -203,10 +182,7 @@ export default function ProductInventoryPage() {
             label={dict.inventoryValue}
             value={
               overview
-                ? `${(
-                  Number(overview.inventoryValue) /
-                  1_000_000
-                ).toFixed(2)}M`
+                ? `${(Number(overview.inventoryValue) / 1_000_000).toFixed(2)}M`
                 : "-"
             }
             icon={<DollarSign className="h-4 w-4 text-muted" />}
@@ -217,131 +193,93 @@ export default function ProductInventoryPage() {
         </div>
       )}
 
-      {/* FILTER PANEL */}
-
+      {/* FILTERS */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
 
-          {/* STOCK STATUS */}
-
+          {/* STOCK */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">
-              {dict.status}
+              {dict.stock}
             </span>
 
             <div className="flex gap-1">
-
               {PRODUCT_STOCK_STATUS_OPTIONS.map((opt) => (
                 <button
                   key={String(opt.value)}
-                  type="button"
                   onClick={() => {
                     setStatusFilter(opt.value);
-                    setPage(1);
-                  }}
 
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors
-                    ${statusFilter === opt.value
-                      ? "border-text bg-text text-bg"
-                      : "border-border bg-card text-muted hover:border-text hover:bg-hover"
+                    table.setFilters({
+                      stockStatus: String(opt.value) as ProductQuery["stockStatus"],
+                    });
+                  }}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs ${statusFilter === opt.value
+                    ? "border-text bg-text text-bg"
+                    : "border-border bg-card text-muted"
                     }`}
                 >
                   {dict[opt.dictKey]}
                 </button>
-
               ))}
             </div>
-
           </div>
 
-          {/* DIVIDER */}
-          <span className="divider mx-2" />
-
-          {/* ACTIVE STATUS */}
-
+          {/* ACTIVE */}
           <div className="flex items-center gap-2">
-
             <span className="text-xs text-muted">
               {dict.status}
             </span>
 
             <div className="flex gap-1">
-
-              {[
-                { key: "all", label: dict.all },
-                { key: "active", label: dict.active },
-                { key: "inactive", label: dict.inactive },
-              ].map((opt) => (
-
+              {PRODUCT_STATUS_OPTIONS.map((opt) => (
                 <button
-                  key={opt.key}
-                  type="button"
+                  key={String(opt.value)}
                   onClick={() => {
-                    setActiveFilter(opt.key as any);
-                    setPage(1);
-                  }}
+                    setActiveFilter(opt.value as any);
 
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors
-                    ${activeFilter === opt.key
-                      ? "border-text bg-text text-bg"
-                      : "border-border bg-card text-muted hover:border-text hover:bg-hover"
+                    table.setFilters({
+                      isActive: opt.value as ProductQuery["isActive"],
+                    });
+                  }}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs ${activeFilter === opt.value
+                    ? "border-text bg-text text-bg"
+                    : "border-border bg-card text-muted"
                     }`}
                 >
-                  {opt.label}
+                  {dict[opt.dictKey]}
                 </button>
-
               ))}
-
             </div>
-
           </div>
-
         </div>
       )}
 
       {/* TABLE */}
-
-      <div className="grow rounded-lg border border-border bg-card shadow-sm">
-
-        {loading ? (
-
-          <div className="flex h-full items-center justify-center text-muted">
-            {dict.loadingProducts}
-          </div>
-
-        ) : (
-
-          <DataTable
-            columns={columns}
-            data={table.data}
-            getRowId={(p) => p.id}
-            showIndex
-            sortField={table.sortField}
-            sortDirection={table.sortDirection}
-            onSort={table.handleSort}
-            maxHeight="fill"
-          />
-
-        )}
-
+      <div className="min-h-0 flex flex-col">
+        <DataTable
+          columns={productColumns(dict)}
+          data={table.data}
+          loading={table.loading}
+          getRowId={(p) => p.id}
+          showIndex
+          sortField={table.query.sortBy}
+          sortDirection={table.query.sortOrder}
+          onSort={(field) =>
+            table.setSort(field as ProductQuery["sortBy"])
+          }
+          maxHeight="fill"
+        />
       </div>
 
       {/* PAGINATION */}
-
       <TablePagination
-        page={page}
-        totalPages={Math.ceil(total / rowsPerPage)}
-        rowsPerPage={rowsPerPage}
-
-        setRowsPerPage={(n) => {
-          setRowsPerPage(n);
-          setPage(1);
-        }}
-
-        setPage={setPage}
-
-        totalResults={total}
-
+        page={table.query.page ?? 1}
+        totalPages={table.totalPages}
+        rowsPerPage={table.query.limit ?? 10}
+        setRowsPerPage={table.setLimit}
+        setPage={table.setPage}
+        totalResults={table.total}
         dict={dict}
       />
     </div>

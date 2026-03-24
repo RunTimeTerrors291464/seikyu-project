@@ -5,9 +5,36 @@ import {
   activateProduct,
   deactivateProduct,
   getProductById,
+  getProductHistory,
+  getProductHistoryDetail,
   updateProduct,
 } from "../services/product.service";
-import type { Product } from "../types/product";
+
+import { toast } from "sonner";
+import type {
+  Product,
+  ProductHistoryDetail,
+  ProductHistoryItem,
+} from "../types/product";
+
+/* ============================= */
+/* HELPER */
+/* ============================= */
+
+function getComparable(p: Product | null) {
+  if (!p) return null;
+
+  return {
+    sku: p.sku,
+    productNames: p.productNames,
+    productUnitId: p.productUnitId,
+    productDescription: p.productDescription,
+    importPrice: p.importPrice,
+    sellingPrice: p.sellingPrice,
+    reorderThreshold: p.reorderThreshold,
+    isActive: p.isActive,
+  };
+}
 
 /* ============================= */
 /* HOOK */
@@ -16,36 +43,115 @@ import type { Product } from "../types/product";
 export function useProductDetail(id: string) {
   const [product, setProduct] = useState<Product | null>(null);
   const [original, setOriginal] = useState<Product | null>(null);
+
+  /* ============================= */
+  /* HISTORY (PORTED) */
+  /* ============================= */
+
+  const [history, setHistory] = useState<ProductHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  const [detailMap, setDetailMap] = useState<
+    Record<number, ProductHistoryDetail>
+  >({});
+  const [loadingMap, setLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+
+  /* ============================= */
+  /* OTHER STATE */
+  /* ============================= */
+
   const [loading, setLoading] = useState(true);
   const [showActivePopup, setShowActivePopup] = useState(false);
 
   /* ============================= */
-  /* FETCH */
+  /* FETCH (PRODUCT + HISTORY) */
   /* ============================= */
 
   useEffect(() => {
-    async function fetchProduct() {
-      console.log("[useProductDetail] fetch → start", { id });
+    let isMounted = true;
 
+    async function fetchAll() {
       setLoading(true);
+      setHistoryLoading(true);
 
       try {
-        const data = await getProductById(id);
+        const [productData, historyData] = await Promise.all([
+          getProductById(id),
+          getProductHistory(id),
+        ]);
 
-        console.log("[useProductDetail] fetch → success", data);
+        if (!isMounted) return;
 
-        setProduct(data);
-        setOriginal(data);
+        setProduct(productData);
+        setOriginal(productData);
+        setHistory(historyData ?? []);
       } catch (err) {
         console.error("[useProductDetail] fetch → error", err);
+        toast.error("Failed to load product");
       } finally {
-        setLoading(false);
-        console.log("[useProductDetail] fetch → end");
+        if (isMounted) {
+          setLoading(false);
+          setHistoryLoading(false);
+        }
       }
     }
 
-    if (id) fetchProduct();
+    async function fetchHistory() {
+      setHistoryLoading(true);
+
+      try {
+        const data = await getProductHistory(id);
+        if (!isMounted) return;
+
+        setHistory(data ?? []);
+      } catch (err) {
+        console.error("fetchHistory failed", err);
+      } finally {
+        if (isMounted) setHistoryLoading(false);
+      }
+    }
+
+    if (id) fetchHistory();
+
+    if (id) fetchAll();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
+
+
+
+  /* ============================= */
+  /* HISTORY DETAIL FETCH  */
+  /* ============================= */
+
+  async function fetchDetail(version: number) {
+    if (detailMap[version] || loadingMap[version]) return;
+
+    setLoadingMap((prev) => ({ ...prev, [version]: true }));
+
+    try {
+      const data = await getProductHistoryDetail(id, version);
+
+      setDetailMap((prev) => ({
+        ...prev,
+        [version]: data,
+      }));
+    } catch (err) {
+      console.error(
+        "useProductDetail → detail fetch failed",
+        err
+      );
+    } finally {
+      setLoadingMap((prev) => ({
+        ...prev,
+        [version]: false,
+      }));
+    }
+  }
 
   /* ============================= */
   /* UPDATE LOCAL STATE */
@@ -68,8 +174,9 @@ export function useProductDetail(id: string) {
   }
 
   /* ============================= */
-  /* TOGGLE ACTIVE */
+  /* ACTIVE TOGGLE */
   /* ============================= */
+
   function requestToggleActive() {
     console.log("[useProductDetail] requestToggleActive");
 
@@ -109,97 +216,6 @@ export function useProductDetail(id: string) {
   }
 
   /* ============================= */
-  /* SAVE PRODUCT */
-  /* ============================= */
-
-  async function saveProduct() {
-    if (!product || !original) return false;
-
-    console.log("[useProductDetail] saveProduct → start", {
-      product,
-      original,
-    });
-
-    try {
-      let updatedProduct = product;
-
-      /* ============================= */
-      /* 1. HANDLE ACTIVATE / DEACTIVATE */
-      /* ============================= */
-
-      if (product.isActive !== original.isActive) {
-        console.log("[useProductDetail] active state changed");
-
-        if (product.isActive) {
-          console.log("[useProductDetail] calling ACTIVATE API");
-
-          const res = await activateProduct(product.id);
-          updatedProduct = res.data;
-        } else {
-          console.log("[useProductDetail] calling DEACTIVATE API");
-
-          const res = await deactivateProduct(product.id);
-          updatedProduct = res.data;
-        }
-      } else {
-        /* ============================= */
-        /* 2. HANDLE NORMAL UPDATE */
-        /* ============================= */
-
-        const hasFieldChanges =
-          JSON.stringify(product) !== JSON.stringify(original);
-
-        if (hasFieldChanges) {
-          console.log("[useProductDetail] updating product fields");
-
-          const payload: any = {
-            id: product.id,
-            productNames: product.productNames,
-            productUnitId: product.productUnitId,
-            productDescription: product.productDescription,
-            importPrice: Number(product.importPrice),
-            sellingPrice: Number(product.sellingPrice),
-            reorderThreshold: Number(product.reorderThreshold),
-          };
-
-          if (product.sku !== original.sku) {
-            payload.sku = product.sku;
-          }
-
-          const res = await updateProduct(payload);
-
-          updatedProduct = res;
-        }
-      }
-
-      /* ============================= */
-      /* 3. SYNC STATE */
-      /* ============================= */
-
-      setProduct(updatedProduct);
-      setOriginal(updatedProduct);
-
-      console.log("[useProductDetail] saveProduct → success");
-
-      return true;
-    } catch (err) {
-      console.error("[useProductDetail] saveProduct → error", err);
-      return false;
-    }
-  }
-
-  /* ============================= */
-  /* DIRTY CHECK */
-  /* ============================= */
-
-  const isDirty =
-    JSON.stringify(product) !== JSON.stringify(original);
-
-  console.log("[useProductDetail] isDirty → check", isDirty);
-  const isInactive = product ? !product.isActive : false;
-  const isActiveChanged =
-    product?.isActive !== original?.isActive;
-  /* ============================= */
   /* PRODUCT NAMES */
   /* ============================= */
 
@@ -218,14 +234,10 @@ export function useProductDetail(id: string) {
 
       if (exists) return prev;
 
-      const updated = {
+      return {
         ...prev,
         productNames: [...prev.productNames, trimmed],
       };
-
-      console.log("[useProductDetail] addName → result", updated);
-
-      return updated;
     });
   }
 
@@ -235,16 +247,12 @@ export function useProductDetail(id: string) {
     setProduct((prev) => {
       if (!prev) return prev;
 
-      const updated = {
+      return {
         ...prev,
         productNames: prev.productNames.filter(
           (_, i) => i !== index
         ),
       };
-
-      console.log("[useProductDetail] removeName → result", updated);
-
-      return updated;
     });
   }
 
@@ -257,19 +265,115 @@ export function useProductDetail(id: string) {
       const target = prev.productNames[index];
       if (!target) return prev;
 
-      const updated = {
+      return {
         ...prev,
         productNames: [
           target,
           ...prev.productNames.filter((_, i) => i !== index),
         ],
       };
-
-      console.log("[useProductDetail] makeDefault → result", updated);
-
-      return updated;
     });
   }
+
+  /* ============================= */
+  /* HISTORY UPDATE */
+  /* ============================= */
+
+  function addHistory(newHistory: ProductHistoryItem) {
+    if (!newHistory) return;
+
+    setHistory((prev) => {
+      const exists = prev.some((h) => h.id === newHistory.id);
+      if (exists) return prev;
+
+      return [newHistory, ...prev];
+    });
+  }
+
+  /* ============================= */
+  /* SAVE */
+  /* ============================= */
+
+  async function saveProduct(): Promise<boolean> {
+    if (!product || !original) return false;
+
+    try {
+      const hasActiveChange =
+        product.isActive !== original.isActive;
+
+      const hasFieldChanges =
+        !isEqual(getComparable(product), getComparable(original));
+
+      if (!hasActiveChange && !hasFieldChanges) {
+        return true;
+      }
+
+      /* ACTIVE */
+      if (hasActiveChange) {
+        const res = product.isActive
+          ? await activateProduct(product.id)
+          : await deactivateProduct(product.id);
+
+        if (!res) return false;
+
+        setOriginal((prev) =>
+          prev ? { ...prev, isActive: product.isActive } : prev
+        );
+
+        setProduct((prev) =>
+          prev ? { ...prev, isActive: product.isActive } : prev
+        );
+
+        toast.success("Status updated");
+        return true;
+      }
+
+      /* FIELDS */
+      if (hasFieldChanges) {
+        const payload: any = {
+          id: product.id,
+          productNames: product.productNames,
+          productUnitId: product.productUnitId,
+          productDescription: product.productDescription,
+          importPrice: Number(product.importPrice),
+          sellingPrice: Number(product.sellingPrice),
+          reorderThreshold: Number(product.reorderThreshold),
+        };
+
+        if (product.sku !== original.sku) {
+          payload.sku = product.sku;
+        }
+
+        const res = await updateProduct(payload);
+
+        setProduct(res.product);
+        setOriginal(res.product);
+
+        // HISTORY UPDATE
+        if (res.history) {
+          addHistory(res.history);
+        }
+
+        toast.success("Product updated");
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      console.error("[useProductDetail] saveProduct → error", err);
+      toast.error("Failed to save product");
+      return false;
+    }
+  }
+
+  /* ============================= */
+  /* STATE */
+  /* ============================= */
+
+  const isDirty =
+    !isEqual(getComparable(product), getComparable(original));
+
+  const isInactive = product ? !product.isActive : false;
 
   /* ============================= */
   /* RETURN */
@@ -287,10 +391,16 @@ export function useProductDetail(id: string) {
     cancelToggleActive,
     showActivePopup,
 
+    // HISTORY
+    history,
+    historyLoading,
+    detailMap,
+    loadingMap,
+    fetchDetail,
+
     // STATE
     isInactive,
 
-    names: product?.productNames ?? [],
     addName,
     removeName,
     makeDefault,
@@ -298,4 +408,8 @@ export function useProductDetail(id: string) {
     saveProduct,
     isDirty,
   };
+}
+
+function isEqual(a: any, b: any): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }

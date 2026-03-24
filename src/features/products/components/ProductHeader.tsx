@@ -81,7 +81,10 @@ export default function ProductHeader({
           />
 
           <Button
-            onClick={() => setOpenConfirm(true)}
+            onClick={() => {
+              console.log("clicked");
+              setOpenConfirm(true);
+            }}
             disabled={!canSave || saving}
             accent="primary"
             icon={<Save className="h-3.5 w-3.5" />}

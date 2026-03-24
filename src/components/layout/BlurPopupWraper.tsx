@@ -8,7 +8,7 @@ type PopupProps = {
   onClose: () => void;
   children: ReactNode;
 };
-// WARPER
+
 export default function Popup({ open, onClose, children }: PopupProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -23,9 +23,8 @@ export default function Popup({ open, onClose, children }: PopupProps) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center m-0"
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+
       {/* BACKDROP */}
       <div
         className="absolute inset-0 bg-bg/50 backdrop-blur-sm"
@@ -35,8 +34,11 @@ export default function Popup({ open, onClose, children }: PopupProps) {
       {/* CONTENT */}
       <div
         className={clsx(
-          "relative z-10 w-full max-w-md rounded-lg",
-          "bg-card border border-border shadow-xl"
+          "relative z-10",
+          "rounded-lg border border-border bg-card shadow-xl",
+          "w-auto h-auto",           // size to content
+          "max-w-[90vw] max-h-[90vh]", // prevent overflow
+          "overflow-hidden"          // prevent bleed
         )}
       >
         {children}

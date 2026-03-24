@@ -39,6 +39,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Store token so Axios can attach it to API requests
       localStorage.setItem("access_token", token);
 
+      localStorage.setItem("user", JSON.stringify(user));
+
       // Store token in cookie for Next.js middleware
       document.cookie = `access_token=${token}; path=/`;
     }
@@ -82,6 +84,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window === "undefined") return;
 
     const token = localStorage.getItem("access_token");
+    const user = localStorage.getItem("user");
 
     if (!token) {
       console.log("AUTH STORE → no stored token");
@@ -93,6 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Restore token to Zustand
     set({
       token,
+      user: user ? JSON.parse(user) : null,
     });
   },
 }));

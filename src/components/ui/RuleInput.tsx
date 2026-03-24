@@ -13,7 +13,7 @@ type RuleInputProps = {
 
   value?: string;
   rule?: string;
-
+  debounce?: number;
   onChange?: (data: { rule: string; value: string }) => void;
 
   placeholder?: string;
@@ -24,8 +24,9 @@ export default function RuleInput({
   options,
   value,
   rule,
+  debounce = 500,
   onChange,
-  placeholder = "Search…",
+  placeholder,
   clearable = true,
 }: RuleInputProps) {
 
@@ -34,6 +35,8 @@ export default function RuleInput({
   const [selectedRule, setSelectedRule] = useState(
     rule || options[0]?.label || ""
   );
+
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const [inputValue, setInputValue] = useState(
     value || ""
@@ -69,16 +72,35 @@ export default function RuleInput({
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* ───────── Handlers ───────── */
+  /* ───────── DEBOUNCED EMIT ───────── */
 
+  function emitChange(val: string, ruleLabel: string) {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      onChange?.({
+        rule: ruleLabel,
+        value: val,
+      });
+    }, debounce);
+  }
+
+  /* ───────── Handlers ───────── */
   function handleSelect(option: RuleOption) {
     setSelectedRule(option.label);
     setOpen(false);
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
 
     onChange?.({
       rule: option.label,
       value: inputValue,
     });
+
 
     inputRef.current?.focus();
   }
@@ -86,19 +108,13 @@ export default function RuleInput({
   function handleInput(val: string) {
     setInputValue(val);
 
-    onChange?.({
-      rule: selectedRule,
-      value: val,
-    });
+    emitChange(val, selectedRule);
   }
 
   function handleClear() {
     setInputValue("");
 
-    onChange?.({
-      rule: selectedRule,
-      value: "",
-    });
+    emitChange("", selectedRule);
 
     inputRef.current?.focus();
   }

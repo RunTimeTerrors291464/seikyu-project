@@ -30,7 +30,7 @@ type Props = {
   onAddProduct?: () => void;
 };
 
-export default function ProductTableToolbar({
+export default function ProductTableHeader({
   dict,
   setSearch,
   setSearchRule,
@@ -65,10 +65,9 @@ export default function ProductTableToolbar({
           ]}
           placeholder={dict.searchPlaceholder}
           onChange={({ rule, value }) => {
-
             const ruleMap: Record<string, "sku" | "productName"> = {
               [dict.sku]: "sku",
-              [dict.name]: "productName"
+              [dict.name]: "productName",
             };
 
             setSearchRule(ruleMap[rule]);

@@ -10,8 +10,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useState } from "react";
-import { useProductHistory } from "../hooks/useProductHistory";
-import { ProductHistoryItem } from "../types/product";
+import { ProductHistoryDetail, ProductHistoryItem } from "../types/product";
 import {
   formatValue,
   getChangeMeta,
@@ -22,19 +21,21 @@ import {
 
 type Props = {
   group: ProductHistoryItem;
-  productId: string;
   isLast?: boolean;
+
+  detailMap: Record<number, ProductHistoryDetail>;
+  loadingMap: Record<number, boolean>;
+  fetchDetail: (version: number) => void;
 };
 
 export default function HistoryGroupRow({
   group,
-  productId,
-  isLast
+  isLast,
+  detailMap,
+  loadingMap,
+  fetchDetail
 }: Props) {
   const [open, setOpen] = useState(false);
-
-  const { detailMap, loadingMap, fetchDetail } =
-    useProductHistory(productId);
 
   const detail = detailMap[group.version];
   const loading = loadingMap[group.version];

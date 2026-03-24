@@ -1,0 +1,52 @@
+"use client";
+
+import api from "@/services/api-client";
+
+export type ProductUnit = {
+  id: string;
+  unitName: string;
+  unitDescription: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GetUnitsParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive: "true" | "false" | "all";
+};
+
+export const productUnitService = {
+  async getAll(params: GetUnitsParams) {
+    const cleaned: Record<string, any> = {};
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        cleaned[key] = value;
+      }
+    });
+
+    const res = await api.get("/product-units", { params: cleaned });
+
+    return res.data;
+  },
+
+  async create(data: {
+    unitName: string;
+    unitDescription?: string;
+  }) {
+    const res = await api.post("/product-units", data);
+    return res.data;
+  },
+
+  async update(data: {
+    id: string;
+    unitName: string;
+    unitDescription?: string;
+  }) {
+    const res = await api.patch("/product-units", data);
+    return res.data;
+  },
+};

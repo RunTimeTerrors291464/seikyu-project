@@ -12,21 +12,37 @@ import { useParams } from "next/navigation";
 
 export default function Page() {
   const { id } = useParams();
-
+  // DETAILS HOOK
   const {
     product,
     loading,
+
     update,
 
+    // ACTIVE FLOW
     requestToggleActive,
     confirmToggleActive,
     cancelToggleActive,
     showActivePopup,
 
+    // HISTORY
+    history,
+    historyLoading,
+    detailMap,
+    loadingMap,
+    fetchDetail,
+
+    // STATE
     isInactive,
+
+    addName,
+    removeName,
+    makeDefault,
+
     saveProduct,
     isDirty,
   } = useProductDetail(id as string);
+
 
   const dict = useDict();
 
@@ -37,11 +53,17 @@ export default function Page() {
   });
 
   if (loading || !product) return null;
+
+  const primaryName =
+    product.productNames?.length
+      ? product.productNames[0]
+      : "-";
+
   return (
-    <div className="space-y-6 grow">
+    <div className="flex flex-col h-full space-y-6 max-h-[100vh]">
       {/* HEADER */}
       <ProductHeader
-        name={product.productNames[0]}
+        name={primaryName}
         createdAt={product.createdAt}
         updatedAt={product.updatedAt}
         active={product.isActive}
@@ -49,6 +71,7 @@ export default function Page() {
         onSave={saveProduct}
         canSave={isDirty}
       />
+
       <ConfirmPopup
         open={showActivePopup}
         title={
@@ -70,13 +93,14 @@ export default function Page() {
         icon={
           product.isActive ? (
             <CircleOff className="h-3.5 w-3.5 text-danger" />
-          ) :
+          ) : (
             <PowerCircle className="h-7 w-7 text-primary" />
+          )
         }
         accent={product.isActive ? "danger" : "neutral"}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
         <ProductDetailsCard
           product={product}
           update={update}
@@ -88,35 +112,19 @@ export default function Page() {
           <ProductNamesCard
             names={product.productNames}
             disabled={isInactive}
-            onAdd={(name) =>
-              update("productNames", [
-                ...product.productNames,
-                name,
-              ])
-            }
-            onRemove={(index) =>
-              update(
-                "productNames",
-                product.productNames.filter(
-                  (_, i) => i !== index
-                )
-              )
-            }
-            onMakeDefault={(index) => {
-              const target = product.productNames[index];
-              if (!target) return;
-
-              update("productNames", [
-                target,
-                ...product.productNames.filter(
-                  (_, i) => i !== index
-                ),
-              ]);
-            }}
+            onAdd={addName}
+            onRemove={removeName}
+            onMakeDefault={makeDefault}
           />
         </div>
 
-        <ProductHistoryCard productId={id as string} />
+        <ProductHistoryCard
+          history={history}
+          loading={historyLoading}
+          detailMap={detailMap}
+          loadingMap={loadingMap}
+          fetchDetail={fetchDetail}
+        />
       </div>
     </div>
   );
