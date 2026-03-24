@@ -64,9 +64,9 @@ export class ProductRankingRepository {
         return `${this.ProductRankingYearlyPrefix}${invoiceType}:${year}`;
     }
 
-    // Set the cache key for price trend in Redis.
-    private getPriceTrendCacheKey(startDate: Date, endDate: Date): string {
-        return `${this.PriceTrendPrefix}${startDate.getTime()}-${endDate.getTime()}`;
+    // Set the per-day cache key for price trend in Redis.
+    private getPriceTrendDayCacheKey(year: number, month: number, day: number): string {
+        return `${this.PriceTrendPrefix}day:${year}-${month}-${day}`;
     }
 
     // Cache top 100 products ranking daily.
@@ -208,6 +208,8 @@ export class ProductRankingRepository {
     }
 
     // --- API methods ---
+
+    // --- Product ranking methods ---
     // Store the product ranking daily data.
     async storeProductRankingDaily(transactionManager: any, productId: string, invoiceType: InvoiceType, quantity: number, totalPrice: number) {
         
@@ -653,80 +655,6 @@ export class ProductRankingRepository {
         });
     }
 
-    // Get aggregated daily totalPrice grouped by (day, month, year, invoiceType) for a date range.
-    // Results are cached in Redis for 30 minutes to avoid repeated DB hits for the same range.
-    async getPriceTrendRawData(startDate: Date, endDate: Date): Promise<{ day: number; month: number; year: number; invoiceType: string; totalPrice: number }[]> {
-        const cacheKey = this.getPriceTrendCacheKey(startDate, endDate);
-
-        const cached = await this.redisClient.get(cacheKey);
-        if (cached) return JSON.parse(cached);
-
-        const startYear = startDate.getFullYear();
-        const startMonth = startDate.getMonth() + 1;
-        const startDay = startDate.getDate();
-        const endYear = endDate.getFullYear();
-        const endMonth = endDate.getMonth() + 1;
-        const endDay = endDate.getDate();
-
-        const rows = await this.productRankingDailyRepository
-            .createQueryBuilder('ranking')
-            .select('ranking.day', 'day')
-            .addSelect('ranking.month', 'month')
-            .addSelect('ranking.year', 'year')
-            .addSelect('ranking.invoiceType', 'invoiceType')
-            .addSelect('SUM(ranking.totalPrice)', 'totalPrice')
-            .where(
-                '(ranking.year > :startYear OR (ranking.year = :startYear AND ranking.month > :startMonth) OR (ranking.year = :startYear AND ranking.month = :startMonth AND ranking.day >= :startDay))',
-                { startYear, startMonth, startDay },
-            )
-            .andWhere(
-                '(ranking.year < :endYear OR (ranking.year = :endYear AND ranking.month < :endMonth) OR (ranking.year = :endYear AND ranking.month = :endMonth AND ranking.day <= :endDay))',
-                { endYear, endMonth, endDay },
-            )
-            .groupBy('ranking.day')
-            .addGroupBy('ranking.month')
-            .addGroupBy('ranking.year')
-            .addGroupBy('ranking.invoiceType')
-            .orderBy('ranking.year', 'ASC')
-            .addOrderBy('ranking.month', 'ASC')
-            .addOrderBy('ranking.day', 'ASC')
-            .getRawMany();
-
-        const result = rows.map((r) => ({
-            day: Number(r.day),
-            month: Number(r.month),
-            year: Number(r.year),
-            invoiceType: r.invoiceType,
-            totalPrice: Number(r.totalPrice),
-        }));
-
-        await this.redisClient.setex(cacheKey, 30 * 60, JSON.stringify(result));
-        return result;
-    }
-
-    // Invalidate all price trend cache keys whose date range includes today.
-    // Called by the 30-minute cron so fresh daily data is reflected immediately.
-    async invalidatePriceTrendCacheForToday(): Promise<void> {
-        const now = new Date();
-        const todayTs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-        let cursor = '0';
-        do {
-            const [nextCursor, keys] = await this.redisClient.scan(cursor, 'MATCH', `*${this.PriceTrendPrefix}*`, 'COUNT', 100);
-            cursor = nextCursor;
-
-            for (const key of keys) {
-                const suffix = key.substring(key.indexOf(this.PriceTrendPrefix) + this.PriceTrendPrefix.length);
-                const [startTsStr, endTsStr] = suffix.split('-');
-                const startTs = Number(startTsStr);
-                const endTs = Number(endTsStr);
-                if (!isNaN(startTs) && !isNaN(endTs) && startTs <= todayTs && todayTs <= endTs) {
-                    await this.redisClient.del(key);
-                }
-            }
-        } while (cursor !== '0');
-    }
-
     // Remove all product ranking yearly data if it is not in the top 100.
     async removeNonTop100ProductRankingYearly(invoiceType: InvoiceType, year: number): Promise<number> {
         return await this.productRankingYearlyRepository.manager.transaction(async (transactionalManager) => {
@@ -750,6 +678,182 @@ export class ProductRankingRepository {
             if (result.affected === undefined || result.affected === null) return 0;
             return result.affected;
         });
+    }
+
+    // Remove all product ranking data older than 10 years from all 3 tables.
+    async removeProductRankingOlderThan10Years(): Promise<{ daily: number; monthly: number; yearly: number }> {
+        const { year } = await this.getCurrentDate();
+        const cutoffYear = year - 10;
+
+        const [daily, monthly, yearly] = await Promise.all([
+            this.productRankingDailyRepository
+                .createQueryBuilder()
+                .delete()
+                .from(ProductRankingDailyEntity)
+                .where('year < :cutoffYear', { cutoffYear })
+                .execute(),
+
+            this.productRankingMonthlyRepository
+                .createQueryBuilder()
+                .delete()
+                .from(ProductRankingMonthlyEntity)
+                .where('year < :cutoffYear', { cutoffYear })
+                .execute(),
+
+            this.productRankingYearlyRepository
+                .createQueryBuilder()
+                .delete()
+                .from(ProductRankingYearlyEntity)
+                .where('year < :cutoffYear', { cutoffYear })
+                .execute(),
+        ]);
+
+        return {
+            daily: daily.affected ?? 0,
+            monthly: monthly.affected ?? 0,
+            yearly: yearly.affected ?? 0,
+        };
+    }
+
+    // --- Price trend methods ---
+    // Pre-compute and cache today's aggregated price data (called by Cron every 30 minutes).
+    async cacheTodayPriceTrendData(): Promise<void> {
+        const now   = new Date();
+        const day   = now.getDate();
+        const month = now.getMonth() + 1;
+        const year  = now.getFullYear();
+
+        const row = await this.productRankingDailyRepository
+            .createQueryBuilder('ranking')
+            .select('ranking.day',   'day')
+            .addSelect('ranking.month', 'month')
+            .addSelect('ranking.year',  'year')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'import'          THEN ranking.total_price ELSE 0 END)`, 'import')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'returnImport'    THEN ranking.total_price ELSE 0 END)`, 'returnImport')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'selling'         THEN ranking.total_price ELSE 0 END)`, 'selling')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'returnSelling'   THEN ranking.total_price ELSE 0 END)`, 'returnSelling')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'stockAdjustment' THEN ranking.total_price ELSE 0 END)`, 'stockAdjustment')
+            .where('ranking.year = :year AND ranking.month = :month AND ranking.day = :day', { year, month, day })
+            .groupBy('ranking.year')
+            .addGroupBy('ranking.month')
+            .addGroupBy('ranking.day')
+            .getRawOne();
+
+        // Always write even if no invoices today so cache entry exists and avoids a DB hit.
+        const value = {
+            day, month, year,
+            import:          row ? Number(row.import)          : 0,
+            returnImport:    row ? Number(row.returnImport)    : 0,
+            selling:         row ? Number(row.selling)         : 0,
+            returnSelling:   row ? Number(row.returnSelling)   : 0,
+            stockAdjustment: row ? Number(row.stockAdjustment) : 0,
+        };
+
+        // TTL matches the Cron interval so data never goes stale.
+        await this.redisClient.setex(this.getPriceTrendDayCacheKey(year, month, day), 30 * 60, JSON.stringify(value));
+    }
+
+    // Get raw daily price data for a date range, pivoting all 5 invoice types into a single row per day.
+    async getPriceTrendRawData(
+        startDate: Date,
+        endDate: Date,
+    ): Promise<{ day: number; month: number; year: number; import: number; returnImport: number; selling: number; returnSelling: number; stockAdjustment: number }[]> {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Build the full list of dates and their Redis keys for the range.
+        const dates: Date[]     = [];
+        const cacheKeys: string[] = [];
+        const cursor = new Date(startDate);
+        while (cursor <= endDate) {
+            dates.push(new Date(cursor));
+            cacheKeys.push(this.getPriceTrendDayCacheKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate()));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
+        // Batch-fetch all days from Redis in a single round-trip.
+        const cachedValues = await this.redisClient.mget(...cacheKeys);
+
+        type DayRow = { day: number; month: number; year: number; import: number; returnImport: number; selling: number; returnSelling: number; stockAdjustment: number };
+        const result: DayRow[]       = [];
+        const uncachedDates: Date[]  = [];
+
+        for (let i = 0; i < dates.length; i++) {
+            if (cachedValues[i]) {
+                result.push(JSON.parse(cachedValues[i] as string));
+            } else {
+                uncachedDates.push(dates[i]);
+            }
+        }
+
+        // All days were cached — skip DB query entirely.
+        if (uncachedDates.length === 0) return result;
+
+        // Query DB for all uncached days in a single query.
+        const minDate = uncachedDates[0];
+        const maxDate = uncachedDates[uncachedDates.length - 1];
+
+        const rawRows = await this.productRankingDailyRepository
+            .createQueryBuilder('ranking')
+            .select('ranking.day',   'day')
+            .addSelect('ranking.month', 'month')
+            .addSelect('ranking.year',  'year')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'import'          THEN ranking.total_price ELSE 0 END)`, 'import')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'returnImport'    THEN ranking.total_price ELSE 0 END)`, 'returnImport')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'selling'         THEN ranking.total_price ELSE 0 END)`, 'selling')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'returnSelling'   THEN ranking.total_price ELSE 0 END)`, 'returnSelling')
+            .addSelect(`SUM(CASE WHEN ranking.invoice_type = 'stockAdjustment' THEN ranking.total_price ELSE 0 END)`, 'stockAdjustment')
+            .where(
+                `(
+                    ranking.year > :startYear OR
+                    (ranking.year = :startYear AND ranking.month > :startMonth) OR
+                    (ranking.year = :startYear AND ranking.month = :startMonth AND ranking.day >= :startDay)
+                )`,
+                { startYear: minDate.getFullYear(), startMonth: minDate.getMonth() + 1, startDay: minDate.getDate() },
+            )
+            .andWhere(
+                `(
+                    ranking.year < :endYear OR
+                    (ranking.year = :endYear AND ranking.month < :endMonth) OR
+                    (ranking.year = :endYear AND ranking.month = :endMonth AND ranking.day <= :endDay)
+                )`,
+                { endYear: maxDate.getFullYear(), endMonth: maxDate.getMonth() + 1, endDay: maxDate.getDate() },
+            )
+            .groupBy('ranking.year')
+            .addGroupBy('ranking.month')
+            .addGroupBy('ranking.day')
+            .getRawMany();
+
+        // Index DB results by "year-month-day" for O(1) lookup.
+        const dbMap = new Map<string, DayRow>();
+        for (const row of rawRows) {
+            dbMap.set(`${Number(row.year)}-${Number(row.month)}-${Number(row.day)}`, {
+                day: Number(row.day), month: Number(row.month), year: Number(row.year),
+                import:          Number(row.import),
+                returnImport:    Number(row.returnImport),
+                selling:         Number(row.selling),
+                returnSelling:   Number(row.returnSelling),
+                stockAdjustment: Number(row.stockAdjustment),
+            });
+        }
+
+        // Cache each uncached day via a Redis pipeline (one round-trip) and append to result.
+        const pipeline = this.redisClient.pipeline();
+        for (const d of uncachedDates) {
+            const key     = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+            const dayData = dbMap.get(key) ?? {
+                day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear(),
+                import: 0, returnImport: 0, selling: 0, returnSelling: 0, stockAdjustment: 0,
+            };
+            // Historical days are immutable → 365-day TTL. Today is managed by Cron → 30-min TTL.
+            const isToday = d.getTime() === today.getTime();
+            const ttl     = isToday ? 30 * 60 : 365 * 24 * 60 * 60;
+            pipeline.setex(this.getPriceTrendDayCacheKey(d.getFullYear(), d.getMonth() + 1, d.getDate()), ttl, JSON.stringify(dayData));
+            result.push(dayData);
+        }
+        await pipeline.exec();
+
+        return result;
     }
 
 }

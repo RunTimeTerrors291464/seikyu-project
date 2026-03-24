@@ -9,8 +9,8 @@ import { ProductRankingService } from '../services/productRanking.service';
 // Import DTOs.
 import { GetListOfProductRankingRequestDto } from '@app/common/dtos/platform/dashboard/crudProductRankingRequest.dto';
 import { GetListOfProductRankingResponseDto } from '@app/common/dtos/platform/dashboard/crudProductRankingResponse.dto';
-import { GetPriceTrendRequestDto } from '@app/common/dtos/platform/dashboard/priceTrendRequest.dto';
-import { GetPriceTrendResponseDto } from '@app/common/dtos/platform/dashboard/priceTrendResponse.dto';
+import { GetPriceTrendRequestDto } from '@app/common/dtos/platform/dashboard/crudPriceTrendRequest.dto';
+import { GetPriceTrendResponseDto } from '@app/common/dtos/platform/dashboard/crudPriceTrendResponse.dto';
 
 @Controller()
 export class ProductRankingController {

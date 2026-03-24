@@ -16,8 +16,8 @@ import { firstValueFrom } from 'rxjs';
 // Import DTOs.
 import { GetListOfProductRankingRequestDto } from '@app/common/dtos/platform/dashboard/crudProductRankingRequest.dto';
 import { GetListOfProductRankingResponseDto } from '@app/common/dtos/platform/dashboard/crudProductRankingResponse.dto';
-import { GetPriceTrendRequestDto } from '@app/common/dtos/platform/dashboard/priceTrendRequest.dto';
-import { GetPriceTrendResponseDto } from '@app/common/dtos/platform/dashboard/priceTrendResponse.dto';
+import { GetPriceTrendRequestDto } from '@app/common/dtos/platform/dashboard/crudPriceTrendRequest.dto';
+import { GetPriceTrendResponseDto } from '@app/common/dtos/platform/dashboard/crudPriceTrendResponse.dto';
 
 // Import error exceptions.
 import { CustomException } from '@app/common/error-exceptions/customException';
@@ -39,8 +39,8 @@ export class ProductRankingController {
     // Get a list of product ranking.
     // GET /api/v1/dashboard/product-ranking
     @Get('product-ranking')
-    @Roles(Role.MANAGER)
-    @ApiOperation({ summary: '[MANAGER] Get a list of product ranking' })
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get a list of product ranking' })
     @ApiResponse({ status: 200, description: 'A list of product ranking has been retrieved successfully.', type: GetListOfProductRankingResponseDto })
     @HttpCode(HttpStatus.OK)
     async getListOfProductRanking(@Query() dto: GetListOfProductRankingRequestDto): Promise<GetListOfProductRankingResponseDto> {
@@ -58,8 +58,8 @@ export class ProductRankingController {
     // Get price trend data for the line chart.
     // GET /api/v1/dashboard/price-trend
     @Get('price-trend')
-    @Roles(Role.MANAGER)
-    @ApiOperation({ summary: '[MANAGER] Get price trend line chart data (up to 12 bucketed columns)' })
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get price trend line chart data.' })
     @ApiResponse({ status: 200, description: 'Price trend data has been retrieved successfully.', type: GetPriceTrendResponseDto })
     @HttpCode(HttpStatus.OK)
     async getPriceTrend(@Query() dto: GetPriceTrendRequestDto): Promise<GetPriceTrendResponseDto> {

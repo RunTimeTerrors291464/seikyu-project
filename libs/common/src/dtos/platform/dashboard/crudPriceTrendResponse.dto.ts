@@ -4,25 +4,18 @@ import { Type } from 'class-transformer';
 
 export class PriceTrendColumnDto {
     @ApiProperty({
-        description: 'Display label for the column (e.g. "09/03" or "09/03 - 11/03")',
-        example: '09/03',
-    })
-    @IsString()
-    label: string;
-
-    @ApiProperty({
-        description: 'Start date of the bucket (YYYY-MM-DD)',
+        description: 'Start date of this bucket (YYYY-MM-DD)',
         example: '2026-03-09',
     })
     @IsString()
-    startDate: string;
+    labelStartDate: string;
 
     @ApiProperty({
-        description: 'End date of the bucket (YYYY-MM-DD)',
-        example: '2026-03-09',
+        description: 'End date of this bucket (YYYY-MM-DD)',
+        example: '2026-03-15',
     })
     @IsString()
-    endDate: string;
+    labelEndDate: string;
 
     @ApiProperty({ description: 'Total import revenue for this bucket', example: 50000 })
     @IsNumber()
@@ -46,6 +39,21 @@ export class PriceTrendColumnDto {
 }
 
 export class GetPriceTrendResponseDto {
+
+    @ApiProperty({
+        description: 'Start date of the price trend',
+        example: '2026-03-09',
+    })
+    @IsString()
+    startDate: string;
+
+    @ApiProperty({
+        description: 'End date of the price trend',
+        example: '2026-03-09',
+    })
+    @IsString()
+    endDate: string;
+
     @ApiProperty({
         description: 'Up to 12 time-bucketed columns for the line chart',
         type: [PriceTrendColumnDto],

@@ -31,8 +31,8 @@ export class ScheduleProductRankingService {
                 this.productRankingRepository.cacheTop100ProductsDaily(InvoiceType.STOCK_ADJUSTMENT, day, month, year),
             ]);
 
-            // Invalidate price trend cache entries that cover today so they reflect the latest data.
-            await this.productRankingRepository.invalidatePriceTrendCacheForToday();
+            // Refresh today's price trend cache so the line chart reflects the latest invoice data.
+            await this.productRankingRepository.cacheTodayPriceTrendData();
 
             Logger.log(`Calculated and stored product rankings for all invoice types.`);
         } catch (error) {
@@ -145,6 +145,22 @@ export class ScheduleProductRankingService {
             Logger.log(`Calculated yearly product rankings for all invoice types and removed ${removed} non-top-100 monthly rankings.`);
         } catch (error) {
             Logger.error('Failed to calculate and store product ranking yearly.');
+            Logger.error('Error in: apps/platform/src/dashboard/services/scheduleProductRanking.service.ts');
+            Logger.error(`Error details: ${error}`);
+        }
+    }
+
+    // Remove all product ranking data older than 10 years, runs once a year on January 1st at 01:00.
+    @Cron('0 1 1 1 *')
+    async removeProductRankingOlderThan10Years(): Promise<void> {
+        Logger.log('Removing product ranking data older than 10 years...');
+
+        try {
+            const { daily, monthly, yearly } = await this.productRankingRepository.removeProductRankingOlderThan10Years();
+
+            Logger.log(`Removed product ranking data older than 10 years: ${daily} daily, ${monthly} monthly, ${yearly} yearly records.`);
+        } catch (error) {
+            Logger.error('Failed to remove product ranking data older than 10 years.');
             Logger.error('Error in: apps/platform/src/dashboard/services/scheduleProductRanking.service.ts');
             Logger.error(`Error details: ${error}`);
         }
