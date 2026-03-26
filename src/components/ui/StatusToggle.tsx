@@ -26,7 +26,7 @@ export function StatusToggle({
         active:translate-y-[1px]
 
         ${active
-          ? "bg-primary-soft text-primary border-primary hover:bg-primary-hover"
+          ? "bg-success-soft text-success border-success hover:bg-success-hover"
           : "bg-card text-muted border-border hover:bg-hover hover:text-text active:bg-active"
         }
       `}
@@ -35,7 +35,7 @@ export function StatusToggle({
       {/* Toggle */}
       <span
         className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors
-          ${active ? "bg-primary" : "bg-border"}`}
+          ${active ? "bg-success" : "bg-border"}`}
       >
         <span
           className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform

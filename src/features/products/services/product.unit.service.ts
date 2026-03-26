@@ -11,6 +11,18 @@ export type ProductUnit = {
   updatedAt: string;
 };
 
+export type ProductUnitUpdateResponse = {
+  productUnit: ProductUnit;
+  history: {
+    id: string;
+    version: number;
+    createdBy: string;
+    createdByUsername: string;
+    createdAt: string;
+    eventSummary: string[];
+  };
+};
+
 export type GetUnitsParams = {
   page?: number;
   limit?: number;
@@ -36,8 +48,10 @@ export const productUnitService = {
   async create(data: {
     unitName: string;
     unitDescription?: string;
-  }) {
+  }): Promise<ProductUnit> {
     const res = await api.post("/product-units", data);
+
+    // backend already returns flat object → OK
     return res.data;
   },
 
@@ -45,8 +59,30 @@ export const productUnitService = {
     id: string;
     unitName: string;
     unitDescription?: string;
-  }) {
+  }): Promise<ProductUnitUpdateResponse> {
     const res = await api.patch("/product-units", data);
-    return res.data;
+
+    return {
+      productUnit: res.data.productUnit,
+      history: res.data.history,
+    };
+  },
+
+  async deactivate(id: string): Promise<ProductUnitUpdateResponse> {
+    const res = await api.patch(`/product-units/${id}/deactivate`);
+
+    return {
+      productUnit: res.data.productUnit,
+      history: res.data.history,
+    };
+  },
+
+  async activate(id: string): Promise<ProductUnitUpdateResponse> {
+    const res = await api.patch(`/product-units/${id}/activate`);
+
+    return {
+      productUnit: res.data.productUnit,
+      history: res.data.history,
+    };
   },
 };

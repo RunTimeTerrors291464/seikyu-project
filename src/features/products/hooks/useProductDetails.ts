@@ -17,6 +17,8 @@ import type {
   ProductHistoryItem,
 } from "../types/product";
 
+import { useIsDirty } from "@/lib/hooks/useIsDirty";
+
 /* ============================= */
 /* HELPER */
 /* ============================= */
@@ -26,7 +28,7 @@ function getComparable(p: Product | null) {
 
   return {
     sku: p.sku,
-    productNames: p.productNames,
+    productNames: [...p.productNames].sort().join("|"), // normalize array
     productUnitId: p.productUnitId,
     productDescription: p.productDescription,
     importPrice: p.importPrice,
@@ -64,6 +66,8 @@ export function useProductDetail(id: string) {
 
   const [loading, setLoading] = useState(true);
   const [showActivePopup, setShowActivePopup] = useState(false);
+
+  const checkDirty = useIsDirty<NonNullable<ReturnType<typeof getComparable>>>();
 
   /* ============================= */
   /* FETCH (PRODUCT + HISTORY) */
@@ -301,8 +305,10 @@ export function useProductDetail(id: string) {
       const hasActiveChange =
         product.isActive !== original.isActive;
 
-      const hasFieldChanges =
-        !isEqual(getComparable(product), getComparable(original));
+      const hasFieldChanges = checkDirty(
+        getComparable(original) ?? undefined,
+        getComparable(product) ?? undefined
+      );
 
       if (!hasActiveChange && !hasFieldChanges) {
         return true;
@@ -370,8 +376,10 @@ export function useProductDetail(id: string) {
   /* STATE */
   /* ============================= */
 
-  const isDirty =
-    !isEqual(getComparable(product), getComparable(original));
+  const isDirty = checkDirty(
+    getComparable(original) ?? undefined,
+    getComparable(product) ?? undefined
+  );
 
   const isInactive = product ? !product.isActive : false;
 
@@ -408,8 +416,4 @@ export function useProductDetail(id: string) {
     saveProduct,
     isDirty,
   };
-}
-
-function isEqual(a: any, b: any): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
 }

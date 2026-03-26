@@ -11,7 +11,13 @@ export function useProductUnit(search: string) {
   const [units, setUnits] = useState<ProductUnit[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const [historyMap, setHistoryMap] = useState<
+    Record<string, any[]>
+  >({});
+
   const debouncedSearch = useDebounce(search, 500);
+
+  /* ───────── FETCH ───────── */
 
   async function fetchUnits() {
     setLoading(true);
@@ -20,7 +26,7 @@ export function useProductUnit(search: string) {
         page: 1,
         limit: 20,
         search: debouncedSearch,
-        isActive: "true",
+        isActive: "all",
       });
 
       setUnits(res.productUnits);
@@ -33,7 +39,28 @@ export function useProductUnit(search: string) {
     fetchUnits();
   }, [debouncedSearch]);
 
-  // ── CRUD ─────────────────────
+  /* ───────── HELPERS ───────── */
+
+  function replaceUnit(updated: ProductUnit) {
+    setUnits((prev) =>
+      prev.map((u) => (u.id === updated.id ? updated : u))
+    );
+  }
+
+  // function removeUnit(id: string) {
+  //   setUnits((prev) => prev.filter((u) => u.id !== id));
+  // }
+
+  function addHistory(unitId: string, history: any) {
+    if (!history) return;
+
+    setHistoryMap((prev) => ({
+      ...prev,
+      [unitId]: [history, ...(prev[unitId] || [])],
+    }));
+  }
+
+  /* ───────── CRUD ───────── */
 
   async function createUnit(name: string, desc: string) {
     const unit = await productUnitService.create({
@@ -50,24 +77,51 @@ export function useProductUnit(search: string) {
     name: string,
     desc: string
   ) {
-    const updated = await productUnitService.update({
+    const res = await productUnitService.update({
       id,
       unitName: name,
       unitDescription: desc,
     });
 
-    setUnits((prev) =>
-      prev.map((u) => (u.id === id ? updated : u))
-    );
+    replaceUnit(res.productUnit);
+    addHistory(id, res.history);
 
-    return updated;
+    return res.productUnit;
   }
+
+  /* ───────── ACTIVE / DEACTIVE ───────── */
+
+  async function activateUnit(id: string) {
+    const res = await productUnitService.activate(id);
+
+    replaceUnit(res.productUnit);
+    addHistory(id, res.history);
+
+    return res.productUnit;
+  }
+
+  async function deactivateUnit(id: string) {
+    const res = await productUnitService.deactivate(id);
+
+    replaceUnit(res.productUnit);
+    addHistory(id, res.history);
+
+    return res.productUnit;
+  }
+
+  /* ───────── RETURN ───────── */
 
   return {
     units,
     loading,
+
     fetchUnits,
+
     createUnit,
     updateUnit,
+
+    activateUnit,
+    deactivateUnit,
+    historyMap,
   };
 }

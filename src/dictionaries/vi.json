@@ -114,5 +114,11 @@
   "deactivate": "Ngừng kích hoạt",
   "close": "Đóng",
   "editName": "Chỉnh sửa tên",
-  "noUnit": "Không có đơn vị"
+  "noUnit": "Không có đơn vị",
+  "confirmSaveUnitTitle": "Lưu thay đổi?",
+  "confirmSaveUnitDescription": "Các thay đổi của bạn sẽ được áp dụng cho đơn vị này.",
+  "confirmDeactivateUnitTitle": "Vô hiệu hóa đơn vị?",
+  "confirmDeactivateUnitDescription": "Đơn vị này sẽ được đánh dấu là không hoạt động, tất cả thay đổi chưa lưu sẽ bị hủy. Bạn có thể kích hoạt lại bất kỳ lúc nào. Các sản phẩm đang sử dụng đơn vị này vẫn hoạt động nhưng sẽ có cảnh báo.",
+  "confirmActivateUnitTitle": "Kích hoạt đơn vị?",
+  "confirmActivateUnitDescription": "Đơn vị này sẽ hoạt động trở lại."
 }

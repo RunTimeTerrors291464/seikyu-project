@@ -43,12 +43,12 @@ export function nameColumns(dict: Dictionary, { onRemove, onMakeDefault }: Actio
               <Star className="h-3.5 w-3.5" strokeWidth={2.5} />
             </Button>
           )}
-          <button
+          <Button
             onClick={() => onRemove(idx)}
-            className="flex h-8 w-8 items-center justify-center rounded-md bg-danger text-white hover:opacity-90 transition"
+            accent="danger"
           >
             <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         </div>
       ),
       thClassName: "text-right pr-3",

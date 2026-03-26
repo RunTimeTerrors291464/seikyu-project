@@ -1,14 +1,16 @@
 "use client";
 
 import Popup from "@/components/layout/BlurPopupWraper";
+import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
+import { Input } from "@/components/ui/Fields";
 import TablePagination from "@/components/ui/TablePagination";
 import { useDict } from "@/lib/lang/DictProvider";
-import clsx from "clsx";
-import { Plus, Ruler } from "lucide-react";
+import { CircleOff, Plus, PowerCircle, Ruler } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useProductUnit } from "../hooks/useProductUnit";
 import { ProductUnit } from "../services/product.unit.service";
 import { unitColumns } from "../table/unitColumns";
@@ -30,6 +32,15 @@ export default function UnitPickerPopup({
 
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftMap, setDraftMap] = useState<Record<string, ProductUnit>>({});
+
+  const [updating, setUpdating] = useState(false);
+
+  const [confirmingActiveUnit, setConfirmingActiveUnit] = useState<ProductUnit | null>(null);
+  const [confirmingSaveUnit, setConfirmingSaveUnit] = useState<ProductUnit | null>(null);;
+
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
 
@@ -41,7 +52,11 @@ export default function UnitPickerPopup({
     loading,
     createUnit,
     updateUnit,
+    activateUnit,
+    deactivateUnit,
   } = useProductUnit(search);
+
+  const isDirty = useIsDirty<ProductUnit>();
 
   /* ───────── Pagination ───────── */
 
@@ -62,7 +77,10 @@ export default function UnitPickerPopup({
   const trimmed = name.trim();
 
   const isDuplicate = units.some(
-    (u) => u.unitName.toLowerCase() === trimmed.toLowerCase()
+    (u) =>
+      (u.unitName || "")
+        .toLowerCase()
+        .trim() === trimmed.toLowerCase()
   );
 
   const canAdd = trimmed.length > 0 && !isDuplicate;
@@ -87,55 +105,55 @@ export default function UnitPickerPopup({
       <div className="flex flex-col max-w-[50vw] max-h-[70vh]">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border gap-3">
 
-          <span className="flex items-center text-sm font-semibold text-text gap-2">
-            <Ruler className="w-4 h4" />
+          {/* LEFT: Title */}
+          <span className="flex items-center text-sm font-semibold text-text gap-2 whitespace-nowrap">
+            <Ruler className="w-4 h-4" />
             {dict.unit}
           </span>
 
+          {/* CENTER: SEARCH */}
+          <div className="flex-1 max-w-md">
+            <Input
+              value={search}
+              onChange={setSearch}
+              placeholder={dict.searchPlaceholder}
+            />
+          </div>
+
+          {/* RIGHT: Add / Adding */}
           {adding ? (
             <div className="flex items-center gap-2 animate-shoot">
 
-              <input
-                autoFocus
+              <Input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={setName}
                 placeholder={dict.name}
-                className={clsx(
-                  "h-8 w-28 rounded-md border px-2 text-xs",
-                  "bg-card text-text outline-none",
-                  isDuplicate ? "border-danger" : "border-border",
-                  "focus:border-primary"
-                )}
               />
 
-              <input
+              <Input
                 value={desc}
-                onChange={(e) => setDesc(e.target.value)}
+                onChange={setDesc}
                 placeholder={dict.description}
-                className="h-8 w-40 rounded-md border px-2 text-xs border-border bg-card text-text outline-none focus:border-primary"
               />
 
               {canAdd && (
-                <button
-                  onClick={handleAdd}
-                  className="h-8 px-2 text-xs border border-border rounded-md hover:bg-hover"
-                >
+                <Button onClick={handleAdd} accent="primary">
                   {dict.add}
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button
                 onClick={() => {
                   setAdding(false);
                   setName("");
                   setDesc("");
                 }}
-                className="h-8 px-2 text-xs border border-border rounded-md text-muted hover:bg-hover"
+                accent="neutral"
               >
                 {dict.cancel}
-              </button>
+              </Button>
 
             </div>
           ) : (
@@ -151,24 +169,76 @@ export default function UnitPickerPopup({
         <div className="grow min-h-0 flex flex-col p-4">
           <DataTable<ProductUnit>
             data={paginatedUnits}
-            getRowId={(u) => u.id}
+            getRowId={(u, index) => u.id || `row-${index}`}
             maxHeight="fill"
             emptyMessage={loading ? dict.loading : dict.noUnit}
             columns={unitColumns(dict, {
               selectedUnitId,
+              editingId: editingId ?? undefined,
+              draftMap,
+              isDirty,
+              units,
+
               onSelect: (unit) => {
+                if (editingId) return;
                 onSelect(unit);
                 onClose();
               },
-              onEdit: async (unit) => {
-                const newName = prompt(dict.editName, unit.unitName);
-                if (!newName) return;
 
-                await updateUnit(
-                  unit.id,
-                  newName,
-                  unit.unitDescription
-                );
+              onEdit: (unit) => {
+                setEditingId(unit.id);
+                setDraftMap({
+                  [unit.id]: { ...unit }, // eset all drafts
+                });
+              },
+
+              onChange: (id, field, value) => {
+                if (field === "isActive") {
+                  const unit = draftMap[id] || units.find((u) => u.id === id);
+                  if (!unit) return;
+
+                  setConfirmingActiveUnit({
+                    ...unit,
+                    isActive: value,
+                  });
+
+                  return;
+                }
+
+                setDraftMap((prev) => ({
+                  ...prev,
+                  [id]: {
+                    ...prev[id],
+                    [field]: value,
+                  },
+                }));
+              },
+
+              onSave: (unit) => {
+                const original = units.find((u) => u.id === unit.id);
+                if (!original) return;
+
+                const hasActiveChange = original.isActive !== unit.isActive;
+                const hasFieldChanges = isDirty(original, unit);
+
+                if (!hasActiveChange && !hasFieldChanges) {
+                  setEditingId(null);
+                  return;
+                }
+
+                setConfirmingSaveUnit(unit);
+              },
+
+              onCancel: () => {
+                if (editingId) {
+                  setDraftMap((prev) => {
+                    const next = { ...prev };
+                    delete next[editingId];
+                    return next;
+                  });
+                }
+
+                setEditingId(null);
               },
             })}
           />
@@ -176,14 +246,11 @@ export default function UnitPickerPopup({
 
         {/* FOOTER */}
         <div className="flex items-center justify-between border-t border-border px-4 py-3">
-
-          {/* PAGINATION */}
-
           <TablePagination
             page={page}
             totalPages={totalPages}
             rowsPerPage={rowsPerPage}
-            setRowsPerPage={() => { }} // fixed
+            setRowsPerPage={() => { }}
             setPage={setPage}
             totalResults={totalResults}
             dict={{
@@ -197,8 +264,88 @@ export default function UnitPickerPopup({
           <Button onClick={onClose} accent="neutral">
             {dict.close}
           </Button>
-
         </div>
+
+        {/* CONFIRM ACTIVATION/DEACTIVATION POPUP */}
+        {confirmingActiveUnit && (
+          <ConfirmPopup
+            open={!!confirmingActiveUnit}
+            title={
+              confirmingActiveUnit.isActive
+                ? dict.confirmActivateUnitTitle
+                : dict.confirmDeactivateUnitTitle
+            }
+            description={
+              confirmingActiveUnit.isActive
+                ? dict.confirmActivateUnitDescription
+                : dict.confirmDeactivateUnitDescription
+            }
+            icon={
+              confirmingActiveUnit.isActive ? (
+                <PowerCircle className="h-7 w-7 text-primary" />
+              ) : (
+                <CircleOff className="h-3.5 w-3.5 text-danger" />
+
+              )
+            }
+            accent={confirmingActiveUnit.isActive ? "neutral" : "danger"}
+            confirmText={dict.confirm}
+            cancelText={dict.cancel}
+            loading={updating}
+            onClose={() => setConfirmingActiveUnit(null)}
+            onConfirm={async () => {
+              const id = confirmingActiveUnit.id;
+
+              // Apply change to draft ONLY
+              setDraftMap((prev) => ({
+                ...prev,
+                [id]: {
+                  ...(prev[id] || units.find((u) => u.id === id)!),
+                  isActive: confirmingActiveUnit.isActive,
+                },
+              }));
+
+              setConfirmingActiveUnit(null);
+            }}
+          />
+        )}
+
+        {/* CONFIRM SAVE POPUP */}
+        {confirmingSaveUnit && (
+          <ConfirmPopup
+            open={!!confirmingSaveUnit}
+            title={dict.confirmSaveUnitTitle}
+            description={dict.confirmSaveUnitDescription}
+            confirmText={dict.confirm}
+            cancelText={dict.cancel}
+            loading={updating}
+            onClose={() => setConfirmingSaveUnit(null)}
+            onConfirm={async () => {
+              if (!confirmingSaveUnit) return;
+
+              setUpdating(true);
+
+              try {
+                await updateUnit(
+                  confirmingSaveUnit.id,
+                  confirmingSaveUnit.unitName,
+                  confirmingSaveUnit.unitDescription
+                );
+
+                setDraftMap((prev) => {
+                  const next = { ...prev };
+                  delete next[confirmingSaveUnit.id];
+                  return next;
+                });
+
+                setEditingId(null);
+              } finally {
+                setUpdating(false);
+                setConfirmingSaveUnit(null);
+              }
+            }}
+          />
+        )}
       </div>
     </Popup>
   );

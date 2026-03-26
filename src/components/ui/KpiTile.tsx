@@ -44,6 +44,7 @@ export default function KpiTile({
     warning: "text-warning",
     danger: "text-danger",
     primary: "text-primary",
+    gold: "text-gold"
   };
 
   /* ───────── Delta ───────── */
