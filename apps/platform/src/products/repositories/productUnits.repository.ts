@@ -136,7 +136,6 @@ export class ProductUnitsRepository {
     async getListOfProductUnits(dto: GetListOfProductUnitRequestDto): Promise<{ data: ProductUnitsEntity[], total: number }> {
         const { page = 1, limit = 10, search, isActive = 'all', sortBy, sortOrder = 'asc' } = dto;
 
-        // Create query builder.
         const queryBuilder = this.productUnitsRepository.createQueryBuilder('productUnit');
 
         if (search) {
@@ -145,8 +144,7 @@ export class ProductUnitsRepository {
             });
         }
 
-        // Apply active status filter.
-        if (isActive && isActive !== 'all') {
+        if (isActive !== 'all') {
             queryBuilder.andWhere('productUnit.active = :active', {
                 active: isActive === 'true',
             });
@@ -158,17 +156,11 @@ export class ProductUnitsRepository {
                 : sortBy === 'updatedAt' ? 'productUnit.updatedAt' : 'productUnit.createdAt';
         queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');
 
-        // Get total count before pagination.
-        const total = await queryBuilder.getCount();
-
-        // Apply pagination.
         queryBuilder.skip((page - 1) * limit).take(limit);
 
-        // Execute query.
-        const productUnitsEntities = await queryBuilder.getMany();
+        const [data, total] = await queryBuilder.getManyAndCount();
 
-        // Return product units entities.
-        return { data: productUnitsEntities, total };
+        return { data, total };
     }
 
     // Deactivate a product unit.

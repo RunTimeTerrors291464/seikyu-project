@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber, Max } from 'class-validator';
+import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber, Max, IsIn, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '../../../enums/role.enum';
 import { Transform, Type } from 'class-transformer';
@@ -48,10 +48,12 @@ export class CreateNewUserRequestDto {
     @ApiProperty({
         description: 'Password for the user account',
         example: 'SecurePassword123!',
+        minLength: 8,
         maxLength: 64,
     })
     @IsNotEmpty()
     @IsString()
+    @MinLength(8, { message: 'password must be at least 8 characters.' })
     @MaxLength(64, { message: 'password must be less than 64 characters.' })
     password: string;
 
@@ -116,9 +118,13 @@ export class CreateUserAdminRequestDto {
     @ApiProperty({
         description: 'Password for the user account',
         example: 'SecurePassword123!',
+        minLength: 8,
+        maxLength: 64,
     })
     @IsNotEmpty()
     @IsString()
+    @MinLength(8, { message: 'password must be at least 8 characters.' })
+    @MaxLength(64, { message: 'password must be less than 64 characters.' })
     password: string;
 }
 
@@ -224,7 +230,7 @@ export class GetListOfUsersRequestDto {
         enum: ['name', 'username'],
     })
     @IsOptional()
-    @IsString()
+    @IsIn(['name', 'username'])
     searchBy?: 'name' | 'username';
 
     @ApiPropertyOptional({
@@ -248,7 +254,7 @@ export class GetListOfUsersRequestDto {
         enum: ['true', 'false', 'all'],
     })
     @IsOptional()
-    @IsString()
+    @IsIn(['true', 'false', 'all'])
     active?: 'true' | 'false' | 'all' = 'all';
 
     @ApiPropertyOptional({
@@ -257,7 +263,7 @@ export class GetListOfUsersRequestDto {
         enum: ['firstName', 'lastName', 'username', 'createdAt', 'updatedAt', 'active'],
     })
     @IsOptional()
-    @IsString()
+    @IsIn(['firstName', 'lastName', 'username', 'createdAt', 'updatedAt', 'active'])
     sortBy?: 'firstName' | 'lastName' | 'username' | 'createdAt' | 'updatedAt' | 'active';
 
     @ApiPropertyOptional({
@@ -266,7 +272,7 @@ export class GetListOfUsersRequestDto {
         enum: ['asc', 'desc'],
     })
     @IsOptional()
-    @IsString()
+    @IsIn(['asc', 'desc'])
     sortOrder?: 'asc' | 'desc' = 'asc';
 }
 

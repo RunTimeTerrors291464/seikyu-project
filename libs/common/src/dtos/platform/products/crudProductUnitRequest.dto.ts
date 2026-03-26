@@ -89,7 +89,7 @@ export class GetListOfProductUnitRequestDto {
         enum: ['true', 'false', 'all'],
     })
     @IsOptional()
-    @IsString()
+    @IsIn(['true', 'false', 'all'])
     isActive?: 'true' | 'false' | 'all' = 'all';
 
     @ApiPropertyOptional({
@@ -98,7 +98,7 @@ export class GetListOfProductUnitRequestDto {
         enum: ['unitName', 'createdAt', 'updatedAt'],
     })
     @IsOptional()
-    @IsString()
+    @IsIn(['unitName', 'createdAt', 'updatedAt'])
     sortBy?: 'unitName' | 'createdAt' | 'updatedAt';
 
     @ApiPropertyOptional({
