@@ -24,6 +24,7 @@ export class ProductMapper {
             productNames: productEntity.productNames.map(pn => pn.name),
             productUnitId: productEntity.productUnit.id,
             productUnitName: productEntity.productUnit.unitName,
+            isUnitActive: productEntity.productUnit.active,
             productDescription: productEntity.productDescription || null,
             importPrice: productEntity.importPrice,
             sellingPrice: productEntity.sellingPrice,

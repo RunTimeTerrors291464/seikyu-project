@@ -37,6 +37,12 @@ export class ProductResponseDto {
     productUnitName: string;
 
     @ApiProperty({
+        description: 'Whether the product unit is active',
+        example: true,
+    })
+    isUnitActive: boolean;
+
+    @ApiProperty({
         description: 'Product description',
         example: 'Detailed description of the product',
         nullable: true,
@@ -103,6 +109,7 @@ export class ProductResponseDtoWithHistory {
             productNames: ['Product Name 1', 'Product Name 2'],
             productUnitId: 'ade95cfd-1121-474c-a19f-fd6ae10a6e4f',
             productUnitName: 'kg',
+            isUnitActive: true,
             productDescription: 'Detailed description of the product',
             importPrice: 100.50,
             sellingPrice: 111.75,

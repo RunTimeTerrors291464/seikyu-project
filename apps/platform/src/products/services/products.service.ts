@@ -19,6 +19,7 @@ import {
     CreateProductRequestDto,
     EditProductRequestDto,
     GetListOfProductRequestDto,
+    GetListOfProductByProductUnitIdRequestDto,
     UpdateProductInventoryBulkRequestDto,
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import {
@@ -166,6 +167,23 @@ export class ProductsService {
     @HandleServiceError(ErrorCode.GET_PRODUCTS_SERVICE)
     async getListOfProducts(dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
         const { products, total } = await this.productsRepository.getListOfProducts(dto);
+
+        const productDtos: ProductResponseDto[] = products.map((product) =>
+            this.productMapper.toProductResponseDto(product)
+        );
+
+        return {
+            page: dto.page || 1,
+            limit: dto.limit || 10,
+            total,
+            products: productDtos,
+        };
+    }
+
+    // Get a list of products with specific product unit id.
+    @HandleServiceError(ErrorCode.GET_PRODUCTS_SERVICE)
+    async getListOfProductByProductUnitId(dto: GetListOfProductByProductUnitIdRequestDto): Promise<GetListOfProductResponseDto> {
+        const { products, total } = await this.productsRepository.getListOfProductByProductUnitId(dto);
 
         const productDtos: ProductResponseDto[] = products.map((product) =>
             this.productMapper.toProductResponseDto(product)

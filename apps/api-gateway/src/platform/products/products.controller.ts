@@ -1,7 +1,7 @@
 import { Controller, Post, Put, Get, Patch, Body, Param, Inject, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
 
 // Import swagger.
-import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiParam, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 // Import guards.
 import { JwtAuthGuard, RolesGuard, Roles } from '../../auth/guards';
@@ -24,6 +24,7 @@ import {
     CreateProductRequestDto,
     EditProductRequestDto,
     GetListOfProductRequestDto,
+    GetListOfProductByProductUnitIdRequestDto,
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import {
     ProductResponseDto,
@@ -152,6 +153,32 @@ export class ProductsController {
         try {
             const result: ProductOverviewResponseDto | null = await firstValueFrom(
                 this.platformService.send({ cmd: 'products.getProductOverview' }, {})
+            );
+            return result;
+        } catch (error: any) {
+            if (error.status && error.errorCode) throw new CustomException(error.status, error.errorCode, error.message, error.errorDetails);
+            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.UNKNOWN_ERROR, error.message);
+        }
+    }
+
+    // Get a list of products by product unit id.
+    // GET /api/v1/products/by-unit/:productUnitId
+    @Get('by-unit/:productUnitId')
+    @Roles(Role.MANAGER, Role.ADMIN)
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of products by product unit ID' })
+    @ApiParam({ name: 'productUnitId', description: 'The ID of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @ApiQuery({ name: 'page', description: 'The page number', example: 1, required: false })
+    @ApiQuery({ name: 'limit', description: 'The page limit', example: 10, required: false })
+    @ApiResponse({ status: 200, description: 'A list of products has been retrieved successfully.', type: GetListOfProductResponseDto })
+    @HttpCode(HttpStatus.OK)
+    async getListOfProductByProductUnitId(
+        @Param('productUnitId') productUnitId: string,
+        @Query() query: { page?: number; limit?: number },
+    ): Promise<GetListOfProductResponseDto> {
+        try {
+            const dto: GetListOfProductByProductUnitIdRequestDto = { productUnitId, page: query.page, limit: query.limit };
+            const result: GetListOfProductResponseDto = await firstValueFrom(
+                this.platformService.send({ cmd: 'products.getListOfProductByProductUnitId' }, dto)
             );
             return result;
         } catch (error: any) {

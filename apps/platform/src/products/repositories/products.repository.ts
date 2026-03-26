@@ -14,6 +14,7 @@ import {
     CreateProductRequestDto,
     EditProductRequestDto,
     GetListOfProductRequestDto,
+    GetListOfProductByProductUnitIdRequestDto,
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import {
     CreateProductStockRequestDto,
@@ -371,6 +372,7 @@ export class ProductsRepository {
                 }
             }
         };
+        
 
         // Create the query builder for counting total products.
         const countQueryBuilder = this.productsRepository.createQueryBuilder('product');
@@ -413,6 +415,41 @@ export class ProductsRepository {
 
             // DB call: Fetch product names.
             const productNames: ProductNamesEntity[] = await this.productNamesRepository.find({
+                where: { product: { id: In(ids) } },
+                relations: ['product'],
+            });
+
+            const namesMap = new Map<string, ProductNamesEntity[]>();
+            productNames.forEach(name => {
+                if (!namesMap.has(name.product.id)) {
+                    namesMap.set(name.product.id, []);
+                }
+                namesMap.get(name.product.id)!.push(name);
+            });
+
+            products.forEach(product => {
+                product.productNames = namesMap.get(product.id) || [];
+            });
+        }
+
+        return { products, total };
+    }
+
+    // Get a list of product with specific product unit id.
+    async getListOfProductByProductUnitId(dto: GetListOfProductByProductUnitIdRequestDto): Promise<{ products: ProductsEntity[], total: number }> {
+        const { page = 1, limit = 10, productUnitId } = dto;
+
+        const [products, total] = await this.productsRepository.findAndCount({
+            where: { productUnit: { id: productUnitId } },
+            relations: ['productUnit'],
+            order: { createdAt: 'DESC' },
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+
+        if (products.length > 0) {
+            const ids = products.map(p => p.id);
+            const productNames = await this.productNamesRepository.find({
                 where: { product: { id: In(ids) } },
                 relations: ['product'],
             });
@@ -557,9 +594,6 @@ export class ProductsRepository {
         });
         return history || null;
     }
-
-    // Revert a product to a specific version.
-
 
     // --- Product Stock History APIs ---
     // Create product stock history.

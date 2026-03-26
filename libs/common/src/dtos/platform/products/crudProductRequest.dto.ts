@@ -250,6 +250,39 @@ export class GetListOfProductRequestDto {
 
 }
 
+// Get a list of product with specific product unit id.
+export class GetListOfProductByProductUnitIdRequestDto {
+    @ApiPropertyOptional({
+        description: 'The page number',
+        example: 1,
+    })
+    @IsNumber()
+    @IsOptional()
+    @Type(() => Number)
+    @Min(1)
+    @Max(2147483647)
+    page?: number = 1;
+
+    @ApiPropertyOptional({
+        description: 'The page size',
+        example: 10,
+    })
+    @IsNumber()
+    @IsOptional()
+    @Type(() => Number)
+    @Min(1)
+    @Max(100)
+    limit?: number = 10;
+
+    @ApiProperty({
+        description: 'The unique identifier of the product unit',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    })
+    @IsNotEmpty()
+    @IsUUID()
+    productUnitId: string;    
+}
+
 export class UpdateProductInventoryRequestDto {
     @ApiProperty({
         description: 'The unique identifier of the product',

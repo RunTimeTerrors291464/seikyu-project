@@ -11,6 +11,7 @@ import {
     CreateProductRequestDto,
     EditProductRequestDto,
     GetListOfProductRequestDto,
+    GetListOfProductByProductUnitIdRequestDto,
     UpdateProductInventoryRequestDto,
     UpdateProductInventoryBulkRequestDto,
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
@@ -75,6 +76,12 @@ export class ProductsController {
     @MessagePattern({ cmd: 'products.getListOfProducts' })
     async getListOfProducts(dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
         return this.productsService.getListOfProducts(dto);
+    }
+
+    // Get a list of products by product unit id.
+    @MessagePattern({ cmd: 'products.getListOfProductByProductUnitId' })
+    async getListOfProductByProductUnitId(dto: GetListOfProductByProductUnitIdRequestDto): Promise<GetListOfProductResponseDto> {
+        return this.productsService.getListOfProductByProductUnitId(dto);
     }
 
     // Update product inventory stock in bulk.
