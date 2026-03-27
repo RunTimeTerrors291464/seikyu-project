@@ -326,12 +326,33 @@ export default function UnitPickerPopup({
               setUpdating(true);
 
               try {
-                await updateUnit(
-                  confirmingSaveUnit.id,
-                  confirmingSaveUnit.unitName,
-                  confirmingSaveUnit.unitDescription
-                );
+                const original = units.find(u => u.id === confirmingSaveUnit.id);
+                if (!original) return;
 
+                const hasActiveChange =
+                  original.isActive !== confirmingSaveUnit.isActive;
+
+                const hasFieldChanges = isDirty(original, confirmingSaveUnit);
+
+                // 1. ACTIVE CHANGE
+                if (hasActiveChange) {
+                  if (confirmingSaveUnit.isActive) {
+                    await activateUnit(confirmingSaveUnit.id);
+                  } else {
+                    await deactivateUnit(confirmingSaveUnit.id);
+                  }
+                }
+
+                // 2. FIELD CHANGE
+                if (hasFieldChanges) {
+                  await updateUnit(
+                    confirmingSaveUnit.id,
+                    confirmingSaveUnit.unitName,
+                    confirmingSaveUnit.unitDescription
+                  );
+                }
+
+                // cleanup
                 setDraftMap((prev) => {
                   const next = { ...prev };
                   delete next[confirmingSaveUnit.id];
@@ -339,6 +360,7 @@ export default function UnitPickerPopup({
                 });
 
                 setEditingId(null);
+
               } finally {
                 setUpdating(false);
                 setConfirmingSaveUnit(null);

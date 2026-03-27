@@ -65,11 +65,13 @@ export function unitColumns(
       icon: <Pencil className="h-3.5 w-3.5" />,
       accessor: (u) => {
         const isEditing = u.id === editingId;
+        const isInactive = !(draftMap[u.id]?.isActive ?? u.isActive);
         const draft = draftMap[u.id] || u;
 
         return isEditing ? (
           <Input
             value={draft.unitName}
+            disabled={isInactive || updating}
             onChange={(v) =>
               onChange(u.id, "unitName", v)
             }
@@ -101,11 +103,16 @@ export function unitColumns(
       icon: <FileText className="h-3 w-3" />,
       accessor: (u) => {
         const isEditing = u.id === editingId;
-        const draft = draftMap[u.id] || u;
+        const isInactive = !(draftMap[u.id]?.isActive ?? u.isActive);
+        const draft = {
+          ...u,
+          ...(draftMap[u.id] || {}),
+        };
 
         return isEditing ? (
           <Input
             value={draft.unitDescription || ""}
+            disabled={isInactive || updating}
             onChange={(v) =>
               onChange(u.id, "unitDescription", v)
             }
@@ -126,7 +133,10 @@ export function unitColumns(
       align: "center",
       accessor: (u) => {
         const isEditing = u.id === editingId;
-        const draft = draftMap[u.id] || u;
+        const draft = {
+          ...u,
+          ...(draftMap[u.id] || {}),
+        };
 
         return isEditing ? (
           <StatusToggle
@@ -144,7 +154,7 @@ export function unitColumns(
             inactiveLabel={dict.inactive}
           />
         ) : (
-          <ActivePill active={draft.isActive} />
+          <ActivePill active={u.isActive} />
         );
       },
     },
