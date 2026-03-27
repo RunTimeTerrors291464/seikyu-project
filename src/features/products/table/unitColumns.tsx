@@ -79,13 +79,13 @@ export function unitColumns(
         ) : (
           <div
             onClick={() => {
-              if (editingId) return; // prevent select while editing
+              if (editingId || isInactive) return; // prevent select while editing
               onSelect(u);
             }}
             className={clsx(
-              "cursor-pointer flex items-center gap-2",
-              u.id === selectedUnitId &&
-              "font-semibold text-primary"
+              "flex items-center gap-2",
+              u.id === selectedUnitId && "font-semibold text-primary",
+              isInactive && "cursor-not-allowed" || "cursor-pointer"
             )}
           >
             <span className="font-mono">
