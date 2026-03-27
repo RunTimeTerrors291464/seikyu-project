@@ -29,6 +29,7 @@ import {
 } from "@/features/products/services/product.service";
 
 import ProductTableHeader from "@/features/products/components/ProductTableHeader";
+import { useIsDirty } from "@/lib/hooks/useIsDirty";
 
 /* ============================= */
 /* PAGE */
@@ -52,6 +53,25 @@ export default function ProductInventoryPage() {
 
   const [activeFilter, setActiveFilter] =
     useState<ProductStatusFilter>("all");
+
+  const defaultFilters = {
+    search: "",
+    searchRule: "sku",
+    statusFilter: "all" as ProductStockFilter,
+    activeFilter: "all" as ProductStatusFilter,
+  };
+
+  const currentFilters = {
+    search,
+    searchRule,
+    statusFilter,
+    activeFilter,
+  };
+
+  const isDirty = useIsDirty<typeof defaultFilters>()(
+    defaultFilters,
+    currentFilters
+  );
 
   /* ============================= */
   /* SERVER TABLE (SOURCE OF TRUTH) */
@@ -133,6 +153,7 @@ export default function ProductInventoryPage() {
         }}
         toggleFilters={() => setShowFilters((v) => !v)}
         resetSearch={handleReset}
+        isDirty={isDirty}
       />
 
       {/* KPI */}

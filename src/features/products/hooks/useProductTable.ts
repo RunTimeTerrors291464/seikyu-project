@@ -34,10 +34,10 @@ export function useProductTable<T, Q extends BaseQuery>({
 
   const abortRef = useRef<AbortController | null>(null);
 
-  /* prevent duplicate fetch */
-  function isSameQuery(a: unknown, b: unknown) {
-    return JSON.stringify(a) === JSON.stringify(b);
-  }
+  // prevent duplicate fetch
+  // function isSameQuery(a: unknown, b: unknown) {
+  //   return JSON.stringify(a) === JSON.stringify(b);
+  // }
 
   /* ============================= */
   /* FETCH */

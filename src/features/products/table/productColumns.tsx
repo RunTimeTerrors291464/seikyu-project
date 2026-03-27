@@ -27,7 +27,7 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
     },
 
     {
-      id: "name",
+      id: "productName",
       header: dict.productName,
       sortable: true,
       icon: <Edit2 className="h-3.5 w-3.5" />,
@@ -44,6 +44,8 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       field: "productUnitName",
       sortable: true,
       icon: <Ruler className="h-3.5 w-3.5" />,
+      sortAccessor: (p) =>
+        p.productUnitName
     },
 
     {
@@ -68,7 +70,6 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       id: "stock",
       header: dict.stock,
       field: "inventoryStock",
-      sortable: true,
       icon: <Warehouse className="h-3.5 w-3.5" />
     },
 
@@ -91,7 +92,6 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       id: "active",
       header: dict.status,
       field: "isActive",
-      sortable: true,
       icon: <CirclePower className="h-3.5 w-3.5" />,
       accessor: (p) => (
         <ActivePill

@@ -28,16 +28,21 @@ type Props = {
 
   onExport?: () => void;
   onAddProduct?: () => void;
+
+  isDirty?: boolean;
 };
 
 export default function ProductTableHeader({
   dict,
+  search,
+  searchRule,
   setSearch,
   setSearchRule,
   toggleFilters,
   resetSearch,
   onExport,
-  onAddProduct
+  onAddProduct,
+  isDirty
 }: Props) {
 
   return (
@@ -53,6 +58,10 @@ export default function ProductTableHeader({
 
       <div className="w-full max-w-md">
         <RuleInput
+          value={search}
+          rule={
+            searchRule === "sku" ? dict.sku : dict.name
+          }
           options={[
             {
               label: dict.sku,
@@ -92,6 +101,7 @@ export default function ProductTableHeader({
         <Button
           icon={<RotateCcw className="h-3.5 w-3.5" />}
           onClick={resetSearch}
+          disabled={!isDirty}
         >
           {dict.resetfilter}
         </Button>

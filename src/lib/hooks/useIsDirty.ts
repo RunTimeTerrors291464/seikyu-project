@@ -28,7 +28,7 @@ export function useIsDirty<T extends Record<string, any>>() {
 
       // normalize string comparison
       if (typeof o === "string" || typeof d === "string") {
-        return (o || "").trim() !== (d || "").trim();
+        return String(o ?? "").trim() !== String(d ?? "").trim();
       }
 
       return o !== d;

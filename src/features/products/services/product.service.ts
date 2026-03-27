@@ -65,6 +65,7 @@ export type ProductQuery = {
   searchBy?: "sku" | "productName";
   sortBy?:
   | "sku"
+  | "productUnitName"
   | "productName"
   | "importPrice"
   | "sellingPrice"
