@@ -28,7 +28,7 @@ import {
   productService,
 } from "@/features/products/services/product.service";
 
-import ProductTableHeader from "@/features/products/components/ProductTableHeader";
+import ProductTableHeader from "@/features/products/layout/ProductTableHeader";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 
 /* ============================= */

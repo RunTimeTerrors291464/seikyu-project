@@ -120,5 +120,9 @@
   "confirmDeactivateUnitTitle": "Vô hiệu hóa đơn vị?",
   "confirmDeactivateUnitDescription": "Đơn vị này sẽ được đánh dấu là không hoạt động, tất cả thay đổi chưa lưu sẽ bị hủy. Bạn có thể kích hoạt lại bất kỳ lúc nào. Các sản phẩm đang sử dụng đơn vị này vẫn hoạt động nhưng sẽ có cảnh báo.",
   "confirmActivateUnitTitle": "Kích hoạt đơn vị?",
-  "confirmActivateUnitDescription": "Đơn vị này sẽ hoạt động trở lại."
+  "confirmActivateUnitDescription": "Đơn vị này sẽ hoạt động trở lại.",
+  "selectUnit": "Chọn đơn vị",
+  "create": "Tạo",
+  "confirmCreateProductTitle": "Tạo sản phẩm?",
+  "confirmCreateProductDescription": "Bạn có chắc muốn tạo sản phẩm này không? Sản phẩm sẽ được thêm vào kho."
 }

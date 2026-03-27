@@ -1,11 +1,11 @@
 "use client";
 
 import { ConfirmPopup } from "@/components/layout/Popup";
-import ProductDetailsCard from "@/features/products/components/ProductDetailsCard";
-import ProductHeader from "@/features/products/components/ProductHeader";
-import ProductHistoryCard from "@/features/products/components/ProductHistoryCard";
-import ProductNamesCard from "@/features/products/components/ProductNamesCard";
 import { useProductDetail } from "@/features/products/hooks/useProductDetails";
+import ProductDetailsCard from "@/features/products/layout/ProductDetailsCard";
+import ProductHeader from "@/features/products/layout/ProductHeader";
+import ProductHistoryCard from "@/features/products/layout/ProductHistoryCard";
+import ProductNamesCard from "@/features/products/layout/ProductNamesCard";
 import { useDict } from "@/lib/lang/DictProvider";
 import { CircleOff, PowerCircle } from "lucide-react";
 import { useParams } from "next/navigation";

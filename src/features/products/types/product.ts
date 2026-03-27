@@ -65,3 +65,13 @@ export type ProductHistoryDetail = {
   isSnapshot: boolean;
   data: any;
 };
+
+export type CreateProductPayload = {
+  sku: string;
+  productNames: string[];
+  productUnitId: string;
+  productDescription?: string;
+  importPrice: number;
+  sellingPrice: number;
+  reorderThreshold?: number;
+};

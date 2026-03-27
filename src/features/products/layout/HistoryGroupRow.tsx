@@ -3,6 +3,13 @@
 import { formatDate } from "@/components/types/ui";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
+  formatValue,
+  getChangeMeta,
+  getDiffIcon,
+  getFieldLabel,
+  getNameDiff,
+} from "@features/products/components/HistoryRow";
+import {
   ChevronRight,
   Crown,
   Edit2,
@@ -11,13 +18,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ProductHistoryDetail, ProductHistoryItem } from "../types/product";
-import {
-  formatValue,
-  getChangeMeta,
-  getDiffIcon,
-  getFieldLabel,
-  getNameDiff,
-} from "./HistoryRow";
 
 type Props = {
   group: ProductHistoryItem;

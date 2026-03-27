@@ -1,5 +1,5 @@
 import apiClient from "@/services/api-client";
-import { Product, ProductHistoryDetail, ProductHistoryItem, ProductListResponse, ProductOverview } from "@features/products/types/product";
+import { CreateProductPayload, Product, ProductHistoryDetail, ProductHistoryItem, ProductListResponse, ProductOverview } from "@features/products/types/product";
 
 /* ============================= */
 /* GET PRODUCT BY ID */
@@ -20,6 +20,32 @@ export async function getProductById(id: string) {
   } catch (error: any) {
     console.error("[ProductService] getProductById → error", {
       id,
+      message: error?.message,
+      response: error?.response?.data,
+    });
+
+    throw error;
+  }
+}
+
+/* ============================= */
+/* GET PRODUCT BY SKU */
+/* ============================= */
+export async function getProductBySku(sku: string) {
+  console.log("[ProductService] getProductBySku → request", { sku });
+
+  try {
+    const res = await apiClient.get(`/products/sku/${sku}`);
+
+    console.log("[ProductService] getProductBySku → success", {
+      sku,
+      data: res.data,
+    });
+
+    return res.data;
+  } catch (error: any) {
+    console.error("[ProductService] getProductBySku → error", {
+      sku,
       message: error?.message,
       response: error?.response?.data,
     });
@@ -226,3 +252,26 @@ export const activateProduct = async (id: string) => {
   const res = await apiClient.patch(`/products/${id}/activate`);
   return res.data;
 };
+
+/* ============================= */
+/* CREATE */
+/* ============================= */
+export async function createProduct(payload: CreateProductPayload) {
+  console.log("[ProductService] createProduct → request", payload);
+
+  try {
+    const res = await apiClient.post("/products", payload);
+
+    console.log("[ProductService] createProduct → success", res.data);
+
+    return res.data;
+  } catch (error: any) {
+    console.error("[ProductService] createProduct → error", {
+      payload,
+      message: error?.message,
+      response: error?.response?.data,
+    });
+
+    throw error;
+  }
+}
