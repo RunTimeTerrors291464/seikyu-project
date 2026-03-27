@@ -82,7 +82,7 @@ export class ProductsRepository {
                 WHERE product_id = $1
                 ORDER BY created_at DESC
                 LIMIT 64
-            )`,
+             )`,
             [productId],
         );
     }
@@ -454,7 +454,7 @@ export class ProductsRepository {
             queryBuilder.orderBy('product_name_sort', sortOrder.toUpperCase() as 'ASC' | 'DESC');
         }
         else {
-            const sortField = sortBy === 'unit' ? 'productUnit.unitName'
+            const sortField = sortBy === 'productUnitName' ? 'productUnit.unitName'
                 : sortBy === 'importPrice' ? 'product.importPrice'
                     : sortBy === 'sellingPrice' ? 'product.sellingPrice'
                         : sortBy === 'stockStatus' ? 'product.stockStatus'
