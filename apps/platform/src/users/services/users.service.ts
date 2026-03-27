@@ -51,6 +51,16 @@ export class UsersService {
         return this.usersMapper.toUserResponseDto(user[0], user[1], withPassword);
     }
 
+    // Get multiple users by their ids.
+    @HandleServiceError(ErrorCode.GET_USER_BY_ID_SERVICE)
+    async getUsersByIds(ids: string[]): Promise<UserResponseDto[]> {
+        const usersWithRoles = await this.usersRepository.getUsersByIds(ids);
+
+        return usersWithRoles.map(([user, userRoles]) =>
+            this.usersMapper.toUserResponseDto(user, userRoles, false) as UserResponseDto
+        );
+    }
+
     // Get a user by username.
     @HandleServiceError(ErrorCode.GET_USER_BY_USERNAME_SERVICE)
     async getUserByUsername(username: string, withPassword: boolean): Promise<UserResponseDto | UserResponseWithPasswordDto> {

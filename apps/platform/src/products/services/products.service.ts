@@ -155,6 +155,21 @@ export class ProductsService {
         return this.productMapper.toProductResponseDto(product);
     }
 
+    // Get multiple products by their ids.
+    @HandleServiceError(ErrorCode.GET_PRODUCT_SERVICE)
+    async getProductsByIds(ids: string[]): Promise<ProductResponseDto[]> {
+        const products = await this.productsRepository.getProductsByIds(ids);
+        return products.map(product => this.productMapper.toProductResponseDto(product));
+    }
+
+    // Get multiple products by their SKUs.
+    @HandleServiceError(ErrorCode.GET_PRODUCT_SERVICE)
+    async getProductsBySkus(skus: string[]): Promise<ProductResponseDto[]> {
+        const products = await this.productsRepository.getProductsBySkus(skus);
+        return products.map(product => this.productMapper.toProductResponseDto(product));
+    }
+
+
     // Get a product cashier by sku.
     @HandleServiceError(ErrorCode.GET_PRODUCT_CASHIER_SERVICE)
     async getProductCashierBySkuResponseDto(sku: string): Promise<ProductCashierResponseDto> {

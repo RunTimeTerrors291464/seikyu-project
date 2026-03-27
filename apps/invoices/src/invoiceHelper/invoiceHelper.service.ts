@@ -15,7 +15,6 @@ import {
     UpdateProductInventoryBulkRequestDto
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import { ProductResponseDto } from '@app/common/dtos/platform/products/crudProductResponse.dto';
-import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
 
 @Injectable()
 export class InvoiceHelperService {
@@ -35,10 +34,13 @@ export class InvoiceHelperService {
 
     // Get multiple users by their IDs.
     async getUsersByIds(userIds: string[]): Promise<UserResponseDto[]> {
-        const users = await Promise.all(
-            userIds.map(id => this.getUserById(id, false))
+        if (userIds.length === 0) return [];
+        return lastValueFrom(
+            this.platformClient.send(
+                { cmd: 'users.getUsersByIds' },
+                { ids: userIds }
+            )
         );
-        return users as UserResponseDto[];
     }
 
     // Update product inventory stock in bulk.
@@ -60,42 +62,31 @@ export class InvoiceHelperService {
         );
     }
 
-    // Check whether the productId exists and active.
+    // Check whether the productIds exist and are active.
     async checkProductIdExistsAndActive(productIds: string[]): Promise<{ success: boolean, notFound: string[], notActive: string[] }> {
-        const notFound: string[] = [];
-        const notActive: string[] = [];
+        if (productIds.length === 0) return { success: true, notFound: [], notActive: [] };
 
-        const products = await Promise.all(
-            productIds.map(id => this.getProductById(id).catch(() => null))
-        );
+        const products = await this.getProductsByIds(productIds);
+        const foundIds = new Set(products.map(p => p.id));
 
-        products.forEach((product, index) => {
-            const id = productIds[index];
-            if (!product) notFound.push(id);
-            else if (!product.isActive) notActive.push(id);
-        });
+        const notFound = productIds.filter(id => !foundIds.has(id));
+        const notActive = products.filter(p => !p.isActive).map(p => p.id);
 
         if (!notFound.length && !notActive.length) return { success: true, notFound, notActive };
         return { success: false, notFound, notActive };
     }
 
-
-    // Check whether the product SKU exists and is active.
+    // Check whether the product SKUs exist and are active.
     async checkProductSkuExistsAndActive(skus: string[]): Promise<{ success: boolean, notFound: string[], notActive: string[], products: ProductResponseDto[] }> {
-        const notFound: string[] = [];
-        const notActive: string[] = [];
+        if (skus.length === 0) return { success: true, notFound: [], notActive: [], products: [] };
 
-        const products = await Promise.all(
-            skus.map(sku => this.getProductBySku(sku).catch(() => null))
-        );
+        const products = await this.getProductsBySkus(skus);
+        const foundSkus = new Set(products.map(p => p.sku));
 
-        products.forEach((product, index) => {
-            const sku = skus[index];
-            if (!product) notFound.push(sku);
-            else if (!product.isActive) notActive.push(sku);
-        });
+        const notFound = skus.filter(sku => !foundSkus.has(sku));
+        const notActive = products.filter(p => !p.isActive).map(p => p.sku);
 
-        if (!notFound.length && !notActive.length) return { success: true, notFound, notActive, products: products as ProductResponseDto[] };
+        if (!notFound.length && !notActive.length) return { success: true, notFound, notActive, products };
         return { success: false, notFound, notActive, products: [] };
     }
 
@@ -109,12 +100,34 @@ export class InvoiceHelperService {
         );
     }
 
-    // Get a product by sku.
+    // Get a product by SKU.
     async getProductBySku(sku: string): Promise<ProductResponseDto> {
         return lastValueFrom(
             this.platformClient.send(
                 { cmd: 'products.getProductBySku' },
                 { sku }
+            )
+        );
+    }
+
+    // Get multiple products by their IDs.
+    async getProductsByIds(ids: string[]): Promise<ProductResponseDto[]> {
+        if (ids.length === 0) return [];
+        return lastValueFrom(
+            this.platformClient.send(
+                { cmd: 'products.getProductsByIds' },
+                { ids }
+            )
+        );
+    }
+
+    // Get multiple products by their SKUs.
+    async getProductsBySkus(skus: string[]): Promise<ProductResponseDto[]> {
+        if (skus.length === 0) return [];
+        return lastValueFrom(
+            this.platformClient.send(
+                { cmd: 'products.getProductsBySkus' },
+                { skus }
             )
         );
     }

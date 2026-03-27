@@ -66,6 +66,18 @@ export class ProductsController {
         return this.productsService.getProductBySkuResponseDto(data.sku);
     }
 
+    // Get multiple products by their ids.
+    @MessagePattern({ cmd: 'products.getProductsByIds' })
+    async getProductsByIds(data: { ids: string[] }): Promise<ProductResponseDto[]> {
+        return this.productsService.getProductsByIds(data.ids);
+    }
+
+    // Get multiple products by their SKUs.
+    @MessagePattern({ cmd: 'products.getProductsBySkus' })
+    async getProductsBySkus(data: { skus: string[] }): Promise<ProductResponseDto[]> {
+        return this.productsService.getProductsBySkus(data.skus);
+    }
+
     // Get a product cashier by sku.
     @MessagePattern({ cmd: 'products.getProductCashierBySku' })
     async getProductCashierBySku(data: { sku: string }): Promise<ProductCashierResponseDto> {

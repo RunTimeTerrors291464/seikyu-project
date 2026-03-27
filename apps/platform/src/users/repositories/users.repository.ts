@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
@@ -32,6 +32,18 @@ export class UsersRepository {
         const userRoles: UserRoleEntity[] = user.userRoles || [];
 
         return [user, userRoles];
+    }
+
+    // Get multiple users by their ids.
+    async getUsersByIds(ids: string[]): Promise<[UserEntity, UserRoleEntity[]][]> {
+        if (ids.length === 0) return [];
+
+        const users = await this.userRepository.find({
+            where: { id: In(ids) },
+            relations: ['userRoles'],
+        });
+
+        return users.map(user => [user, user.userRoles || []]);
     }
 
     // Get a user by username.

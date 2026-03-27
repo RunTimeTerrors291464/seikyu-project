@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, OneToMany, JoinColumn, ManyToOne, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, JoinColumn, ManyToOne, Column, CreateDateColumn } from 'typeorm';
 
 // Import entities.
 import { ProductsEntity } from '../products.entity';
@@ -14,7 +14,7 @@ export class ProductStockHistoryEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => ProductsEntity, (product) => product.productsHistory)
+    @ManyToOne(() => ProductsEntity, (product) => product.productStockHistory)
     @JoinColumn({ name: 'product_id', referencedColumnName: 'id' })
     product: ProductsEntity;
 

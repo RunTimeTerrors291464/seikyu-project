@@ -28,6 +28,12 @@ export class UsersController {
         return this.usersService.getUserById(data.id, data.withPassword);
     }
 
+    // Get multiple users by their ids.
+    @MessagePattern({ cmd: 'users.getUsersByIds' })
+    async getUsersByIds(data: { ids: string[] }): Promise<UserResponseDto[]> {
+        return this.usersService.getUsersByIds(data.ids);
+    }
+
     // Get a user by username.
     @MessagePattern({ cmd: 'users.getUserByUsername' })
     async getUserByUsername(data: { username: string; withPassword: boolean }): Promise<UserResponseDto | UserResponseWithPasswordDto> {

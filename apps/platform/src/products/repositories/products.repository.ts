@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Repository, In, SelectQueryBuilder } from 'typeorm';
+import { EntityManager, Repository, In, SelectQueryBuilder } from 'typeorm';
 
 // Import entities.
 import { InjectRepository } from '@nestjs/typeorm';
@@ -47,8 +47,8 @@ export class ProductsRepository {
 
     // --- DRY methods ---
     // Get the latest version number of a product's history.
-    private async getLatestHistoryVersion(id: string, transactionalManager?: any): Promise<number> {
-        const manager = transactionalManager || this.productsHistoryRepository;
+    private async getLatestHistoryVersion(id: string, transactionalManager?: EntityManager): Promise<number> {
+        const manager = transactionalManager || this.productsHistoryRepository.manager;
         const latestHistory = await manager.findOne(ProductsHistoryEntity, {
             where: { product: { id } },
             order: { version: 'DESC' },
@@ -57,30 +57,55 @@ export class ProductsRepository {
     }
 
     // Clean up old product history versions if exceeding 16 versions.
-    private async cleanupOldProductHistoryVersions(id: string, transactionalManager?: any): Promise<void> {
-        const manager = transactionalManager || this.productsHistoryRepository;
-        const histories = await manager.find(ProductsHistoryEntity, {
-            where: { product: { id } },
-            order: { version: 'ASC' },
-        });
-
-        if (histories.length > 16) {
-            const toDelete = histories.slice(0, histories.length - 16);
-            await manager.remove(toDelete);
-        }
+    private async cleanupOldProductHistoryVersions(id: string, transactionalManager?: EntityManager): Promise<void> {
+        const manager = transactionalManager || this.productsHistoryRepository.manager;
+        await manager.query(
+            `DELETE FROM products_history
+            WHERE product_id = $1
+            AND id NOT IN (
+                SELECT id FROM products_history
+                WHERE product_id = $1
+                ORDER BY version DESC
+                LIMIT 16
+            )`,
+            [id],
+        );
     }
 
     // Clean up old product stock history if exceeding 64 records.
-    private async cleanupOldProductStockHistory(productId: string, transactionalManager: any): Promise<void> {
-        const histories = await transactionalManager.find(ProductStockHistoryEntity, {
-            where: { product: { id: productId } },
-            order: { createdAt: 'ASC' },
+    private async cleanupOldProductStockHistory(productId: string, transactionalManager: EntityManager): Promise<void> {
+        await transactionalManager.query(
+            `DELETE FROM product_stock_history
+            WHERE product_id = $1
+            AND id NOT IN (
+                SELECT id FROM product_stock_history
+                WHERE product_id = $1
+                ORDER BY created_at DESC
+                LIMIT 64
+            )`,
+            [productId],
+        );
+    }
+
+    // Load and attach productNames for a list of products in a single query.
+    private async loadProductNamesForProducts(products: ProductsEntity[]): Promise<void> {
+        if (products.length === 0) return;
+
+        const ids = products.map(product => product.id);
+        const productNames = await this.productNamesRepository.find({
+            where: { product: { id: In(ids) } },
+            relations: ['product'],
         });
 
-        if (histories.length > 64) {
-            const toDelete = histories.slice(0, histories.length - 64);
-            await transactionalManager.remove(ProductStockHistoryEntity, toDelete);
-        }
+        const namesMap = new Map<string, ProductNamesEntity[]>();
+        productNames.forEach(name => {
+            if (!namesMap.has(name.product.id)) namesMap.set(name.product.id, []);
+            namesMap.get(name.product.id)!.push(name);
+        });
+
+        products.forEach(product => {
+            product.productNames = namesMap.get(product.id) || [];
+        });
     }
 
     // --- APIs ---
@@ -89,7 +114,7 @@ export class ProductsRepository {
         return await this.productsRepository.manager.transaction(async (transactionalManager) => {
             const { productNames, productUnitId, ...productData } = dto;
 
-            // Create product entity with productUnitId mapped to product_unit column.
+            // Create product entity with productUnitId.
             const productEntity: ProductsEntity = this.productsRepository.create({
                 ...productData,
                 productUnit: { id: productUnitId },
@@ -97,10 +122,10 @@ export class ProductsRepository {
 
             productEntity.stockStatus = stockStatus;
 
-            // Save product first.
+            // Save product first in ProductsEntity.
             const savedProductEntity: ProductsEntity = await transactionalManager.save(ProductsEntity, productEntity);
 
-            // Create and save product names.
+            // Create and save product names in ProductNamesEntity.
             if (productNames && productNames.length > 0) {
                 const productNameEntities = productNames.map(name =>
                     this.productNamesRepository.create({ name, product: savedProductEntity })
@@ -118,7 +143,8 @@ export class ProductsRepository {
             });
             const productToReturn = productWithRelations || savedProductEntity;
 
-            // Create a new product history.
+            // --- History operations ---
+            // Create a new product history in ProductsHistoryEntity.
             const newProductSnapshot = this.productMapper.toProductSnapshotDto(productToReturn);
             await transactionalManager.save(ProductsHistoryEntity, {
                 product: productToReturn,
@@ -130,12 +156,15 @@ export class ProductsRepository {
                 data: newProductSnapshot,
             } as ProductsHistoryEntity);
 
-            // Update the product overview.
+            // --- Overview operations ---
+            // Update the product overview in ProductOverviewEntity with pessimistic lock to prevent race conditions.
             const overviewId = '00000000-0000-0000-0000-000000000001';
             let overview = await transactionalManager.findOne(ProductOverviewEntity, {
                 where: { id: overviewId },
-            }) || this.productOverviewRepository.create({ id: overviewId });
-
+                lock: { mode: 'pessimistic_write' },
+            });
+            if (!overview) overview = this.productOverviewRepository.create({ id: overviewId });
+            
             overview.totalProducts += 1;
             overview.outOfStock += 1;
             await transactionalManager.save(ProductOverviewEntity, overview);
@@ -156,18 +185,18 @@ export class ProductsRepository {
                 productData['productUnit'] = { id: productUnitId };
             }
 
-            // Snapshot the product state BEFORE any changes to compute change events later.
+            // Snapshot the product state BEFORE any changes.
             const previousProductState = await transactionalManager.findOne(ProductsEntity, {
                 where: { id: productEntity.id },
                 relations: ['productUnit', 'productNames'],
             });
             const previousSnapshot = previousProductState ? this.productMapper.toProductSnapshotDto(previousProductState) : null;
 
-            // Merge product data without productNames.
+            // Merge product data without productNames in ProductsEntity.
             this.productsRepository.merge(productEntity, productData);
             const updatedProductEntity: ProductsEntity = await transactionalManager.save(ProductsEntity, productEntity);
 
-            // Update product names if provided.
+            // Update product names if provided in ProductNamesEntity.
             if (productNames !== undefined) {
                 // Delete existing product names.
                 await transactionalManager.delete(ProductNamesEntity, { product: { id: productEntity.id } });
@@ -228,7 +257,7 @@ export class ProductsRepository {
         action: StockActionType,
         referenceType: InvoiceType,
         referenceId: string,
-        manager: any,
+        manager: EntityManager,
     ): Promise<ProductsEntity> {
 
         // Get the iventory stock before any changes.
@@ -256,6 +285,7 @@ export class ProductsRepository {
         });
         const productToReturn = productWithRelations || productEntity;
 
+        // --- Stock history operations ---
         // Create product stock history.
         const history = this.productStockHistoryRepository.create({
             product: { id: productEntity.id },
@@ -269,11 +299,15 @@ export class ProductsRepository {
         await manager.save(ProductStockHistoryEntity, history);
         await this.cleanupOldProductStockHistory(productEntity.id, manager);
 
-        // --- Update the productOverview entity ---
+        // --- Overview operations ---
+        // Update the productOverview entity with pessimistic lock.
         const overviewId = '00000000-0000-0000-0000-000000000001';
         let overview = await manager.findOne(ProductOverviewEntity, {
             where: { id: overviewId },
-        }) || this.productOverviewRepository.create({ id: overviewId });
+            lock: { mode: 'pessimistic_write' },
+        });
+        if (!overview) overview = this.productOverviewRepository.create({ id: overviewId });
+
 
         // Update stock status counts.
         if (beforeStockStatus !== productEntity.stockStatus) {
@@ -305,6 +339,8 @@ export class ProductsRepository {
         return productToReturn;
     }
 
+
+
     // Get a product by sku.
     async getProductBySku(sku: string): Promise<ProductsEntity | null> {
         const productEntity: ProductsEntity | null = await this.productsRepository.findOne({
@@ -323,6 +359,32 @@ export class ProductsRepository {
         });
         if (!productEntity) return null;
         return productEntity;
+    }
+
+    // Get multiple products by their ids in a single query.
+    async getProductsByIds(ids: string[]): Promise<ProductsEntity[]> {
+        if (ids.length === 0) return [];
+
+        const products = await this.productsRepository.find({
+            where: { id: In(ids) },
+            relations: ['productUnit'],
+        });
+
+        await this.loadProductNamesForProducts(products);
+        return products;
+    }
+
+    // Get multiple products by their SKUs in a single query.
+    async getProductsBySkus(skus: string[]): Promise<ProductsEntity[]> {
+        if (skus.length === 0) return [];
+
+        const products = await this.productsRepository.find({
+            where: { sku: In(skus) },
+            relations: ['productUnit'],
+        });
+
+        await this.loadProductNamesForProducts(products);
+        return products;
     }
 
     // Get a list of products with filters and sorting.
@@ -385,10 +447,11 @@ export class ProductsRepository {
 
         // Sort the data based on the sortBy field.
         if (sortBy === 'productName') {
-            queryBuilder.orderBy(
+            queryBuilder.addSelect(
                 `(SELECT MIN(pn.name) FROM product_names pn WHERE pn.product_id = product.id)`,
-                sortOrder.toUpperCase() as 'ASC' | 'DESC',
+                'product_name_sort',
             );
+            queryBuilder.orderBy('product_name_sort', sortOrder.toUpperCase() as 'ASC' | 'DESC');
         }
         else {
             const sortField = sortBy === 'unit' ? 'productUnit.unitName'
@@ -410,27 +473,7 @@ export class ProductsRepository {
             queryBuilder.getMany(),
         ]);
 
-        if (products.length > 0) {
-            const ids = products.map(p => p.id);
-
-            // DB call: Fetch product names.
-            const productNames: ProductNamesEntity[] = await this.productNamesRepository.find({
-                where: { product: { id: In(ids) } },
-                relations: ['product'],
-            });
-
-            const namesMap = new Map<string, ProductNamesEntity[]>();
-            productNames.forEach(name => {
-                if (!namesMap.has(name.product.id)) {
-                    namesMap.set(name.product.id, []);
-                }
-                namesMap.get(name.product.id)!.push(name);
-            });
-
-            products.forEach(product => {
-                product.productNames = namesMap.get(product.id) || [];
-            });
-        }
+        await this.loadProductNamesForProducts(products);
 
         return { products, total };
     }
@@ -447,25 +490,7 @@ export class ProductsRepository {
             take: limit,
         });
 
-        if (products.length > 0) {
-            const ids = products.map(p => p.id);
-            const productNames = await this.productNamesRepository.find({
-                where: { product: { id: In(ids) } },
-                relations: ['product'],
-            });
-
-            const namesMap = new Map<string, ProductNamesEntity[]>();
-            productNames.forEach(name => {
-                if (!namesMap.has(name.product.id)) {
-                    namesMap.set(name.product.id, []);
-                }
-                namesMap.get(name.product.id)!.push(name);
-            });
-
-            products.forEach(product => {
-                product.productNames = namesMap.get(product.id) || [];
-            });
-        }
+        await this.loadProductNamesForProducts(products);
 
         return { products, total };
     }
