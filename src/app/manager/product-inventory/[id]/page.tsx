@@ -9,9 +9,15 @@ import ProductNamesCard from "@/features/products/layout/ProductNamesCard";
 import { useDict } from "@/lib/lang/DictProvider";
 import { CircleOff, PowerCircle } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 
 export default function Page() {
+  const [skuState, setSkuState] = useState({
+    checking: false,
+    duplicate: false,
+  });
   const { id } = useParams();
+  const productId = typeof id === "string" ? id : "";
   // DETAILS HOOK
   const {
     product,
@@ -41,7 +47,7 @@ export default function Page() {
 
     saveProduct,
     isDirty,
-  } = useProductDetail(id as string);
+  } = useProductDetail(productId);
 
 
   const dict = useDict();
@@ -69,7 +75,7 @@ export default function Page() {
         active={product.isActive}
         onToggleActive={requestToggleActive}
         onSave={saveProduct}
-        canSave={isDirty}
+        canSave={isDirty && !skuState.checking && !skuState.duplicate}
       />
 
       <ConfirmPopup
@@ -106,6 +112,7 @@ export default function Page() {
           update={update}
           dict={dict}
           disabled={isInactive}
+          onSkuStateChange={setSkuState}
         />
 
         <div className="flex h-full flex-col gap-4 overflow-hidden">

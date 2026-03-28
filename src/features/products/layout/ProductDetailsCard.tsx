@@ -18,7 +18,8 @@ import {
   Textarea,
 } from "@/components/ui/Fields";
 import { Dictionary } from "@/lib/lang/i18n";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import useSkuValidation from "../hooks/useSkuValidation";
 import { Product } from "../types/product";
 import UnitPickerPopup from "./UnitPickerPopup";
 
@@ -28,6 +29,11 @@ type Props = {
   dict: Dictionary;
   disabled?: boolean;
   errors?: Partial<Record<keyof Product, string>>;
+
+  onSkuStateChange?: (state: {
+    checking: boolean;
+    duplicate: boolean;
+  }) => void;
 };
 
 export default function ProductDetailsCard({
@@ -36,12 +42,32 @@ export default function ProductDetailsCard({
   dict,
   disabled,
   errors = {},
+  onSkuStateChange,
 }: Props) {
   const stock = getStockStatus(product, dict);
   const [unitOpen, setUnitOpen] = useState(false);
 
   const isDisabled = disabled || !product.isActive;
   const MAX_INT = 2147483647;
+
+  const [initialSku] = useState(product.sku || "");
+
+  const { checking: skuChecking, isDuplicate: skuDuplicate } =
+    useSkuValidation({
+      sku: product.sku || "",
+      skip: (product.sku || "") === initialSku,
+    });
+
+  const skuError =
+    errors.sku ||
+    (skuDuplicate ? dict.skuAlreadyExists : undefined);
+
+  useEffect(() => {
+    onSkuStateChange?.({
+      checking: skuChecking,
+      duplicate: skuDuplicate,
+    });
+  }, [skuChecking, skuDuplicate]);
 
   return (
     <div className="card p-5 space-y-4 rounded-lg">
@@ -54,13 +80,15 @@ export default function ProductDetailsCard({
       <Field
         label={dict.sku}
         icon={<Barcode className="h-3 w-3" />}
-        error={errors.sku}
+        error={skuError}
+        hint={skuChecking ? dict.checkingSku : undefined}
       >
         <Input
           value={product.sku || ""}
           disabled={isDisabled}
           onChange={(v) => {
             const digits = v.replace(/\D/g, "");
+
             update("sku", digits.slice(0, 13));
           }}
           onBlur={() => {

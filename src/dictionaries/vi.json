@@ -130,5 +130,7 @@
   "unitRequired": "Vui lòng chọn đơn vị",
   "invalidPrice": "Giá trị phải là số dương hợp lệ",
   "invalidThreshold": "Giá trị phải là số nguyên dương",
-  "emptyDescription": "Mô tả đang trống"
+  "emptyDescription": "Mô tả đang trống",
+  "skuAlreadyExists": "SKU đã tồn tại",
+  "checkingSku": "Đang kiểm tra SKU..."
 }

@@ -14,6 +14,8 @@ import {
 import { Dictionary } from "@/lib/lang/i18n";
 import UnitPickerPopup from "@features/products/layout/UnitPickerPopup";
 
+import useSkuValidation from "../hooks/useSkuValidation";
+
 /* ============================= */
 
 type FormValues = {
@@ -63,6 +65,13 @@ export default function AddNewProductForm({
   >({});
 
   /* ============================= */
+  /* CHECK SKU DUPLICATE */
+  /* ============================= */
+
+  const { checking: skuChecking, isDuplicate: skuDuplicate } =
+    useSkuValidation({ sku: values.sku });
+
+  /* ============================= */
   /* FIELD VALIDATION */
   /* ============================= */
 
@@ -83,6 +92,9 @@ export default function AddNewProductForm({
       case "sku":
         if (!value || !/^\d{13}$/.test(value))
           return dict.skuMustBe13;
+
+        if (skuDuplicate)
+          return dict.skuAlreadyExists;
         return "";
 
       case "name":
@@ -182,12 +194,23 @@ export default function AddNewProductForm({
       className="space-y-4"
     >
       {/* SKU */}
-      <Field label={dict.sku} error={errors.sku}>
+      <Field
+        label={dict.sku}
+        error={errors.sku}
+        hint={skuChecking ? dict.checkingSku : undefined}>
         <Input
           value={values.sku}
           onChange={(v) => {
             const digits = v.replace(/\D/g, "").slice(0, 13);
+
             setValue("sku", digits);
+
+            // clear error immediately
+            setErrors((prev) => ({
+              ...prev,
+              sku: "",
+            }));
+
             validateField("sku", digits);
           }}
           onBlur={() =>

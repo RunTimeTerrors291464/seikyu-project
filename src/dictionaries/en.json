@@ -130,5 +130,7 @@
   "unitRequired": "Please select a unit",
   "invalidPrice": "Must be a positive number",
   "invalidThreshold": "Value must be a positive integer",
-  "emptyDescription": "Description is empty"
+  "emptyDescription": "Description is empty",
+  "skuAlreadyExists": "SKU already exists",
+  "checkingSku": "Checking SKU..."
 }
