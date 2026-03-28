@@ -92,7 +92,7 @@
   "isDuplicate": "Duplicate",
   "action": "Action",
   "addNamePlaceholder": "Enter new name...",
-  "newProdduct": "New Product",
+  "newProduct": "New Product",
   "history": "History",
   "saves": "saves",
   "changes": "Changes",
@@ -124,5 +124,11 @@
   "selectUnit": "Select unit",
   "create": "Create",
   "confirmCreateProductTitle": "Create product?",
-  "confirmCreateProductDescription": "Are you sure you want to create this product? This action will add it to the inventory."
+  "confirmCreateProductDescription": "Are you sure you want to create this product? This action will add it to the inventory.",
+  "skuMustBe13": "SKU must be exactly 13 digits",
+  "productNameRequired": "Product name is required",
+  "unitRequired": "Please select a unit",
+  "invalidPrice": "Must be a positive number",
+  "invalidThreshold": "Value must be a positive integer",
+  "emptyDescription": "Description is empty"
 }

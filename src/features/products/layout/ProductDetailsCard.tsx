@@ -1,9 +1,22 @@
 "use client";
 
-import { AlertTriangle, Barcode, DollarSign, Edit2, Ruler, Warehouse } from "lucide-react";
+import {
+  AlertTriangle,
+  Barcode,
+  DollarSign,
+  Edit2,
+  Ruler,
+  Warehouse,
+} from "lucide-react";
 
 import { Accent } from "@/components/types/ui";
-import { Field, Input, SelectButton, StatDisplay, Textarea } from "@/components/ui/Fields";
+import {
+  Field,
+  Input,
+  SelectButton,
+  StatDisplay,
+  Textarea,
+} from "@/components/ui/Fields";
 import { Dictionary } from "@/lib/lang/i18n";
 import { useState } from "react";
 import { Product } from "../types/product";
@@ -14,20 +27,22 @@ type Props = {
   update: (k: any, v: any) => void;
   dict: Dictionary;
   disabled?: boolean;
+  errors?: Partial<Record<keyof Product, string>>;
 };
-
 
 export default function ProductDetailsCard({
   product,
   update,
   dict,
   disabled,
+  errors = {},
 }: Props) {
-
   const stock = getStockStatus(product, dict);
   const [unitOpen, setUnitOpen] = useState(false);
+
   const isDisabled = disabled || !product.isActive;
   const MAX_INT = 2147483647;
+
   return (
     <div className="card p-5 space-y-4 rounded-lg">
       <span className="flex items-center text-sm font-semibold text-text gap-2">
@@ -36,7 +51,11 @@ export default function ProductDetailsCard({
       </span>
 
       {/* SKU */}
-      <Field label={dict.sku} icon={<Barcode className="h-3 w-3" />}>
+      <Field
+        label={dict.sku}
+        icon={<Barcode className="h-3 w-3" />}
+        error={errors.sku}
+      >
         <Input
           value={product.sku || ""}
           disabled={isDisabled}
@@ -47,12 +66,6 @@ export default function ProductDetailsCard({
           onBlur={() => {
             const sku = String(product.sku || "");
             if (sku) update("sku", sku.padStart(13, "0"));
-          }}
-          onPaste={(e) => {
-            e.preventDefault();
-            const text = e.clipboardData.getData("text");
-            const digits = text.replace(/\D/g, "").slice(0, 13);
-            update("sku", digits);
           }}
           inputMode="numeric"
           maxLength={13}
@@ -73,9 +86,14 @@ export default function ProductDetailsCard({
       </Field>
 
       {/* UNIT */}
-      <Field label={dict.unit} icon={<Ruler className="h-3 w-3" />}>
+      <Field
+        label={dict.unit}
+        icon={<Ruler className="h-3 w-3" />}
+        error={errors.productUnitId}
+      >
         <SelectButton
           value={product.productUnitName}
+          placeholder={dict.selectUnit}
           disabled={isDisabled}
           onClick={() => setUnitOpen(true)}
         />
@@ -95,16 +113,14 @@ export default function ProductDetailsCard({
       <Field
         label={dict.importPrice}
         icon={<DollarSign className="h-3 w-3" />}
+        error={errors.importPrice}
       >
         <Input
           type="number"
           value={product.importPrice || 0}
           disabled={isDisabled}
           onChange={(v) => {
-            if (v === "") {
-              update("importPrice", 0);
-              return;
-            }
+            if (v === "") return update("importPrice", 0);
 
             const num = Number(v);
 
@@ -127,16 +143,14 @@ export default function ProductDetailsCard({
       <Field
         label={dict.sellingPrice}
         icon={<DollarSign className="h-3 w-3" />}
+        error={errors.sellingPrice}
       >
         <Input
           type="number"
           value={product.sellingPrice || 0}
           disabled={isDisabled}
           onChange={(v) => {
-            if (v === "") {
-              update("sellingPrice", 0);
-              return;
-            }
+            if (v === "") return update("sellingPrice", 0);
 
             const num = Number(v);
 
@@ -159,16 +173,14 @@ export default function ProductDetailsCard({
       <Field
         label={dict.reorderThreshold}
         icon={<AlertTriangle className="h-3 w-3" />}
+        error={errors.reorderThreshold}
       >
         <Input
           type="number"
           disabled={isDisabled}
           value={product.reorderThreshold || 0}
           onChange={(v) => {
-            if (v === "") {
-              update("reorderThreshold", 0);
-              return;
-            }
+            if (v === "") return update("reorderThreshold", 0);
 
             const num = Number(v);
 
@@ -190,6 +202,7 @@ export default function ProductDetailsCard({
       <Field
         label={dict.description}
         icon={<Ruler className="h-3 w-3" />}
+        error={errors.productDescription}
       >
         <Textarea
           disabled={isDisabled}
@@ -198,7 +211,6 @@ export default function ProductDetailsCard({
           placeholder={dict.descriptionPlaceholder}
         />
       </Field>
-
     </div>
   );
 }

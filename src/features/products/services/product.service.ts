@@ -254,7 +254,7 @@ export const activateProduct = async (id: string) => {
 };
 
 /* ============================= */
-/* CREATE */
+/* CREATE / ADD */
 /* ============================= */
 export async function createProduct(payload: CreateProductPayload) {
   console.log("[ProductService] createProduct → request", payload);

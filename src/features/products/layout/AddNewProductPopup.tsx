@@ -3,10 +3,11 @@
 import Popup from "@/components/layout/BlurPopupWraper";
 import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
+
 import { useState } from "react";
 
 import { Dictionary } from "@/lib/lang/i18n";
-import AddProductForm, { CreateProductFormData } from "../form/addProductForm";
+import AddProductForm from "../form/addProductForm";
 import { createProduct } from "../services/product.service";
 
 type Props = {
@@ -16,18 +17,20 @@ type Props = {
   onCreated?: () => void;
 };
 
-export default function AddNewProductPopup({
+export default function AddProductPopup({
   open,
   onClose,
   dict,
   onCreated,
 }: Props) {
 
-  const [formData, setFormData] = useState<CreateProductFormData | null>(null);
-  const [valid, setValid] = useState(false);
-
+  const [formData, setFormData] = useState<any>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  /* ============================= */
+  /* CREATE */
+  /* ============================= */
 
   async function handleCreate() {
     if (!formData) return;
@@ -48,6 +51,8 @@ export default function AddNewProductPopup({
       onCreated?.();
       onClose();
 
+    } catch (err) {
+      console.error("Create product failed", err);
     } finally {
       setLoading(false);
       setConfirmOpen(false);
@@ -69,9 +74,9 @@ export default function AddNewProductPopup({
         <div className="p-4 overflow-auto">
           <AddProductForm
             dict={dict}
-            onChange={(data, isValid) => {
+            onSubmit={(data) => {
               setFormData(data);
-              setValid(isValid);
+              setConfirmOpen(true);
             }}
           />
         </div>
@@ -83,14 +88,17 @@ export default function AddNewProductPopup({
           </Button>
 
           <Button
-            onClick={() => setConfirmOpen(true)}
-            disabled={!valid}
+            accent="primary"
+            onClick={() => {
+              const form = document.querySelector("form");
+              form?.requestSubmit();
+            }}
           >
             {dict.create}
           </Button>
         </div>
 
-        {/* CONFIRM */}
+        {/* CONFIRM POPUP */}
         {confirmOpen && (
           <ConfirmPopup
             open={confirmOpen}

@@ -1,96 +1,219 @@
 "use client";
 
-import { Field, Input, SelectButton, Textarea } from "@/components/ui/Fields";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+
+import {
+  Field,
+  Input,
+  SelectButton,
+  Textarea,
+} from "@/components/ui/Fields";
+
+
 import { Dictionary } from "@/lib/lang/i18n";
 import UnitPickerPopup from "@features/products/layout/UnitPickerPopup";
-import { AlertTriangle, Barcode, DollarSign, Ruler } from "lucide-react";
-import { useState } from "react";
 
-export type CreateProductFormData = {
+/* ============================= */
+
+type FormValues = {
   sku: string;
   name: string;
   productUnitId: string;
   productUnitName: string;
-  importPrice: number;
-  sellingPrice: number;
-  reorderThreshold: number;
+  importPrice: string;
+  sellingPrice: string;
+  reorderThreshold: string;
   productDescription: string;
 };
 
 type Props = {
   dict: Dictionary;
-  onChange?: (data: CreateProductFormData, valid: boolean) => void;
+  onSubmit: (data: any) => void;
 };
 
-export default function AddProductForm({ dict, onChange }: Props) {
+export default function AddNewProductForm({
+  dict,
+  onSubmit,
+}: Props) {
+  const { setValue, watch, handleSubmit } =
+    useForm<FormValues>({
+      defaultValues: {
+        sku: "",
+        name: "",
+        productUnitId: "",
+        productUnitName: "",
+        importPrice: "",
+        sellingPrice: "",
+        reorderThreshold: "",
+        productDescription: "",
+      },
+    });
 
-  const [data, setData] = useState<CreateProductFormData>({
-    sku: "",
-    name: "",
-    productUnitId: "",
-    productUnitName: "",
-    importPrice: 0,
-    sellingPrice: 0,
-    reorderThreshold: 0,
-    productDescription: "",
-  });
+  const values = watch();
 
   const [unitOpen, setUnitOpen] = useState(false);
 
-  const MAX_INT = 2147483647;
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof FormValues, string>>
+  >({});
 
-  /* ───────── UPDATE ───────── */
+  const [touched, setTouched] = useState<
+    Partial<Record<keyof FormValues, boolean>>
+  >({});
 
-  function update<K extends keyof CreateProductFormData>(
-    key: K,
-    value: CreateProductFormData[K]
-  ) {
-    const next = { ...data, [key]: value };
-    setData(next);
+  /* ============================= */
+  /* FIELD VALIDATION */
+  /* ============================= */
 
-    const valid =
-      next.sku.length === 13 &&
-      next.name.trim().length > 0 &&
-      !!next.productUnitId &&
-      next.importPrice >= 0 &&
-      next.sellingPrice >= 0;
+  const validateField = (field: keyof FormValues, value: string) => {
+    const error = getFieldError(field, value);
 
-    onChange?.(next, valid);
-  }
+    setErrors((prev) => ({
+      ...prev,
+      [field]: error,
+    }));
+  };
 
-  /* ───────── UI ───────── */
+  const getFieldError = (
+    field: keyof FormValues,
+    value: string
+  ) => {
+    switch (field) {
+      case "sku":
+        if (!value || !/^\d{13}$/.test(value))
+          return dict.skuMustBe13;
+        return "";
+
+      case "name":
+        if (!value.trim())
+          return dict.productNameRequired;
+        return "";
+
+      case "productUnitId":
+        if (!value)
+          return dict.unitRequired;
+        return "";
+
+      case "importPrice":
+      case "sellingPrice":
+        if (!value || isNaN(Number(value)))
+          return dict.invalidPrice;
+        if (Number(value) < 0)
+          return dict.invalidPrice;
+        return "";
+
+      case "reorderThreshold":
+        if (!value || !Number.isInteger(Number(value)))
+          return dict.invalidThreshold;
+        if (Number(value) < 0)
+          return dict.invalidThreshold;
+        return "";
+
+      default:
+        return "";
+    }
+  };
+
+  /* ============================= */
+  /* WARNING */
+  /* ============================= */
+
+  const warnings = {
+    importPrice:
+      touched.importPrice &&
+      values.importPrice === "0",
+
+    sellingPrice:
+      touched.sellingPrice &&
+      values.sellingPrice === "0",
+
+    reorderThreshold:
+      touched.reorderThreshold &&
+      values.reorderThreshold === "0",
+
+    description:
+      touched.productDescription &&
+      !values.productDescription.trim(),
+  };
+
+  /* ============================= */
+  /* SUBMIT */
+  /* ============================= */
+
+  const onSubmitForm = () => {
+    const newErrors: Partial<Record<keyof FormValues, string>> = {};
+
+    (Object.keys(values) as (keyof FormValues)[]).forEach((field) => {
+      const error = getFieldError(field, values[field]);
+      if (error) newErrors[field] = error;
+    });
+
+    setTouched({
+      sku: true,
+      name: true,
+      productUnitId: true,
+      importPrice: true,
+      sellingPrice: true,
+      reorderThreshold: true,
+      productDescription: true,
+    });
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) return;
+
+    onSubmit({
+      ...values,
+      importPrice: Number(values.importPrice),
+      sellingPrice: Number(values.sellingPrice),
+      reorderThreshold: Number(values.reorderThreshold),
+    });
+  };
+
+  /* ============================= */
+  /* UI */
+  /* ============================= */
 
   return (
-    <div className="space-y-4">
-
+    <form
+      onSubmit={handleSubmit(onSubmitForm)}
+      noValidate
+      className="space-y-4"
+    >
       {/* SKU */}
-      <Field label={dict.sku} icon={<Barcode className="h-3 w-3" />} required>
+      <Field label={dict.sku} error={errors.sku}>
         <Input
-          value={data.sku}
+          value={values.sku}
           onChange={(v) => {
-            const digits = v.replace(/\D/g, "");
-            update("sku", digits.slice(0, 13));
+            const digits = v.replace(/\D/g, "").slice(0, 13);
+            setValue("sku", digits);
+            validateField("sku", digits);
           }}
-          onBlur={() => {
-            if (data.sku) update("sku", data.sku.padStart(13, "0"));
-          }}
-          inputMode="numeric"
-          maxLength={13}
+          onBlur={() =>
+            setTouched((t) => ({ ...t, sku: true }))
+          }
         />
       </Field>
 
       {/* NAME */}
-      <Field label={dict.productName} required>
+      <Field label={dict.productName} error={errors.name}>
         <Input
-          value={data.name}
-          onChange={(v) => update("name", v)}
+          value={values.name}
+          onChange={(v) => {
+            setValue("name", v);
+            validateField("name", v);
+          }}
+          onBlur={() =>
+            setTouched((t) => ({ ...t, name: true }))
+          }
         />
       </Field>
 
       {/* UNIT */}
-      <Field label={dict.unit} icon={<Ruler className="h-3 w-3" />} required>
+      <Field label={dict.unit} error={errors.productUnitId}>
         <SelectButton
-          value={data.productUnitName}
+          value={values.productUnitName}
           placeholder={dict.selectUnit}
           onClick={() => setUnitOpen(true)}
         />
@@ -99,69 +222,116 @@ export default function AddProductForm({ dict, onChange }: Props) {
       <UnitPickerPopup
         open={unitOpen}
         onClose={() => setUnitOpen(false)}
-        selectedUnitId={data.productUnitId}
+        selectedUnitId={values.productUnitId}
         onSelect={(unit) => {
-          update("productUnitId", unit.id);
-          update("productUnitName", unit.unitName);
+          setValue("productUnitId", unit.id);
+          setValue("productUnitName", unit.unitName);
+          validateField("productUnitId", unit.id);
         }}
       />
 
       {/* IMPORT PRICE */}
-      <Field label={dict.importPrice} icon={<DollarSign className="h-3 w-3" />}>
+      <Field
+        label={dict.importPrice}
+        error={errors.importPrice}
+        warning={
+          warnings.importPrice
+            ? dict.invalidPrice
+            : undefined
+        }
+      >
         <Input
           type="number"
-          value={data.importPrice}
+          value={values.importPrice}
           onChange={(v) => {
-            const num = Number(v);
-            if (isNaN(num) || num > MAX_INT) return;
-
-            const decimal = v.split(".")[1];
-            if (decimal && decimal.length > 2) return;
-
-            update("importPrice", num);
+            setValue("importPrice", v);
+            validateField("importPrice", v);
           }}
+          onBlur={() =>
+            setTouched((t) => ({
+              ...t,
+              importPrice: true,
+            }))
+          }
         />
       </Field>
 
       {/* SELLING PRICE */}
-      <Field label={dict.sellingPrice} icon={<DollarSign className="h-3 w-3" />}>
+      <Field
+        label={dict.sellingPrice}
+        error={errors.sellingPrice}
+        warning={
+          warnings.sellingPrice
+            ? dict.invalidPrice
+            : undefined
+        }
+      >
         <Input
           type="number"
-          value={data.sellingPrice}
+          value={values.sellingPrice}
           onChange={(v) => {
-            const num = Number(v);
-            if (isNaN(num) || num > MAX_INT) return;
-
-            const decimal = v.split(".")[1];
-            if (decimal && decimal.length > 2) return;
-
-            update("sellingPrice", num);
+            setValue("sellingPrice", v);
+            validateField("sellingPrice", v);
           }}
+          onBlur={() =>
+            setTouched((t) => ({
+              ...t,
+              sellingPrice: true,
+            }))
+          }
         />
       </Field>
 
       {/* REORDER */}
-      <Field label={dict.reorderThreshold} icon={<AlertTriangle className="h-3 w-3" />}>
+      <Field
+        label={dict.reorderThreshold}
+        error={errors.reorderThreshold}
+        warning={
+          warnings.reorderThreshold
+            ? dict.invalidThreshold
+            : undefined
+        }
+      >
         <Input
           type="number"
-          value={data.reorderThreshold}
+          value={values.reorderThreshold}
           onChange={(v) => {
-            const num = Number(v);
-            if (!Number.isInteger(num) || num > MAX_INT) return;
-            update("reorderThreshold", num);
+            setValue("reorderThreshold", v);
+            validateField("reorderThreshold", v);
           }}
+          onBlur={() =>
+            setTouched((t) => ({
+              ...t,
+              reorderThreshold: true,
+            }))
+          }
         />
       </Field>
 
       {/* DESCRIPTION */}
-      <Field label={dict.description}>
+      <Field
+        label={dict.description}
+        warning={
+          warnings.description
+            ? dict.emptyDescription
+            : undefined
+        }
+      >
         <Textarea
-          value={data.productDescription}
-          onChange={(v) => update("productDescription", v)}
-          placeholder={dict.descriptionPlaceholder}
+          value={values.productDescription}
+          onChange={(v) =>
+            setValue("productDescription", v)
+          }
+          onBlur={() =>
+            setTouched((t) => ({
+              ...t,
+              productDescription: true,
+            }))
+          }
         />
       </Field>
 
-    </div>
+      <button type="submit" className="hidden" />
+    </form>
   );
 }

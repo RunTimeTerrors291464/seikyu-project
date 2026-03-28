@@ -43,6 +43,7 @@ export const FIELD_KEYS: Record<string, keyof Dictionary> = {
   sellingPrice: "sellingPrice",
   importPrice: "importPrice",
   productUnit: "unit",
+  newProduct: "newProduct"
 };
 
 export type Size = "sm" | "md";

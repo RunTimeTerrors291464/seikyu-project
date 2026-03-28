@@ -31,6 +31,7 @@ export function useProductTable<T, Q extends BaseQuery>({
   const [data, setData] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -63,7 +64,7 @@ export function useProductTable<T, Q extends BaseQuery>({
     }
 
     load();
-  }, [query, fetcher]);
+  }, [query, fetcher, refreshKey]);
 
   /* ============================= */
   /* ACTIONS */
@@ -119,6 +120,10 @@ export function useProductTable<T, Q extends BaseQuery>({
     setQuery(initialQuery);
   };
 
+  const refetch = () => {
+    setRefreshKey((k) => k + 1);
+  };
+
   /* ============================= */
   /* PAGINATION */
   /* ============================= */
@@ -143,6 +148,7 @@ export function useProductTable<T, Q extends BaseQuery>({
     setSort,
     setFilters,
     resetQuery,
+    refetch,
 
     totalPages,
   };

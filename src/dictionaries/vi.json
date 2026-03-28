@@ -92,7 +92,7 @@
   "isDuplicate": "Tên sản phẩm đã tồn tại",
   "action": "Hành Động",
   "addNamePlaceholder": "Nhập tên sản phẩm mới...",
-  "newProdduct": "Sản phẩm mới",
+  "newProduct": "Sản phẩm mới",
   "history": "Lịch sử",
   "saves": "lưu",
   "changes": "Chỉnh sữa",
@@ -124,5 +124,11 @@
   "selectUnit": "Chọn đơn vị",
   "create": "Tạo",
   "confirmCreateProductTitle": "Tạo sản phẩm?",
-  "confirmCreateProductDescription": "Bạn có chắc muốn tạo sản phẩm này không? Sản phẩm sẽ được thêm vào kho."
+  "confirmCreateProductDescription": "Bạn có chắc muốn tạo sản phẩm này không? Sản phẩm sẽ được thêm vào kho.",
+  "skuMustBe13": "SKU phải gồm đúng 13 chữ số",
+  "productNameRequired": "Tên sản phẩm là bắt buộc",
+  "unitRequired": "Vui lòng chọn đơn vị",
+  "invalidPrice": "Giá trị phải là số dương hợp lệ",
+  "invalidThreshold": "Giá trị phải là số nguyên dương",
+  "emptyDescription": "Mô tả đang trống"
 }

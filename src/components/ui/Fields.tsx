@@ -14,6 +14,7 @@ type FieldProps = {
   required?: boolean;
   hint?: string;
   error?: string;
+  warning?: string;
   children: React.ReactNode;
 };
 
@@ -23,29 +24,36 @@ export function Field({
   required,
   hint,
   error,
+  warning,
   children,
 }: FieldProps) {
+  const hasError = !!error;
+  const hasWarning = !error && !!warning;
+
   return (
     <div className="space-y-1">
       {/* LABEL */}
       <div className="flex items-center gap-1.5 text-xs text-muted">
-        {icon && (
-          <span className="flex items-center text-muted">
-            {icon}
-          </span>
-        )}
-
+        {icon && <span className="flex items-center text-muted">{icon}</span>}
         <span>{label}</span>
-
         {required && <span className="text-danger">*</span>}
       </div>
 
-      {/* INPUT / CONTENT */}
-      <div>{children}</div>
+      {/* INPUT */}
+      <div>
+        {React.isValidElement(children)
+          ? React.cloneElement(children as any, {
+            error: hasError,
+            warning: hasWarning,
+          })
+          : children}
+      </div>
 
-      {/* HINT / ERROR */}
-      {error ? (
+      {/* MESSAGE */}
+      {hasError ? (
         <p className="text-xs text-danger">{error}</p>
+      ) : hasWarning ? (
+        <p className="text-xs text-warning">{warning}</p>
       ) : hint ? (
         <p className="text-xs text-muted">{hint}</p>
       ) : null}
@@ -61,6 +69,7 @@ type InputProps = {
   type?: string;
   placeholder?: string;
   error?: boolean;
+  warning?: boolean;
   disabled?: boolean;
   onBlur?: () => void;
   onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
@@ -73,7 +82,8 @@ export function Input({
   onChange,
   type = "text",
   placeholder,
-  error,
+  error = false,
+  warning = false,
   disabled,
   onBlur,
   onPaste,
@@ -96,16 +106,19 @@ export function Input({
         "outline-none transition-colors duration-150",
         "placeholder:text-muted",
 
-        /* base border */
-        error ? "border-danger" : "border-border",
+        error
+          ? "border-danger"
+          : warning
+            ? "border-warning"
+            : "border-border",
 
-        /* hover */
         "hover:bg-hover",
 
-        /* focus */
         error
           ? "focus:border-danger"
-          : "focus:border-primary",
+          : warning
+            ? "focus:border-warning"
+            : "focus:border-primary",
 
         /* disabled */
         disabled && "opacity-60 cursor-not-allowed bg-hover"
@@ -148,8 +161,6 @@ export function StatDisplay({
   status,
   accent = "neutral" as Accent,
 }: StatDisplayProps) {
-
-
   return (
     <div
       className={clsx(
@@ -161,45 +172,59 @@ export function StatDisplay({
     >
       <span className="font-medium">{value}</span>
 
-      <StatusPill
-        status={Number(status) as ProductStockStatus}
-      />
+      <StatusPill status={Number(status) as ProductStockStatus} />
     </div>
   );
 }
 
 /* ───────────────── Text Area ───────────────── */
 
-export function Textarea({
-  value,
-  onChange,
-  placeholder,
-  disabled = false,
-}: {
+type TextareaProps = {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   disabled?: boolean;
-}) {
+  error?: boolean;
+  onBlur?: () => void;
+  warning?: boolean;
+};
+
+export function Textarea({
+  value,
+  onChange,
+  placeholder,
+  onBlur,
+  disabled = false,
+  error = false,
+  warning = false,
+}: TextareaProps) {
   return (
     <textarea
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       disabled={disabled}
       rows={3}
       className={clsx(
-        "w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-text",
+        "w-full rounded-md border bg-card px-3 py-2 text-sm text-text",
         "outline-none transition-colors duration-150",
-
         "placeholder:text-muted",
         "resize-none",
 
-        /* hover */
+        error
+          ? "border-danger"
+          : warning
+            ? "border-warning"
+            : "border-border",
+
         "hover:bg-hover",
 
-        /* focus */
-        "focus:border-primary",
+        error
+          ? "focus:border-danger"
+          : warning
+            ? "focus:border-warning"
+            : "focus:border-primary",
 
         /* disabled */
         disabled && "opacity-60 cursor-not-allowed bg-hover"
@@ -208,13 +233,14 @@ export function Textarea({
   );
 }
 
-/* ───────────────── Button ───────────────── */
+/* ───────────────── Select Button ───────────────── */
 
 type SelectButtonProps = {
   value?: string;
   placeholder?: string;
   onClick?: () => void;
   disabled?: boolean;
+  error?: boolean;
 };
 
 export function SelectButton({
@@ -222,6 +248,7 @@ export function SelectButton({
   placeholder,
   onClick,
   disabled,
+  error,
 }: SelectButtonProps) {
   return (
     <button
@@ -234,32 +261,28 @@ export function SelectButton({
         "transition-colors duration-150",
 
         /* base */
-        "bg-card text-text border-border",
+        "bg-card text-text",
+
+        /* border */
+        error ? "border-danger" : "border-border",
 
         /* hover */
         !disabled && "hover:bg-hover cursor-pointer",
 
         /* focus */
-        "focus:border-primary outline-none",
+        error ? "focus:border-danger" : "focus:border-primary",
+
+        "outline-none",
 
         /* disabled */
         disabled && "opacity-60 cursor-not-allowed bg-hover"
       )}
     >
-      {/* value / placeholder */}
-      <span
-        className={clsx(
-          "truncate",
-          !value && "text-muted"
-        )}
-      >
+      <span className={clsx("truncate", !value && "text-muted")}>
         {value || placeholder}
       </span>
 
-      {/* right icon */}
-      <span className="ml-auto text-muted text-xs">
-        ▼
-      </span>
+      <span className="ml-auto text-muted text-xs">▼</span>
     </button>
   );
 }

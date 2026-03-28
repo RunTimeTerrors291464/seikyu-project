@@ -28,6 +28,7 @@ import {
   productService,
 } from "@/features/products/services/product.service";
 
+import AddNewProductPopup from "@/features/products/layout/AddNewProductPopup";
 import ProductTableHeader from "@/features/products/layout/ProductTableHeader";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 
@@ -43,8 +44,9 @@ export default function ProductInventoryPage() {
   /* ============================= */
 
   const [search, setSearch] = useState("");
-  const [searchRule, setSearchRule] =
-    useState<"sku" | "productName">("sku");
+  const [searchRule, setSearchRule] = useState<"sku" | "productName">("sku");
+
+  const [openAdd, setOpenAdd] = useState(false);
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -154,6 +156,8 @@ export default function ProductInventoryPage() {
         toggleFilters={() => setShowFilters((v) => !v)}
         resetSearch={handleReset}
         isDirty={isDirty}
+
+        onAddProduct={() => setOpenAdd(true)}
       />
 
       {/* KPI */}
@@ -302,6 +306,17 @@ export default function ProductInventoryPage() {
         setPage={table.setPage}
         totalResults={table.total}
         dict={dict}
+      />
+
+      {/* ADD PRPODUCT POPUP */}
+      <AddNewProductPopup
+        open={openAdd}
+        onClose={() => setOpenAdd(false)}
+        dict={dict}
+        onCreated={() => {
+          table.refetch();
+          console.log("Product created!");
+        }}
       />
     </div>
   );
