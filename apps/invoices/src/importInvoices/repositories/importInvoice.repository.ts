@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Brackets } from 'typeorm';
+import { EntityManager, Repository, In, Brackets } from 'typeorm';
 
 // Import error exceptions.
 import { Role } from '@app/common/enums/role.enum';
@@ -34,14 +34,13 @@ export class ImportInvoiceRepository {
 
     // Generate a new import invoice ID.
     // The format is IYY-XXXXXXX (I26-0000001).
-    private async generateInvoiceId(): Promise<string> {
+    private async generateInvoiceId(manager: EntityManager): Promise<string> {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
         const yearPrefix = `I${year}`;
 
-        // Find the latest invoice with the same year prefix.
-        const latestInvoice = await this.importInvoiceRepository
-            .createQueryBuilder('invoice')
+        const latestInvoice = await manager
+            .createQueryBuilder(ImportInvoiceEntity, 'invoice')
             .where('invoice.invoiceId LIKE :prefix', { prefix: `${yearPrefix}-%` })
             .orderBy('LENGTH(invoice.invoiceId)', 'DESC')
             .addOrderBy('invoice.invoiceId', 'DESC')
@@ -179,12 +178,12 @@ export class ImportInvoiceRepository {
 
     // Confirm a draft import invoice.
     async confirmImportInvoice(invoice: ImportInvoiceEntity, user: AccessTokenPayload): Promise<ImportInvoiceEntity | null> {
-        return await this.importInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Generate invoice ID.
-            const invoiceId = await this.generateInvoiceId();
+        // Step 1: Local transaction - confirm the import invoice in the database.
+        const result = await this.importInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Load products if relations are missing.
+            const invoiceId = await this.generateInvoiceId(transactionalManager);
+
             let products = invoice.importInvoiceProducts;
             if (!products) {
                 const loadedInvoice = await transactionalManager.findOne(ImportInvoiceEntity, {
@@ -195,7 +194,19 @@ export class ImportInvoiceRepository {
                 products = loadedInvoice.importInvoiceProducts;
             }
 
-            // Update inventory stock.
+            invoice.invoiceId = invoiceId;
+            invoice.status = ImportInvoiceStatus.CONFIRMED;
+            invoice.confirmedBy = user.id;
+            invoice.confirmedAt = new Date();
+            invoice.returnCount = 0;
+
+            await transactionalManager.save(ImportInvoiceEntity, invoice);
+
+            const invoiceWithRelations = await transactionalManager.findOne(ImportInvoiceEntity, {
+                where: { id: invoice.id },
+                relations: ['importInvoiceProducts'],
+            });
+
             const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
                 invoiceType: InvoiceType.IMPORT,
                 invoiceId: invoice.id,
@@ -206,25 +217,28 @@ export class ImportInvoiceRepository {
                 })),
             };
 
-            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
-
-            // Update invoice details.
-            invoice.invoiceId = invoiceId;
-            invoice.status = ImportInvoiceStatus.CONFIRMED;
-            invoice.confirmedBy = user.id;
-            invoice.confirmedAt = new Date();
-            invoice.returnCount = 0;
-
-            await transactionalManager.save(ImportInvoiceEntity, invoice);
-
-            // Reload with relations to return the latest data.
-            const invoiceWithRelations = await transactionalManager.findOne(ImportInvoiceEntity, {
-                where: { id: invoice.id },
-                relations: ['importInvoiceProducts'],
-            });
-
-            return invoiceWithRelations || invoice;
+            return { invoice: invoiceWithRelations || invoice, stockUpdateDto };
         });
+
+        if (!result) return null;
+
+        // Step 2: TCP call for updating product inventory stock.
+        try {
+            await this.invoiceHelperService.updateProductInventoryStockBulk(result.stockUpdateDto);
+        } catch (error) {
+            // Step 3: In case of error, rollback the local transaction.
+            await this.importInvoiceRepository.manager.transaction(async (transactionalManager) => {
+                await transactionalManager.update(ImportInvoiceEntity, { id: invoice.id }, {
+                    invoiceId: null as any,
+                    status: ImportInvoiceStatus.DRAFT,
+                    confirmedBy: null as any,
+                    confirmedAt: null as any,
+                });
+            });
+            throw error;
+        }
+
+        return result.invoice;
     }
 
     // Get import invoice by id.

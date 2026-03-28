@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Brackets } from 'typeorm';
+import { EntityManager, Repository, In, Brackets } from 'typeorm';
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
@@ -33,14 +33,13 @@ export class StockAdjustmentInvoiceRepository {
 
     // Generate a new stock adjustment invoice ID.
     // The format is SAYY-XXXXXXX (SA26-0000001).
-    private async generateInvoiceId(): Promise<string> {
+    private async generateInvoiceId(manager: EntityManager): Promise<string> {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
         const yearPrefix = `SA${year}`;
 
-        // Find the latest invoice with the same year prefix.
-        const latestInvoice = await this.stockAdjustmentInvoiceRepository
-            .createQueryBuilder('invoice')
+        const latestInvoice = await manager
+            .createQueryBuilder(StockAdjustmentInvoiceEntity, 'invoice')
             .where('invoice.invoiceId LIKE :prefix', { prefix: `${yearPrefix}-%` })
             .orderBy('LENGTH(invoice.invoiceId)', 'DESC')
             .addOrderBy('invoice.invoiceId', 'DESC')
@@ -171,12 +170,12 @@ export class StockAdjustmentInvoiceRepository {
 
     // Confirm a draft stock adjustment invoice.
     async confirmStockAdjustmentInvoice(invoice: StockAdjustmentInvoiceEntity, user: AccessTokenPayload): Promise<StockAdjustmentInvoiceEntity | null> {
-        return await this.stockAdjustmentInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Generate invoice ID.
-            const invoiceId = await this.generateInvoiceId();
+        // Step 1: Local transaction - confirm invoice in DB.
+        const result = await this.stockAdjustmentInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Load products if relations are missing.
+            const invoiceId = await this.generateInvoiceId(transactionalManager);
+
             let products = invoice.stockAdjustmentInvoiceProducts;
             if (!products) {
                 const loadedInvoice = await transactionalManager.findOne(StockAdjustmentInvoiceEntity, {
@@ -187,7 +186,18 @@ export class StockAdjustmentInvoiceRepository {
                 products = loadedInvoice.stockAdjustmentInvoiceProducts;
             }
 
-            // Update inventory stock using each product's own action (ADD or SUBTRACT).
+            invoice.invoiceId = invoiceId;
+            invoice.status = StockAdjustmentInvoiceStatus.CONFIRMED;
+            invoice.confirmedBy = user.id;
+            invoice.confirmedAt = new Date();
+
+            await transactionalManager.save(StockAdjustmentInvoiceEntity, invoice);
+
+            const invoiceWithRelations = await transactionalManager.findOne(StockAdjustmentInvoiceEntity, {
+                where: { id: invoice.id },
+                relations: ['stockAdjustmentInvoiceProducts'],
+            });
+
             const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
                 invoiceType: InvoiceType.STOCK_ADJUSTMENT,
                 invoiceId: invoice.id,
@@ -198,24 +208,28 @@ export class StockAdjustmentInvoiceRepository {
                 })),
             };
 
-            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
-
-            // Update invoice status.
-            invoice.invoiceId = invoiceId;
-            invoice.status = StockAdjustmentInvoiceStatus.CONFIRMED;
-            invoice.confirmedBy = user.id;
-            invoice.confirmedAt = new Date();
-
-            await transactionalManager.save(StockAdjustmentInvoiceEntity, invoice);
-
-            // Reload with relations to return the latest data.
-            const invoiceWithRelations = await transactionalManager.findOne(StockAdjustmentInvoiceEntity, {
-                where: { id: invoice.id },
-                relations: ['stockAdjustmentInvoiceProducts'],
-            });
-
-            return invoiceWithRelations || invoice;
+            return { invoice: invoiceWithRelations || invoice, stockUpdateDto };
         });
+
+        if (!result) return null;
+
+        // Step 2: TCP call for updating product inventory stock.
+        try {
+            await this.invoiceHelperService.updateProductInventoryStockBulk(result.stockUpdateDto);
+        } catch (error) {
+            // Step 3: In case of error, rollback the local transaction.
+            await this.stockAdjustmentInvoiceRepository.manager.transaction(async (transactionalManager) => {
+                await transactionalManager.update(StockAdjustmentInvoiceEntity, { id: invoice.id }, {
+                    invoiceId: null as any,
+                    status: StockAdjustmentInvoiceStatus.DRAFT,
+                    confirmedBy: null as any,
+                    confirmedAt: null as any,
+                });
+            });
+            throw error;
+        }
+
+        return result.invoice;
     }
 
     // Get stock adjustment invoice by id.

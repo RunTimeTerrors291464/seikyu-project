@@ -458,10 +458,11 @@ export class ProductsRepository {
                 : sortBy === 'importPrice' ? 'product.importPrice'
                     : sortBy === 'sellingPrice' ? 'product.sellingPrice'
                         : sortBy === 'stockStatus' ? 'product.stockStatus'
-                            : sortBy === 'createdAt' ? 'product.createdAt'
-                                : sortBy === 'updatedAt' ? 'product.updatedAt'
-                                    : sortBy === 'sku' ? 'product.sku'
-                                        : 'product.createdAt';
+                            : sortBy === 'inventoryStock' ? 'product.inventoryStock'
+                                : sortBy === 'createdAt' ? 'product.createdAt'
+                                    : sortBy === 'updatedAt' ? 'product.updatedAt'
+                                        : sortBy === 'sku' ? 'product.sku'
+                                            : 'product.createdAt';
             queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');
         }
         queryBuilder.addOrderBy('product.id', 'ASC');

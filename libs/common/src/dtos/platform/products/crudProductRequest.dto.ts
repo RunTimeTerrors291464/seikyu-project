@@ -215,11 +215,11 @@ export class GetListOfProductRequestDto {
     @ApiPropertyOptional({
         description: 'Sort by which field',
         example: 'sku',
-        enum: ['sku', 'productName', 'productUnitName', 'importPrice', 'sellingPrice', 'createdAt', 'updatedAt', 'stockStatus'],
+        enum: ['sku', 'productName', 'productUnitName', 'importPrice', 'sellingPrice', 'createdAt', 'updatedAt', 'stockStatus', 'inventoryStock'],
     })
-    @IsIn(['sku', 'productName', 'productUnitName', 'importPrice', 'sellingPrice', 'createdAt', 'updatedAt', 'stockStatus'])
+    @IsIn(['sku', 'productName', 'productUnitName', 'importPrice', 'sellingPrice', 'createdAt', 'updatedAt', 'stockStatus', 'inventoryStock'])
     @IsOptional()
-    sortBy?: 'sku' | 'productName' | 'productUnitName' | 'importPrice' | 'sellingPrice' | 'createdAt' | 'updatedAt' | 'stockStatus';
+    sortBy?: 'sku' | 'productName' | 'productUnitName' | 'importPrice' | 'sellingPrice' | 'createdAt' | 'updatedAt' | 'stockStatus' | 'inventoryStock';
 
     @ApiPropertyOptional({
         description: 'Sort order',

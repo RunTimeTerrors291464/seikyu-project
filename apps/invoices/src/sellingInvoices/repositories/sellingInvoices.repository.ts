@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Brackets } from 'typeorm';
+import { EntityManager, Repository, In, Brackets } from 'typeorm';
 
 // Import error exceptions.
 import { Role } from '@app/common/enums/role.enum';
@@ -46,14 +46,13 @@ export class SellingInvoiceRepository {
 
     // Generate a new selling invoice ID.
     // The format is SYY-XXXXXXX (S26-0000001).
-    private async generateInvoiceId(): Promise<string> {
+    private async generateInvoiceId(manager: EntityManager): Promise<string> {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
         const yearPrefix = `S${year}`;
 
-        // Find the latest invoice with the same year prefix.
-        const latestInvoice = await this.sellingInvoiceRepository
-            .createQueryBuilder('invoice')
+        const latestInvoice = await manager
+            .createQueryBuilder(SellingInvoiceEntity, 'invoice')
             .where('invoice.invoiceId LIKE :prefix', { prefix: `${yearPrefix}-%` })
             .orderBy('LENGTH(invoice.invoiceId)', 'DESC')
             .addOrderBy('invoice.invoiceId', 'DESC')
@@ -79,12 +78,12 @@ export class SellingInvoiceRepository {
             resolvedProducts: ResolvedSellingProductData[];
         }
     ): Promise<SellingInvoiceEntity> {
-        return await this.sellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Generate invoice ID.
-            const invoiceId = await this.generateInvoiceId();
+        // Step 1: Local transaction - save invoice + products in one atomic operation.
+        const { invoice, stockUpdateDto } = await this.sellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Create and save the selling invoice.
+            const invoiceId = await this.generateInvoiceId(transactionalManager);
+
             const sellingInvoice = this.sellingInvoiceRepository.create({
                 invoiceId,
                 totalProducts: calculatedTotals.totalProducts,
@@ -98,20 +97,6 @@ export class SellingInvoiceRepository {
             });
             const savedInvoice = await transactionalManager.save(SellingInvoiceEntity, sellingInvoice);
 
-            // Update inventory stock AFTER saving to DB so we have the UUID.
-            // If the platform service call fails, the transaction is rolled back.
-            const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
-                invoiceType: InvoiceType.SELLING,
-                invoiceId: savedInvoice.id,
-                products: calculatedTotals.resolvedProducts.map(p => ({
-                    id: p.productId,
-                    quantity: p.quantity,
-                    action: StockActionType.SUBTRACT,
-                })),
-            };
-            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
-
-            // Create selling invoice products.
             const products = calculatedTotals.resolvedProducts.map(item => {
                 return this.sellingInvoiceProductsRepository.create({
                     sellingInvoice: savedInvoice,
@@ -126,17 +111,39 @@ export class SellingInvoiceRepository {
                     notes: item.notes,
                 });
             });
-
             await transactionalManager.save(SellingInvoiceProductsEntity, products);
 
-            // Reload with relations.
             const invoiceWithRelations = await transactionalManager.findOne(SellingInvoiceEntity, {
                 where: { id: savedInvoice.id },
                 relations: ['sellingInvoiceProducts'],
             });
 
-            return invoiceWithRelations || savedInvoice;
+            const stockDto: UpdateProductInventoryBulkRequestDto = {
+                invoiceType: InvoiceType.SELLING,
+                invoiceId: savedInvoice.id,
+                products: calculatedTotals.resolvedProducts.map(p => ({
+                    id: p.productId,
+                    quantity: p.quantity,
+                    action: StockActionType.SUBTRACT,
+                })),
+            };
+
+            return { invoice: invoiceWithRelations || savedInvoice, stockUpdateDto: stockDto };
         });
+
+        // Step 2: TCP call for updating product inventory stock.
+        try {
+            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
+        } catch (error) {
+            // Step 3: In case of error, rollback the local transaction.
+            await this.sellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
+                await transactionalManager.delete(SellingInvoiceProductsEntity, { sellingInvoice: { id: invoice.id } });
+                await transactionalManager.delete(SellingInvoiceEntity, { id: invoice.id });
+            });
+            throw error;
+        }
+
+        return invoice;
     }
 
     // Get a selling invoice by id. 

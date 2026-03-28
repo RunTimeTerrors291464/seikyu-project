@@ -22,27 +22,6 @@ export class InvoiceHelperService {
         @Inject('PLATFORM_SERVICE') private platformClient: ClientProxy
     ) { }
 
-    // Get user information by ID.
-    async getUserById(userId: string, withPassword: boolean = false): Promise<UserResponseDto | UserResponseWithPasswordDto> {
-        return lastValueFrom(
-            this.platformClient.send(
-                { cmd: 'users.getUserById' },
-                { id: userId, withPassword }
-            )
-        );
-    }
-
-    // Get multiple users by their IDs.
-    async getUsersByIds(userIds: string[]): Promise<UserResponseDto[]> {
-        if (userIds.length === 0) return [];
-        return lastValueFrom(
-            this.platformClient.send(
-                { cmd: 'users.getUsersByIds' },
-                { ids: userIds }
-            )
-        );
-    }
-
     // Update product inventory stock in bulk.
     // Retry 3 times. If all retries fail, throw a CustomException.
     async updateProductInventoryStockBulk(dto: UpdateProductInventoryBulkRequestDto): Promise<ProductResponseDto[]> {
@@ -88,6 +67,27 @@ export class InvoiceHelperService {
 
         if (!notFound.length && !notActive.length) return { success: true, notFound, notActive, products };
         return { success: false, notFound, notActive, products: [] };
+    }
+
+    // Get user information by ID.
+    async getUserById(userId: string, withPassword: boolean = false): Promise<UserResponseDto | UserResponseWithPasswordDto> {
+        return lastValueFrom(
+            this.platformClient.send(
+                { cmd: 'users.getUserById' },
+                { id: userId, withPassword }
+            )
+        );
+    }
+
+    // Get multiple users by their IDs.
+    async getUsersByIds(userIds: string[]): Promise<UserResponseDto[]> {
+        if (userIds.length === 0) return [];
+        return lastValueFrom(
+            this.platformClient.send(
+                { cmd: 'users.getUsersByIds' },
+                { ids: userIds }
+            )
+        );
     }
 
     // Get a product by ID.

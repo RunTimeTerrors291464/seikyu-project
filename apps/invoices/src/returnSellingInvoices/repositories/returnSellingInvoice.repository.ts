@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Brackets } from 'typeorm';
+import { EntityManager, Repository, In, Brackets } from 'typeorm';
 
 // Import enums.
 import { Role } from '@app/common/enums/role.enum';
@@ -19,6 +19,7 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 
 // Import DTOs.
 import { GetListOfReturnSellingInvoiceRequestDto } from '@app/common/dtos/invoices/returnSellingInvoices/crudReturnSellingInvoicesRequest.dto';
+import { UpdateProductInventoryBulkRequestDto } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 
 // Import helper services.
 import { InvoiceHelperService } from '../../invoiceHelper/invoiceHelper.service';
@@ -40,14 +41,13 @@ export class ReturnSellingInvoiceRepository {
 
     // Generate a new return selling invoice ID.
     // The format is RSYY-XXXXXXX (RS26-0000001).
-    async generateReturnInvoiceId(): Promise<string> {
+    private async generateReturnInvoiceId(manager: EntityManager): Promise<string> {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
         const yearPrefix = `RS${year}`;
 
-        // Find the latest invoice with the same year prefix.
-        const latestInvoice = await this.returnSellingInvoiceRepository
-            .createQueryBuilder('invoice')
+        const latestInvoice = await manager
+            .createQueryBuilder(ReturnSellingInvoiceEntity, 'invoice')
             .where('invoice.returnInvoiceId LIKE :prefix', { prefix: `${yearPrefix}-%` })
             .orderBy('LENGTH(invoice.returnInvoiceId)', 'DESC')
             .addOrderBy('invoice.returnInvoiceId', 'DESC')
@@ -189,34 +189,78 @@ export class ReturnSellingInvoiceRepository {
         originalSellingInvoice: SellingInvoiceEntity,
         user: AccessTokenPayload
     ): Promise<ReturnSellingInvoiceEntity | null> {
-        return await this.returnSellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
 
-            // Generate return invoice ID.
-            const returnInvoiceId = await this.generateReturnInvoiceId();
+        // Snapshot values before changes for compensation if TCP fails.
+        const previousOriginalStatus = originalSellingInvoice.status;
+        const previousReturnCount = originalSellingInvoice.returnCount;
 
-            // Load products if relations are missing.
+        // Step 1: Local transaction - all DB changes atomically.
+        const result = await this.returnSellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
+
+            // Generate a new return selling invoice ID.
+            const returnInvoiceId = await this.generateReturnInvoiceId(transactionalManager);
+
+            // Load return selling invoice products.
             if (!returnSellingInvoice.returnSellingInvoiceProducts) {
                 const loadedReturnInvoice = await transactionalManager.findOne(ReturnSellingInvoiceEntity, {
                     where: { id: returnSellingInvoice.id },
                     relations: ['returnSellingInvoiceProducts'],
                 });
-                if (loadedReturnInvoice) {
-                    returnSellingInvoice.returnSellingInvoiceProducts = loadedReturnInvoice.returnSellingInvoiceProducts;
-                }
+                if (loadedReturnInvoice) returnSellingInvoice.returnSellingInvoiceProducts = loadedReturnInvoice.returnSellingInvoiceProducts;
             }
 
+            // Load original selling invoice products.
             if (!originalSellingInvoice.sellingInvoiceProducts) {
                 const loadedSellingInvoice = await transactionalManager.findOne(SellingInvoiceEntity, {
                     where: { id: originalSellingInvoice.id },
                     relations: ['sellingInvoiceProducts'],
                 });
-                if (loadedSellingInvoice) {
-                    originalSellingInvoice.sellingInvoiceProducts = loadedSellingInvoice.sellingInvoiceProducts;
-                }
+                if (loadedSellingInvoice) originalSellingInvoice.sellingInvoiceProducts = loadedSellingInvoice.sellingInvoiceProducts;
             }
 
-            // Update inventory stock (ADD back to warehouse when customer returns goods).
-            const stockUpdateDto = {
+            // Update return selling invoice.
+            returnSellingInvoice.returnInvoiceId = returnInvoiceId;
+            returnSellingInvoice.status = ReturnSellingInvoiceStatus.CONFIRMED;
+            returnSellingInvoice.confirmedBy = user.id;
+            returnSellingInvoice.confirmedAt = new Date();
+
+            // Save return selling invoice.
+            const savedReturnInvoice = await transactionalManager.save(ReturnSellingInvoiceEntity, returnSellingInvoice);
+
+            // Create a map of return quantities.
+            const returnQuantityMap = new Map<string, number>();
+            for (const rp of returnSellingInvoice.returnSellingInvoiceProducts || []) {
+                returnQuantityMap.set(rp.productId, rp.returnQuantity);
+            }
+
+            // Check if the selling invoice is fully returned.
+            let isFullyReturned = true;
+            // Create a list of products to update.
+            const productsToUpdate: SellingInvoiceProductsEntity[] = [];
+            for (const originalProduct of originalSellingInvoice.sellingInvoiceProducts || []) {
+                const currentReturnQty = returnQuantityMap.get(originalProduct.productId) || 0;
+                if (currentReturnQty > 0) originalProduct.returnQuantity += currentReturnQty;
+                if (originalProduct.returnQuantity < originalProduct.quantity) isFullyReturned = false;
+            }
+
+            // Update the selling invoice products.
+            if (productsToUpdate.length > 0) {
+                await transactionalManager.save(SellingInvoiceProductsEntity, productsToUpdate);
+            }
+
+            // Update the selling invoice status and return count.
+            originalSellingInvoice.status = isFullyReturned ? SellingInvoiceStatus.RETURNED : SellingInvoiceStatus.PARTIALLY_RETURNED;
+            originalSellingInvoice.returnCount += 1;
+            await transactionalManager.save(SellingInvoiceEntity, originalSellingInvoice);
+
+            // Load return selling invoice with relations.
+            const invoiceWithRelations = await transactionalManager.findOne(ReturnSellingInvoiceEntity, {
+                where: { id: savedReturnInvoice.id },
+                relations: ['sellingInvoice', 'returnSellingInvoiceProducts'],
+            });
+
+            // Create a stock update DTO.
+            const stockUpdateDto: UpdateProductInventoryBulkRequestDto = {
                 invoiceType: InvoiceType.RETURN_SELLING,
                 invoiceId: returnSellingInvoice.id,
                 products: (returnSellingInvoice.returnSellingInvoiceProducts || []).map(p => ({
@@ -225,63 +269,44 @@ export class ReturnSellingInvoiceRepository {
                     action: StockActionType.ADD,
                 })),
             };
-            await this.invoiceHelperService.updateProductInventoryStockBulk(stockUpdateDto);
 
-            // Update return selling invoice details.
-            returnSellingInvoice.returnInvoiceId = returnInvoiceId;
-            returnSellingInvoice.status = ReturnSellingInvoiceStatus.CONFIRMED;
-            returnSellingInvoice.confirmedBy = user.id;
-            returnSellingInvoice.confirmedAt = new Date();
-
-            const savedReturnInvoice = await transactionalManager.save(ReturnSellingInvoiceEntity, returnSellingInvoice);
-
-            // Create a map to look up return quantity fast.
-            const returnQuantityMap = new Map<string, number>();
-            for (const rp of returnSellingInvoice.returnSellingInvoiceProducts || []) {
-                returnQuantityMap.set(rp.productId, rp.returnQuantity);
-            }
-
-            // Determine if the original invoice is fully or partially returned.
-            let isFullyReturned = true;
-
-            const productsToUpdate: SellingInvoiceProductsEntity[] = [];
-            for (const originalProduct of originalSellingInvoice.sellingInvoiceProducts || []) {
-                const currentReturnQty = returnQuantityMap.get(originalProduct.productId) || 0;
-
-                if (currentReturnQty > 0) {
-                    originalProduct.returnQuantity += currentReturnQty;
-                    productsToUpdate.push(originalProduct);
-                }
-
-                const totalReturnedSoFar = originalProduct.returnQuantity;
-
-                // If any product has not been fully returned yet.
-                if (totalReturnedSoFar < originalProduct.quantity) {
-                    isFullyReturned = false;
-                }
-            }
-
-            // Update original selling invoice products.
-            if (productsToUpdate.length > 0) {
-                await transactionalManager.save(SellingInvoiceProductsEntity, productsToUpdate);
-            }
-
-            // Update the original selling invoice status and return count.
-            originalSellingInvoice.status = isFullyReturned
-                ? SellingInvoiceStatus.RETURNED
-                : SellingInvoiceStatus.PARTIALLY_RETURNED;
-            originalSellingInvoice.returnCount += 1;
-
-            await transactionalManager.save(SellingInvoiceEntity, originalSellingInvoice);
-
-            // Reload with relations.
-            const invoiceWithRelations = await transactionalManager.findOne(ReturnSellingInvoiceEntity, {
-                where: { id: savedReturnInvoice.id },
-                relations: ['sellingInvoice', 'returnSellingInvoiceProducts'],
-            });
-
-            return invoiceWithRelations || savedReturnInvoice;
+            return { invoice: invoiceWithRelations || savedReturnInvoice, stockUpdateDto, returnQuantityMap };
         });
+
+        if (!result) return null;
+
+        // Step 2: TCP call for updating product inventory stock.
+        try {
+            await this.invoiceHelperService.updateProductInventoryStockBulk(result.stockUpdateDto);
+        } catch (error) {
+            // Step 3: In case of error, rollback the local transaction.
+            await this.returnSellingInvoiceRepository.manager.transaction(async (transactionalManager) => {
+                await transactionalManager.update(ReturnSellingInvoiceEntity, { id: returnSellingInvoice.id }, {
+                    returnInvoiceId: null as any,
+                    status: ReturnSellingInvoiceStatus.DRAFT,
+                    confirmedBy: null as any,
+                    confirmedAt: null as any,
+                });
+
+                // Revert original selling invoice products' returnQuantity.
+                for (const originalProduct of originalSellingInvoice.sellingInvoiceProducts || []) {
+                    const returnQty = result.returnQuantityMap.get(originalProduct.productId) || 0;
+                    if (returnQty > 0) {
+                        originalProduct.returnQuantity -= returnQty;
+                        await transactionalManager.save(SellingInvoiceProductsEntity, originalProduct);
+                    }
+                }
+
+                // Revert original selling invoice status and return count.
+                await transactionalManager.update(SellingInvoiceEntity, { id: originalSellingInvoice.id }, {
+                    status: previousOriginalStatus,
+                    returnCount: previousReturnCount,
+                });
+            });
+            throw error;
+        }
+
+        return result.invoice;
     }
 
     // Get return selling invoice by ID.
