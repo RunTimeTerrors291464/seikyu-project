@@ -57,43 +57,45 @@ export default function ProductInventoryPage() {
   const [activeFilter, setActiveFilter] =
     useState<ProductStatusFilter>("all");
 
+  const initialTableQuery: ProductQuery = {
+    page: 1,
+    limit: 30,
+    search: undefined,
+    searchBy: undefined,
+    sortBy: "sku",
+    sortOrder: "asc",
+    stockStatus: "all",
+    isActive: "all",
+  };
+
   const defaultFilters = {
     search: "",
     searchRule: "sku",
     statusFilter: "all" as ProductStockFilter,
     activeFilter: "all" as ProductStatusFilter,
+    sortBy: initialTableQuery.sortBy,
+    sortOrder: initialTableQuery.sortOrder,
   };
+
+  const table = useProductTable({
+    fetcher: productService.getProducts,
+
+    initialQuery: initialTableQuery,
+  });
 
   const currentFilters = {
     search,
     searchRule,
     statusFilter,
     activeFilter,
+    sortBy: table.query.sortBy,
+    sortOrder: table.query.sortOrder,
   };
 
   const isDirty = useIsDirty<typeof defaultFilters>()(
     defaultFilters,
     currentFilters
   );
-
-  /* ============================= */
-  /* SERVER TABLE (SOURCE OF TRUTH) */
-  /* ============================= */
-
-  const table = useProductTable({
-    fetcher: productService.getProducts,
-
-    initialQuery: {
-      page: 1,
-      limit: 30,
-      search: undefined,
-      searchBy: undefined,
-      sortBy: "sku",
-      sortOrder: "asc",
-      stockStatus: "all",
-      isActive: "all",
-    } as ProductQuery,
-  });
 
   /* ============================= */
   /* OVERVIEW */
