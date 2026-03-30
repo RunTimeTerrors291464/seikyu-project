@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -68,7 +68,11 @@ export default function AddNewProductForm({
   /* CHECK SKU DUPLICATE */
   /* ============================= */
 
-  const { checking: skuChecking, isDuplicate: skuDuplicate } =
+  const {
+    checking: skuChecking,
+    isDebouncing: skuDebouncing,
+    isDuplicate: skuDuplicate,
+  } =
     useSkuValidation({ sku: values.sku });
 
   /* ============================= */
@@ -92,6 +96,9 @@ export default function AddNewProductForm({
       case "sku":
         if (!value || !/^\d{13}$/.test(value))
           return dict.skuMustBe13;
+
+        if (skuDebouncing || skuChecking)
+          return "";
 
         if (skuDuplicate)
           return dict.skuAlreadyExists;
@@ -122,10 +129,28 @@ export default function AddNewProductForm({
           return dict.invalidThreshold;
         return "";
 
+
       default:
         return "";
     }
   };
+
+  useEffect(() => {
+    const shouldValidateSku = touched.sku || values.sku.length > 0;
+    if (!shouldValidateSku) return;
+
+    const nextSkuError = getFieldError("sku", values.sku);
+    setErrors((previousErrors) => ({
+      ...previousErrors,
+      sku: nextSkuError,
+    }));
+  }, [
+    values.sku,
+    touched.sku,
+    skuDebouncing,
+    skuChecking,
+    skuDuplicate,
+  ]);
 
   /* ============================= */
   /* WARNING */
@@ -174,6 +199,7 @@ export default function AddNewProductForm({
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) return;
+    if (skuDebouncing || skuChecking) return;
 
     onSubmit({
       ...values,
@@ -197,7 +223,11 @@ export default function AddNewProductForm({
       <Field
         label={dict.sku}
         error={errors.sku}
-        hint={skuChecking ? dict.checkingSku : undefined}>
+        hint={
+          skuDebouncing || skuChecking
+            ? dict.checkingSku
+            : undefined
+        }>
         <Input
           value={values.sku}
           onChange={(v) => {

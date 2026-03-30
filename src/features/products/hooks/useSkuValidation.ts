@@ -14,6 +14,7 @@ export default function useSkuValidation({
   skip,
 }: UseSkuValidationProps) {
   const debouncedSku = useDebounce(sku, 800);
+  const isDebouncing = sku !== debouncedSku;
 
   const [checking, setChecking] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -51,15 +52,23 @@ export default function useSkuValidation({
         // exists → duplicate
         cacheRef.current[debouncedSku] = true;
         setIsDuplicate(true);
-      } catch (err: any) {
+      } catch (error: unknown) {
         if (requestId !== activeRequest.current) return;
 
-        if (err?.response?.status === 404) {
+        const hasNotFoundStatus =
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          typeof (error as { response?: unknown }).response === "object" &&
+          (error as { response?: { status?: number } }).response
+            ?.status === 404;
+
+        if (hasNotFoundStatus) {
           // not found → valid SKU
           cacheRef.current[debouncedSku] = false;
           setIsDuplicate(false);
         } else {
-          console.error("[useSkuValidation]", err);
+          console.error("[useSkuValidation]", error);
         }
       } finally {
         if (requestId === activeRequest.current) {
@@ -72,6 +81,7 @@ export default function useSkuValidation({
   }, [debouncedSku]);
 
   return {
+    isDebouncing,
     checking,
     isDuplicate,
   };

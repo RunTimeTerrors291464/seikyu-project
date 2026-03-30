@@ -31,6 +31,7 @@ type Props = {
   errors?: Partial<Record<keyof Product, string>>;
 
   onSkuStateChange?: (state: {
+    debouncing: boolean;
     checking: boolean;
     duplicate: boolean;
   }) => void;
@@ -52,22 +53,36 @@ export default function ProductDetailsCard({
 
   const [initialSku] = useState(product.sku || "");
 
-  const { checking: skuChecking, isDuplicate: skuDuplicate } =
+  const {
+    checking: skuChecking,
+    isDebouncing: skuDebouncing,
+    isDuplicate: skuDuplicate,
+  } =
     useSkuValidation({
       sku: product.sku || "",
       skip: (product.sku || "") === initialSku,
     });
 
+  const skuValue = String(product.sku || "");
+  const hasValidSkuFormat = /^\d{13}$/.test(skuValue);
+
   const skuError =
     errors.sku ||
-    (skuDuplicate ? dict.skuAlreadyExists : undefined);
+    (!hasValidSkuFormat
+      ? dict.skuMustBe13
+      : skuDebouncing || skuChecking
+        ? undefined
+        : skuDuplicate
+          ? dict.skuAlreadyExists
+          : undefined);
 
   useEffect(() => {
     onSkuStateChange?.({
+      debouncing: skuDebouncing,
       checking: skuChecking,
       duplicate: skuDuplicate,
     });
-  }, [skuChecking, skuDuplicate]);
+  }, [skuDebouncing, skuChecking, skuDuplicate, onSkuStateChange]);
 
   return (
     <div className="card p-5 space-y-4 rounded-lg">
@@ -81,7 +96,11 @@ export default function ProductDetailsCard({
         label={dict.sku}
         icon={<Barcode className="h-3 w-3" />}
         error={skuError}
-        hint={skuChecking ? dict.checkingSku : undefined}
+        hint={
+          skuDebouncing || skuChecking
+            ? dict.checkingSku
+            : undefined
+        }
       >
         <Input
           value={product.sku || ""}
@@ -90,10 +109,6 @@ export default function ProductDetailsCard({
             const digits = v.replace(/\D/g, "");
 
             update("sku", digits.slice(0, 13));
-          }}
-          onBlur={() => {
-            const sku = String(product.sku || "");
-            if (sku) update("sku", sku.padStart(13, "0"));
           }}
           inputMode="numeric"
           maxLength={13}

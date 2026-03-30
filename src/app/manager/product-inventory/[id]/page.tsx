@@ -13,6 +13,7 @@ import { useState } from "react";
 
 export default function Page() {
   const [skuState, setSkuState] = useState({
+    debouncing: false,
     checking: false,
     duplicate: false,
   });
@@ -64,6 +65,9 @@ export default function Page() {
     product.productNames?.length
       ? product.productNames[0]
       : "-";
+  const hasValidSkuFormat = /^\d{13}$/.test(
+    String(product.sku || "")
+  );
 
   return (
     <div className="flex flex-col h-full space-y-6 max-h-[100vh]">
@@ -75,7 +79,13 @@ export default function Page() {
         active={product.isActive}
         onToggleActive={requestToggleActive}
         onSave={saveProduct}
-        canSave={isDirty && !skuState.checking && !skuState.duplicate}
+        canSave={
+          isDirty &&
+          hasValidSkuFormat &&
+          !skuState.debouncing &&
+          !skuState.checking &&
+          !skuState.duplicate
+        }
       />
 
       <ConfirmPopup
