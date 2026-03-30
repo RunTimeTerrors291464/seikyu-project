@@ -29,9 +29,18 @@ type FormValues = {
   productDescription: string;
 };
 
+type SubmitFormValues = Omit<
+  FormValues,
+  "importPrice" | "sellingPrice" | "reorderThreshold"
+> & {
+  importPrice: number;
+  sellingPrice: number;
+  reorderThreshold: number;
+};
+
 type Props = {
   dict: Dictionary;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: SubmitFormValues) => void;
 };
 
 export default function AddNewProductForm({

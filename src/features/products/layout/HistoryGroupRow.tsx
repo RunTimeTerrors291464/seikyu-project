@@ -17,7 +17,11 @@ import {
   Plus,
 } from "lucide-react";
 import { useState } from "react";
-import { ProductHistoryDetail, ProductHistoryItem } from "../types/product";
+import {
+  ProductHistoryDetail,
+  ProductHistoryEvent,
+  ProductHistoryItem,
+} from "../types/product";
 
 type Props = {
   group: ProductHistoryItem;
@@ -52,8 +56,11 @@ export default function HistoryGroupRow({
     }
   }
 
-  function renderNameDiff(e: any, index: number) {
-    const diff = getNameDiff(e);
+  function renderNameDiff(
+    historyEvent: ProductHistoryEvent,
+    index: number
+  ) {
+    const diff = getNameDiff(historyEvent);
 
     return (
       <div key={index} className="space-y-1">

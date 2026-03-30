@@ -12,6 +12,11 @@ import {
   ToggleRight,
   Warehouse,
 } from "lucide-react";
+import {
+  JsonValue,
+  ProductHistoryEvent,
+  ProductHistoryNameItem,
+} from "../types/product";
 
 /* ============================= */
 /* TYPES */
@@ -42,7 +47,9 @@ export type NameDiffResult = {
 /* FORMAT VALUE */
 /* ============================= */
 
-export function formatValue(value: any): string {
+export function formatValue(
+  value: JsonValue | ProductHistoryNameItem | undefined
+): string {
   if (value === null || value === undefined) return "";
 
   if (Array.isArray(value)) {
@@ -50,9 +57,9 @@ export function formatValue(value: any): string {
   }
 
   if (typeof value === "object") {
-    if ("name" in value) return value.name;
-    if ("unitName" in value) return value.unitName;
-    if ("label" in value) return value.label;
+    if ("name" in value && typeof value.name === "string") return value.name;
+    if ("unitName" in value && typeof value.unitName === "string") return value.unitName;
+    if ("label" in value && typeof value.label === "string") return value.label;
 
     return JSON.stringify(value);
   }
@@ -64,12 +71,26 @@ export function formatValue(value: any): string {
 /* NAME DIFF */
 /* ============================= */
 
-export function getNameDiff(e: any): NameDiffResult {
-  const prev = e.previousValue || [];
-  const next = e.newValue || [];
+function isProductHistoryNameItem(
+  value: unknown
+): value is ProductHistoryNameItem {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-  const prevNames: string[] = prev.map((x: any) => x?.name ?? "");
-  const nextNames: string[] = next.map((x: any) => x?.name ?? "");
+function toNameItemArray(
+  value: ProductHistoryEvent["previousValue"] | ProductHistoryEvent["newValue"]
+): ProductHistoryNameItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return (value as unknown[]).filter(isProductHistoryNameItem);
+}
+
+export function getNameDiff(historyEvent: ProductHistoryEvent): NameDiffResult {
+  const prev = toNameItemArray(historyEvent.previousValue);
+  const next = toNameItemArray(historyEvent.newValue);
+
+  const prevNames: string[] = prev.map((item) => item.name ?? "");
+  const nextNames: string[] = next.map((item) => item.name ?? "");
 
   const prevSet = new Set(prevNames);
   const nextSet = new Set(nextNames);
@@ -149,7 +170,10 @@ export function getNameDiff(e: any): NameDiffResult {
 /* DIFF ICON */
 /* ============================= */
 
-export function getDiffIcon(oldValue: any, newValue: any) {
+export function getDiffIcon(
+  oldValue: JsonValue | ProductHistoryNameItem | undefined,
+  newValue: JsonValue | ProductHistoryNameItem | undefined
+) {
   const base = "mt-0.5 h-3 w-3 shrink-0";
 
   const hasOld = oldValue !== undefined && oldValue !== null;

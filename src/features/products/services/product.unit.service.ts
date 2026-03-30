@@ -34,11 +34,11 @@ export const productUnitService = {
   async getAll(params: GetUnitsParams) {
     console.debug("[productUnitService] getAll called with params:", params);
 
-    const cleaned: Record<string, any> = {};
+    const cleaned: Partial<GetUnitsParams> = {};
 
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
-        cleaned[key] = value;
+        cleaned[key as keyof GetUnitsParams] = value as never;
       }
     });
 

@@ -28,10 +28,10 @@ type Actions = {
   onEdit: (unit: ProductUnit) => void;
   onDelete?: (unit: ProductUnit) => void;
 
-  onChange: (
+  onChange: <K extends keyof ProductUnit>(
     id: string,
-    field: keyof ProductUnit,
-    value: any
+    field: K,
+    value: ProductUnit[K]
   ) => void;
 
   onSave: (unit: ProductUnit) => void;

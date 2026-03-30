@@ -4,6 +4,7 @@ import useDebounce from "@/lib/hooks/useDebounce";
 import { useEffect, useState } from "react";
 import {
   ProductUnit,
+  ProductUnitUpdateResponse,
   productUnitService,
 } from "../services/product.unit.service";
 
@@ -12,7 +13,7 @@ export function useProductUnit(search: string) {
   const [loading, setLoading] = useState(false);
 
   const [historyMap, setHistoryMap] = useState<
-    Record<string, any[]>
+    Record<string, ProductUnitUpdateResponse["history"][]>
   >({});
 
   const debouncedSearch = useDebounce(search, 500);
@@ -51,7 +52,10 @@ export function useProductUnit(search: string) {
   //   setUnits((prev) => prev.filter((u) => u.id !== id));
   // }
 
-  function addHistory(unitId: string, history: any) {
+  function addHistory(
+    unitId: string,
+    history: ProductUnitUpdateResponse["history"] | undefined
+  ) {
     if (!history) return;
 
     setHistoryMap((prev) => ({

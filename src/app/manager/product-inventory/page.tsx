@@ -15,6 +15,7 @@ import { useDict } from "@/lib/lang/DictProvider";
 import { useProductTable } from "@/features/products/hooks/useProductTable";
 
 import type { ProductQuery } from "@/features/products/services/product.service";
+import type { ProductOverview } from "@/features/products/types/product";
 
 import {
   AlertTriangle,
@@ -98,7 +99,7 @@ export default function ProductInventoryPage() {
   /* OVERVIEW */
   /* ============================= */
 
-  const [overview, setOverview] = useState<any>(null);
+  const [overview, setOverview] = useState<ProductOverview | null>(null);
   const [overviewLoading, setOverviewLoading] =
     useState(true);
 
@@ -261,7 +262,7 @@ export default function ProductInventoryPage() {
                 <button
                   key={String(opt.value)}
                   onClick={() => {
-                    setActiveFilter(opt.value as any);
+                    setActiveFilter(opt.value as ProductStatusFilter);
 
                     table.setFilters({
                       isActive: opt.value as ProductQuery["isActive"],

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Dictionary } from "@/lib/lang/i18n";
 import AddProductForm from "../form/addProductForm";
 import { createProduct } from "../services/product.service";
+import type { CreateProductPayload } from "../types/product";
 
 type Props = {
   open: boolean;
@@ -24,7 +25,17 @@ export default function AddProductPopup({
   onCreated,
 }: Props) {
 
-  const [formData, setFormData] = useState<any>(null);
+  type AddProductFormData = {
+    sku: string;
+    name: string;
+    productUnitId: string;
+    productDescription: string;
+    importPrice: number;
+    sellingPrice: number;
+    reorderThreshold: number;
+  };
+
+  const [formData, setFormData] = useState<AddProductFormData | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +49,7 @@ export default function AddProductPopup({
     setLoading(true);
 
     try {
-      await createProduct({
+      const payload: CreateProductPayload = {
         sku: formData.sku,
         productNames: [formData.name],
         productUnitId: formData.productUnitId,
@@ -46,7 +57,9 @@ export default function AddProductPopup({
         importPrice: formData.importPrice,
         sellingPrice: formData.sellingPrice,
         reorderThreshold: formData.reorderThreshold,
-      });
+      };
+
+      await createProduct(payload);
 
       onCreated?.();
       onClose();

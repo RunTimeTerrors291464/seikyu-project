@@ -1,6 +1,22 @@
 import apiClient from "@/services/api-client";
 import { CreateProductPayload, Product, ProductHistoryDetail, ProductHistoryItem, ProductListResponse, ProductOverview } from "@features/products/types/product";
 
+type ApiErrorLike = {
+  message?: string;
+  response?: {
+    data?: unknown;
+    status?: number;
+  };
+};
+
+function toApiErrorLike(error: unknown): ApiErrorLike {
+  if (typeof error === "object" && error !== null) {
+    return error as ApiErrorLike;
+  }
+
+  return {};
+}
+
 /* ============================= */
 /* GET PRODUCT BY ID */
 /* ============================= */
@@ -17,11 +33,12 @@ export async function getProductById(id: string) {
     });
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] getProductById → error", {
       id,
-      message: error?.message,
-      response: error?.response?.data,
+      message: apiError.message,
+      response: apiError.response?.data,
     });
 
     throw error;
@@ -43,11 +60,12 @@ export async function getProductBySku(sku: string) {
     });
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] getProductBySku → error", {
       sku,
-      message: error?.message,
-      response: error?.response?.data,
+      message: apiError.message,
+      response: apiError.response?.data,
     });
 
     throw error;
@@ -69,11 +87,12 @@ export async function updateProduct(
     console.log("[ProductService] updateProduct → success", res.data);
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] updateProduct → error", {
       payload,
-      message: error?.message,
-      response: error?.response?.data,
+      message: apiError.message,
+      response: apiError.response?.data,
     });
 
     throw error;
@@ -108,11 +127,11 @@ export type ProductQuery = {
 /* ============================= */
 
 function cleanParams(params: ProductQuery) {
-  const cleaned: Record<string, any> = {};
+  const cleaned: Partial<ProductQuery> = {};
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
-      cleaned[key] = value;
+      cleaned[key as keyof ProductQuery] = value as never;
     }
   });
 
@@ -141,10 +160,11 @@ export const productService = {
       });
 
       return res.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = toApiErrorLike(error);
       console.error("[ProductService] getProducts → error", {
         params,
-        message: error?.message,
+        message: apiError.message,
       });
 
       throw error;
@@ -167,10 +187,11 @@ export async function getProductOverview(): Promise<ProductOverview> {
     console.log("[ProductService] getProductOverview → success", res.data);
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] getProductOverview → error", {
-      message: error?.message,
-      response: error?.response?.data,
+      message: apiError.message,
+      response: apiError.response?.data,
     });
 
     throw error;
@@ -199,10 +220,11 @@ export const getProductHistory = async (
     });
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] getProductHistory → error", {
       productId,
-      message: error?.message,
+      message: apiError.message,
     });
 
     throw error;
@@ -229,11 +251,12 @@ export const getProductHistoryDetail = async (
     });
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] getProductHistoryDetail → error", {
       productId,
       version,
-      message: error?.message,
+      message: apiError.message,
     });
 
     throw error;
@@ -265,11 +288,12 @@ export async function createProduct(payload: CreateProductPayload) {
     console.log("[ProductService] createProduct → success", res.data);
 
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const apiError = toApiErrorLike(error);
     console.error("[ProductService] createProduct → error", {
       payload,
-      message: error?.message,
-      response: error?.response?.data,
+      message: apiError.message,
+      response: apiError.response?.data,
     });
 
     throw error;

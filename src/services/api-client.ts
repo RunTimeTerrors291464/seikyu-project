@@ -20,6 +20,19 @@ const apiClient = axios.create({
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
+type AxiosLikeError = {
+  response?: {
+    status?: number;
+  };
+};
+
+function toAxiosLikeError(error: unknown): AxiosLikeError {
+  if (typeof error === "object" && error !== null) {
+    return error as AxiosLikeError;
+  }
+
+  return {};
+}
 
 function subscribeTokenRefresh(cb: (token: string) => void) {
   refreshSubscribers.push(cb);
@@ -143,9 +156,10 @@ apiClient.interceptors.response.use(
         console.log("🔁 Retrying original request →", originalRequest.url);
 
         return apiClient(originalRequest);
-      } catch (refreshError: any) {
+      } catch (refreshError: unknown) {
+        const axiosLikeError = toAxiosLikeError(refreshError);
         console.error("💥 REFRESH FAILED →", {
-          status: refreshError?.response?.status,
+          status: axiosLikeError.response?.status,
         });
 
         console.warn("🚪 Logging out user");

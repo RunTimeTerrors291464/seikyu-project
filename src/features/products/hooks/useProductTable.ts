@@ -97,14 +97,15 @@ export function useProductTable<T, Q extends BaseQuery>({
 
   const setFilters = (filters: Partial<Q>) => {
     setQuery((prev) => {
-      const next: Q = { ...prev };
+      const next: Partial<Q> = { ...prev };
       let changed = false;
 
       for (const key in filters) {
-        const value = filters[key];
+        const typedKey = key as keyof Q;
+        const value = filters[typedKey];
 
-        if (prev[key] !== value) {
-          next[key] = value as any;
+        if (prev[typedKey] !== value) {
+          next[typedKey] = value;
           changed = true;
         }
       }
@@ -112,7 +113,7 @@ export function useProductTable<T, Q extends BaseQuery>({
       if (!changed) return prev;
 
       next.page = 1;
-      return next;
+      return next as Q;
     });
   };
 

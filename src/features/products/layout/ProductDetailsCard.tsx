@@ -25,7 +25,7 @@ import UnitPickerPopup from "./UnitPickerPopup";
 
 type Props = {
   product: Product;
-  update: (k: any, v: any) => void;
+  update: <K extends keyof Product>(key: K, value: Product[K]) => void;
   dict: Dictionary;
   disabled?: boolean;
   errors?: Partial<Record<keyof Product, string>>;

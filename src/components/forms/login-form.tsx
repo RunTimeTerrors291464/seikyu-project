@@ -18,6 +18,20 @@ import { Field } from "@/components/ui/Fields";
 
 import { z } from "zod";
 
+type ApiErrorLike = {
+  response?: {
+    status?: number;
+  };
+};
+
+function toApiErrorLike(error: unknown): ApiErrorLike {
+  if (typeof error === "object" && error !== null) {
+    return error as ApiErrorLike;
+  }
+
+  return {};
+}
+
 /* ---------------- Schema ---------------- */
 
 function createLoginSchema(dict: Dictionary) {
@@ -66,8 +80,10 @@ export default function LoginForm() {
       // redirect
       router.push("/dashboard");
 
-    } catch (err: any) {
-      if ([401, 404].includes(err?.response?.status)) {
+    } catch (error: unknown) {
+      const apiError = toApiErrorLike(error);
+
+      if ([401, 404].includes(apiError.response?.status ?? 0)) {
         setAuthError(dict.invalidCredentials);
       } else {
         setAuthError(dict.somethingWentWrong ?? "Something went wrong");

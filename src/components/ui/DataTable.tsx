@@ -104,7 +104,7 @@ export default function DataTable<T>({
                     if (!c.sortable || !onSort) return;
 
                     const key = c.field ?? c.id;
-                    if (key) onSort(key as any);
+                    if (key) onSort(key as keyof T | string);
                   }}
                 >
                   <span className={clsx(

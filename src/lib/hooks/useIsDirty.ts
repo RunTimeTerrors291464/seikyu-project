@@ -18,7 +18,7 @@ Note:
 This performs a shallow comparison. For nested objects, extend logic if needed.
 */
 
-export function useIsDirty<T extends Record<string, any>>() {
+export function useIsDirty<T extends Record<string, unknown>>() {
   return (original: T | undefined, draft: T | undefined) => {
     if (!original || !draft) return false;
 

@@ -42,10 +42,16 @@ export function Field({
       {/* INPUT */}
       <div>
         {React.isValidElement(children)
-          ? React.cloneElement(children as any, {
+          ? React.cloneElement(
+            children as React.ReactElement<{
+              error?: boolean;
+              warning?: boolean;
+            }>,
+            {
             error: hasError,
             warning: hasWarning,
-          })
+            }
+          )
           : children}
       </div>
 

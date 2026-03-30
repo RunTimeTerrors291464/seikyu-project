@@ -1,4 +1,15 @@
 export type ProductStockStatus = 0 | 1 | 2;
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type ProductHistoryNameItem = {
+  id?: string;
+  name?: string;
+  isDefault?: boolean;
+};
 export interface Product {
   id: string;
   sku: string;
@@ -50,8 +61,8 @@ export type ProductHistoryItem = {
 
 export type ProductHistoryEvent = {
   fieldName: string;
-  previousValue: any;
-  newValue: any;
+  previousValue: JsonValue | ProductHistoryNameItem[] | undefined;
+  newValue: JsonValue | ProductHistoryNameItem[] | undefined;
 };
 
 export type ProductHistoryDetail = {
@@ -63,7 +74,7 @@ export type ProductHistoryDetail = {
   events: ProductHistoryEvent[];
   eventSummary: string[];
   isSnapshot: boolean;
-  data: any;
+  data: Record<string, JsonValue> | null;
 };
 
 export type CreateProductPayload = {

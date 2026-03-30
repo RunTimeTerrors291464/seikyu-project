@@ -336,7 +336,7 @@ export function useProductDetail(id: string) {
 
       /* FIELDS */
       if (hasFieldChanges) {
-        const payload: any = {
+        const payload: Partial<Product> & { id: string } = {
           id: product.id,
           productNames: product.productNames,
           productUnitId: product.productUnitId,
