@@ -1,0 +1,70 @@
+export enum ErrorCode {
+
+    // --- USERS Module ---
+    USER_ALREADY_EXISTS = 1001,
+    USER_NOT_FOUND = 1002,
+    FIRST_ADMIN_ACCOUNT_ALREADY_EXISTS = 1003,
+    USER_CANNOT_DEACTIVATE_SELF = 1004,
+    USER_ALREADY_DEACTIVATED = 1005,
+    USER_ALREADY_ACTIVATED = 1006,
+    OLD_PASSWORD_INCORRECT = 1007,
+
+    CREATE_USER_SERVICE = 1101,
+    GET_USER_BY_ID_SERVICE = 1102,
+    GET_USER_BY_USERNAME_SERVICE = 1103,
+    GET_LIST_OF_USERS_SERVICE = 1104,
+    DEACTIVATE_OR_ACTIVATE_USER_SERVICE = 1105,
+    EDIT_USER_SERVICE = 1106,
+    FORGOT_PASSWORD_SERVICE = 1107,
+    UPDATE_USER_PASSWORD_SERVICE = 1108,
+    SEARCH_USERS_SERVICE = 1109,
+
+    // --- AUTH Module ---
+    USERNAME_OR_PASSWORD_INCORRECT = 2001,
+    INVALID_JWT_PAYLOAD = 2002,
+    INVALID_JWT_TOKEN = 2003,
+    NO_ROLES_FOUND_FOR_USER = 2004,
+    REQUIRED_ROLES_NOT_FOUND = 2005,
+    INVALID_REFRESH_TOKEN = 2006,
+    RATE_LIMIT_EXCEEDED = 2007,
+    TOO_MANY_REFRESH_TOKENS = 2008,
+
+    LOGIN_SERVICE = 2101,
+    NEW_ACCESS_TOKEN_SERVICE = 2102,
+    LOGOUT_SERVICE = 2103,
+    VALIDATE_REFRESH_TOKEN_SERVICE = 2104,
+    VALIDATE_REFRESH_TOKEN_BY_ID_SERVICE = 2105,
+    REVOKE_ALL_REFRESH_TOKENS_SERVICE = 2106,
+
+    // --- DTO Validation Error ---
+    DTO_VALIDATION_ERROR = 8001,
+
+    IS_NOT_EMPTY_ERROR = 8100,
+    IS_STRING_ERROR = 8101,
+    IS_NUMBER_ERROR = 8102,
+    IS_BOOLEAN_ERROR = 8103,
+    IS_ARRAY_ERROR = 8104,
+    IS_OBJECT_ERROR = 8105,
+    IS_DATE_ERROR = 8106,
+    IS_EMAIL_ERROR = 8107,
+    IS_URL_ERROR = 8108,
+    IS_IP_ERROR = 8109,
+    IS_INT_ERROR = 8110,
+    IS_ENUM_ERROR = 8111,
+    MIN_LENGTH_ERROR = 8112, // When a property is less than the minimum length.
+    MAX_LENGTH_ERROR = 8113, // When a property is greater than the maximum length.
+    MIN_ERROR = 8114, // When a property is less than the minimum value.
+    MAX_ERROR = 8115, // When a property is greater than the maximum value.
+    MATCHES_ERROR = 8116, // When a property does not match the regex pattern.
+    IS_STRONG_PASSWORD_ERROR = 8117, // When a property is not a strong password.
+    WHITELISTED_ERROR = 8118, // When a property is not allowed by the DTO.
+    UNKNOWN_CONSTRAINT_ERROR = 8199, // When a constraint is not found in the constraint error code map.
+
+
+    // --- COMMON Module ---
+    DB_CONNECTION_ERROR = 9001,
+    RACE_CONDITION_ERROR = 9002,
+    DB_QUERY_ERROR = 9003,
+    HTTP_EXCEPTION = 9901,
+    UNKNOWN_ERROR = 9999,
+}
