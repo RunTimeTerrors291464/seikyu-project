@@ -9,14 +9,9 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/register");
 
-  // Not logged in → block everything
+  // Not logged in → block protected routes, allow auth pages
   if (!token && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  // Already logged in → block login page
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return NextResponse.next();

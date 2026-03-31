@@ -8,10 +8,10 @@ interface User {
   role: string;
 }
 
-// Auth store state definition
 interface AuthState {
   user: User | null;       // current logged-in user
   token: string | null;    // JWT access token
+  hydrated: boolean;       // has state been restored from storage
 
   login: (token: string, user: User) => void;
   logout: () => void;
@@ -26,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   // Initial state
   user: null,
   token: null,
+  hydrated: false,
 
   // Called after successful login API request
   login: (token, user) => {
@@ -46,10 +47,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     // Update Zustand state
-    set({
+    set((previous) => ({
+      ...previous,
       token,
       user,
-    });
+      hydrated: true,
+    }));
   },
 
   // Clears authentication
@@ -71,10 +74,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     // Reset store state
-    set({
+    set((previous) => ({
+      ...previous,
       token: null,
       user: null,
-    });
+      hydrated: true,
+    }));
   },
 
   // Restore auth state when the app starts
@@ -88,15 +93,23 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     if (!token) {
       console.log("AUTH STORE → no stored token");
+      set((previous) => ({
+        ...previous,
+        token: null,
+        user: null,
+        hydrated: true,
+      }));
       return;
     }
 
     console.log("AUTH STORE → token loaded from storage");
 
     // Restore token to Zustand
-    set({
+    set((previous) => ({
+      ...previous,
       token,
       user: user ? JSON.parse(user) : null,
-    });
+      hydrated: true,
+    }));
   },
 }));

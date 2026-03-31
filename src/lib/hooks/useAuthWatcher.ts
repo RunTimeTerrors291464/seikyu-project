@@ -6,11 +6,16 @@ import { useEffect } from "react";
 
 export const useAuthWatcher = () => {
   const token = useAuthStore((s) => s.token);
+  const hydrated = useAuthStore((s) => s.hydrated);
 
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
+    if (!hydrated) {
+      return;
+    }
+
     const isAuthPage =
       pathname === "/login" ||
       pathname === "/register" ||
@@ -25,7 +30,7 @@ export const useAuthWatcher = () => {
       return;
     }
 
-    // lready logged in → block auth pages
+    // already logged in → block auth pages
     if (token && isAuthPage) {
       console.log("Already logged in → redirect to dashboard");
       router.replace("/dashboard");
@@ -34,5 +39,5 @@ export const useAuthWatcher = () => {
 
     // DO NOTHING about expiry
     // axios interceptor handles it
-  }, [pathname, token, router]);
+  }, [pathname, token, hydrated, router]);
 };

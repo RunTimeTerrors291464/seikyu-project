@@ -48,8 +48,11 @@ export function Field({
               warning?: boolean;
             }>,
             {
-            error: hasError,
-            warning: hasWarning,
+              // Avoid passing explicit false values down to DOM elements.
+              // React warns when non-boolean attributes receive `false`, so
+              // only provide these props when they are actually active.
+              error: hasError || undefined,
+              warning: hasWarning || undefined,
             }
           )
           : children}
