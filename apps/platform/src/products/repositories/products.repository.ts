@@ -192,6 +192,13 @@ export class ProductsRepository {
             });
             const previousSnapshot = previousProductState ? this.productMapper.toProductSnapshotDto(previousProductState) : null;
 
+            // Update the product stock status when the stock threshold is edited.
+            if (productData.reorderThreshold !== undefined) {
+                if (productEntity.inventoryStock <= 0) productEntity.stockStatus = StockStatus.OUT_OF_STOCK;
+                else if (productEntity.reorderThreshold !== null && productEntity.inventoryStock <= productEntity.reorderThreshold) productEntity.stockStatus = StockStatus.REORDER_THRESHOLD_REACHED;
+                else productEntity.stockStatus = StockStatus.IN_STOCK;
+            }
+
             // Merge product data without productNames in ProductsEntity.
             this.productsRepository.merge(productEntity, productData);
             const updatedProductEntity: ProductsEntity = await transactionalManager.save(ProductsEntity, productEntity);

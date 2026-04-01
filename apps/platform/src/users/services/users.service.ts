@@ -19,7 +19,7 @@ import { UsersRepository } from '../repositories/users.repository';
 import { AdminService, UserWithRolesEntity } from './admin.service';
 
 // Import DTOs.
-import { GetListOfUsersRequestDto, GetListOfUsersForSearchRequestDto } from '@app/common/dtos/platform/users/crudUsersRequest.dto';
+import { GetListOfUsersRequestDto } from '@app/common/dtos/platform/users/crudUsersRequest.dto';
 import { UserChangePasswordRequestDto } from '@app/common/dtos/platform/users/userChangePasswordRequest.dto';
 import {
     UserResponseDto,

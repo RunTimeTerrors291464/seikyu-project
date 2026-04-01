@@ -34,7 +34,6 @@ import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPa
 // Import mappers.
 import { ProductUnitMapper } from '@app/common/mappers/platform/productUnit.mapper';
 
-
 @Injectable()
 export class ProductUnitsService {
     constructor(
@@ -59,7 +58,7 @@ export class ProductUnitsService {
     }
 
     // Get the username of the user who created the product unit.
-    private async getCreatedByUsername(userId: string): Promise<string> {
+    async getCreatedByUsername(userId: string): Promise<string> {
         const userResult = await this.usersRepository.getUserById(userId);
         return userResult ? userResult[0].username : '[UNKNOWN] USER';
     }

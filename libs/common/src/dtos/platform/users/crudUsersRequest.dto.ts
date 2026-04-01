@@ -275,38 +275,3 @@ export class GetListOfUsersRequestDto {
     @IsIn(['asc', 'desc'])
     sortOrder?: 'asc' | 'desc' = 'asc';
 }
-
-// Get list of users request DTO.
-export class GetListOfUsersForSearchRequestDto {
-    @ApiPropertyOptional({
-        description: 'Page number for pagination',
-        example: 1,
-        minimum: 1,
-    })
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    @Max(2147483647)
-    page?: number = 1;
-
-    @ApiPropertyOptional({
-        description: 'Number of items per page',
-        example: 10,
-        minimum: 1,
-    })
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    @Max(100)
-    limit?: number = 10;
-
-    @ApiPropertyOptional({
-        description: 'Search the username only',
-        example: 'john',
-    })
-    @IsOptional()
-    @IsString()
-    search?: string;
-}
