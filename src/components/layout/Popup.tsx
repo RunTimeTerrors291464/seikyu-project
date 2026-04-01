@@ -3,7 +3,7 @@
 import Button from "@/components/ui/Buttons";
 import clsx from "clsx";
 import { ReactNode } from "react";
-import Popup from "./BlurPopupWraper";
+import Popup from "./BlurPopupWrapper";
 
 type Props = {
   open: boolean;

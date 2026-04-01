@@ -74,7 +74,15 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log("✅ API SUCCESS →", response.config.url);
+    if (process.env.NODE_ENV === "development") {
+      console.log("✅ API SUCCESS →", {
+        url: response.config.url,
+        method: response.config.method?.toUpperCase(),
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+      });
+    }
     return response;
   },
 
@@ -84,10 +92,15 @@ apiClient.interceptors.response.use(
 
     const status = error.response?.status;
 
-    console.log("❌ API ERROR →", {
-      url: originalRequest?.url,
-      status,
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("❌ API ERROR →", {
+        url: originalRequest?.url,
+        method: originalRequest?.method?.toUpperCase(),
+        status,
+        data: error.response?.data,
+        message: error.message,
+      });
+    }
 
     const authRoutes = ["/auth/login", "/auth/refresh-token"];
 
@@ -145,8 +158,12 @@ apiClient.interceptors.response.use(
         // update storage
         localStorage.setItem("access_token", newAccessToken);
 
-        // sync cookie
-        document.cookie = `access_token=${newAccessToken}; path=/`;
+        // sync cookie (used by Next.js middleware)
+        document.cookie = `access_token=${encodeURIComponent(
+          newAccessToken
+        )}; path=/; SameSite=Lax${
+          window.location.protocol === "https:" ? "; Secure" : ""
+        }`;
 
         onRefreshed(newAccessToken);
 

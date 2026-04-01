@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ACCENT_STYLES } from "@/components/types/ui";
 import DataTable from "@/components/ui/DataTable";
 import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
@@ -242,10 +243,19 @@ export default function ProductInventoryPage() {
                       stockStatus: String(opt.value) as ProductQuery["stockStatus"],
                     });
                   }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs ${statusFilter === opt.value
-                    ? "border-text bg-text text-bg"
-                    : "border-border bg-card text-muted"
-                    }`}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${
+                    opt.value === "all"
+                      ? statusFilter === opt.value
+                        ? "border-text bg-text text-bg"
+                        : "border-border bg-card text-muted"
+                      : `${ACCENT_STYLES[
+                          opt.value === 0
+                            ? "success"
+                            : opt.value === 1
+                              ? "warning"
+                              : "danger"
+                        ]} ${statusFilter === opt.value ? "opacity-100" : "opacity-70"}`
+                  }`}
                 >
                   {dict[opt.dictKey]}
                 </button>
@@ -270,10 +280,15 @@ export default function ProductInventoryPage() {
                       isActive: opt.value as ProductQuery["isActive"],
                     });
                   }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs ${activeFilter === opt.value
-                    ? "border-text bg-text text-bg"
-                    : "border-border bg-card text-muted"
-                    }`}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${
+                    opt.value === "all"
+                      ? activeFilter === opt.value
+                        ? "border-text bg-text text-bg"
+                        : "border-border bg-card text-muted"
+                      : `${ACCENT_STYLES[opt.value ? "success" : "danger"]} ${
+                          activeFilter === opt.value ? "opacity-100" : "opacity-70"
+                        }`
+                  }`}
                 >
                   {dict[opt.dictKey]}
                 </button>
@@ -284,7 +299,7 @@ export default function ProductInventoryPage() {
       )}
 
       {/* TABLE */}
-      <div className="min-h-0 flex flex-col">
+      <div className="min-h-0 grow flex flex-col">
         <DataTable
           columns={productColumns(dict)}
           data={table.data}
@@ -311,7 +326,7 @@ export default function ProductInventoryPage() {
         dict={dict}
       />
 
-      {/* ADD PRPODUCT POPUP */}
+      {/* ADD PRODUCT POPUP */}
       <AddNewProductPopup
         open={openAdd}
         onClose={() => setOpenAdd(false)}

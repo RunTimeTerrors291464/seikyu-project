@@ -1,6 +1,6 @@
 "use client";
 
-import Popup from "@/components/layout/BlurPopupWraper";
+import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";

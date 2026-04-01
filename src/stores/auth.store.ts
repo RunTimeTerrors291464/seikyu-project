@@ -43,7 +43,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem("user", JSON.stringify(user));
 
       // Store token in cookie for Next.js middleware
-      document.cookie = `access_token=${token}; path=/`;
+      document.cookie = `access_token=${encodeURIComponent(
+        token
+      )}; path=/; SameSite=Lax${
+        window.location.protocol === "https:" ? "; Secure" : ""
+      }`;
     }
 
     // Update Zustand state
@@ -68,7 +72,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // Delete cookie by expiring it
       document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        "access_token=; path=/; SameSite=Lax" +
+        (window.location.protocol === "https:" ? "; Secure" : "") +
+        "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
       window.location.href = "/login";
     }

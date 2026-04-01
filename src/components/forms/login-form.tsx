@@ -78,6 +78,11 @@ export default function LoginForm() {
       loginStore(data.accessToken, data.user);
 
       // redirect
+      // Next.js middleware runs on the subsequent request; wait a tick so the cookie
+      // is reliably persisted before navigating to a protected route.
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 0);
+      });
       router.push("/dashboard");
 
     } catch (error: unknown) {

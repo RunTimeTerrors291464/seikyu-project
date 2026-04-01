@@ -71,7 +71,7 @@ export function Sidebar() {
       defaultOpen: false,
       items: [
         { href: "/manager/product-inventory", label: dict.productInventory, icon: <FolderOpen className="h-4 w-4" /> },
-        { href: "/manager/inbound-invoices", label: dict.inboundInvoices, icon: <FileCheck2 className="h-4 w-4" />, disabled: true },
+        { href: "/manager/invoices/import", label: dict.importInvoices, icon: <FileCheck2 className="h-4 w-4" /> },
         { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
       ],
     },

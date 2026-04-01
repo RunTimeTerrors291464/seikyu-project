@@ -46,17 +46,19 @@ export default function ProductTableHeader({
 }: Props) {
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="grid grid-cols-3 items-center gap-2">
 
       {/* ───────── TITLE ───────── */}
+      <div className="flex items-center justify-start gap-2">
+        <h1 className="text-lg font-semibold text-text">
+          {dict.productInventory}
+        </h1>
+      </div>
 
-      <h1 className="text-lg font-semibold text-text">
-        {dict.productInventory}
-      </h1>
 
       {/* ───────── SEARCH ───────── */}
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-xl">
         <RuleInput
           value={search}
           rule={
@@ -87,7 +89,7 @@ export default function ProductTableHeader({
 
       {/* ───────── ACTIONS ───────── */}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-end">
 
         {/* FILTER */}
         <Button
@@ -103,7 +105,7 @@ export default function ProductTableHeader({
           onClick={resetSearch}
           disabled={!isDirty}
         >
-          {dict.resetfilter}
+          {dict.resetFilter}
         </Button>
 
         {/* EXPORT */}

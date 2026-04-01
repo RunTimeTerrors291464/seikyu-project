@@ -129,10 +129,10 @@ export default function RuleInput({
   return (
     <div
       ref={containerRef}
-      className="relative inline-flex items-stretch"
+      className="relative flex w-full items-stretch"
     >
 
-      <div className="inline-flex items-stretch overflow-hidden rounded-md border border-border bg-card text-xs shadow-sm">
+      <div className="flex w-full items-stretch overflow-hidden rounded-md border border-border bg-card text-xs shadow-sm">
 
         {/* Rule selector */}
 
@@ -156,7 +156,7 @@ export default function RuleInput({
 
         {/* Input */}
 
-        <div className="relative flex items-center">
+        <div className="relative flex min-w-0 flex-1 items-center">
 
           <input
             ref={inputRef}
@@ -164,7 +164,7 @@ export default function RuleInput({
             value={inputValue}
             onChange={(e) => handleInput(e.target.value)}
             placeholder={placeholder}
-            className="flex-1 bg-card px-3 py-2 text-xs text-text outline-none placeholder:text-muted"
+            className="w-full flex-1 bg-card px-3 py-2 text-xs text-text outline-none placeholder:text-muted"
           />
 
           {/* Clear */}

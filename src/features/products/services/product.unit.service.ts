@@ -32,8 +32,6 @@ export type GetUnitsParams = {
 
 export const productUnitService = {
   async getAll(params: GetUnitsParams) {
-    console.debug("[productUnitService] getAll called with params:", params);
-
     const cleaned: Partial<GetUnitsParams> = {};
 
     Object.entries(params).forEach(([key, value]) => {
@@ -42,11 +40,7 @@ export const productUnitService = {
       }
     });
 
-    console.debug("[productUnitService] cleaned params:", cleaned);
-
     const res = await api.get("/product-units", { params: cleaned });
-
-    console.debug("[productUnitService] API response:", res.data);
 
     return res.data;
   },
@@ -55,12 +49,7 @@ export const productUnitService = {
     unitName: string;
     unitDescription?: string;
   }): Promise<ProductUnit> {
-    console.debug("[productUnitService] create called with data:", data);
-
     const res = await api.post("/product-units", data);
-
-    // backend already returns flat object → OK
-    console.debug("[productUnitService] API response:", res.data);
 
     return res.data;
   },
@@ -70,11 +59,7 @@ export const productUnitService = {
     unitName: string;
     unitDescription?: string;
   }): Promise<ProductUnitUpdateResponse> {
-    console.debug("[productUnitService] update called with data:", data);
-
     const res = await api.patch("/product-units", data);
-
-    console.debug("[productUnitService] API response:", res.data);
 
     return {
       productUnit: res.data.productUnit,
@@ -83,11 +68,7 @@ export const productUnitService = {
   },
 
   async deactivate(id: string): Promise<ProductUnitUpdateResponse> {
-    console.debug("[productUnitService] deactivate called for id:", id);
-
     const res = await api.patch(`/product-units/${id}/deactivate`);
-
-    console.debug("[productUnitService] API response:", res.data);
 
     return {
       productUnit: res.data.productUnit,
@@ -96,11 +77,7 @@ export const productUnitService = {
   },
 
   async activate(id: string): Promise<ProductUnitUpdateResponse> {
-    console.debug("[productUnitService] activate called for id:", id);
-
     const res = await api.patch(`/product-units/${id}/activate`);
-
-    console.debug("[productUnitService] API response:", res.data);
 
     return {
       productUnit: res.data.productUnit,

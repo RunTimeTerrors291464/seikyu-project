@@ -37,7 +37,7 @@ export default function Button({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        "inline-flex items-center justify-center rounded-md",
+        "inline-flex min-w-0 max-w-full items-center justify-center overflow-hidden rounded-md",
         "transition-all duration-150",
         "focus:bg-active focus:border-active",
 
@@ -54,7 +54,7 @@ export default function Button({
       )}
     >
       {icon && <span className="shrink-0">{icon}</span>}
-      {children}
+      <span className="min-w-0 truncate">{children}</span>
     </button>
   );
 }

@@ -19,42 +19,28 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   const cookieStore = await cookies();
-
-  const lang =
-    (cookieStore.get("lang")?.value || "en") as Lang;
+  const lang = (cookieStore.get("lang")?.value || "en") as Lang;
 
   const dict = getDictionary(lang);
 
   return (
     <html lang={lang} suppressHydrationWarning>
-
+      <head />
       <body>
-
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-
           <DictProvider dict={dict}>
-
             <AuthProvider>
-
-              <LayoutWrapper>
-                {children}
-              </LayoutWrapper>
-
+              <LayoutWrapper>{children}</LayoutWrapper>
             </AuthProvider>
-
           </DictProvider>
-
         </ThemeProvider>
-
       </body>
-
     </html>
   );
 }

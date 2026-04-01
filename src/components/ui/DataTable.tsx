@@ -114,7 +114,7 @@ export default function DataTable<T>({
                   )}>
 
                     {c.icon && (
-                      <span className="text-muted">
+                      <span className="flex items-center text-muted">
                         {c.icon}
                       </span>
                     )}
