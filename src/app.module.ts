@@ -10,11 +10,12 @@ import { RedisModule } from '@libs/services/redis.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
-import { LogsModule } from './logs/logs.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ProductUnitsModule } from './productUnits/productUnits.module';
 
 @Module({
   imports: [
-    
+
     // Import third party modules.
     PostgresModule.forRoot(),
 
@@ -24,7 +25,8 @@ import { LogsModule } from './logs/logs.module';
     UsersModule,
     AuthModule,
     ProductsModule,
-    LogsModule,
+    DashboardModule,
+    ProductUnitsModule,
 
   ],
   controllers: [],

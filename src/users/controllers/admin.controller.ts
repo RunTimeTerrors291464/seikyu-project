@@ -84,12 +84,12 @@ export class AdminController {
         return await this.usersService.getUserInformationById(id, false) as UserResponseDto;
     }
 
-    // PATCH /api/v1/admin/users/activation/:id
-    @Patch('users/activation/:id')
-    @ApiOperation({ summary: '[ADMIN] Deactivate a user' })
+    // PATCH /api/v1/admin/users/activation/:id/:action
+    @Patch('users/activation/:id/:action')
+    @ApiOperation({ summary: '[ADMIN] Activate or deactivate a user' })
     @ApiParam({ name: 'id', type: String, description: 'ID of the user', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
     @ApiParam({ name: 'action', type: String, description: 'Action to perform', example: 'activate', enum: ['activate', 'deactivate'], required: true })
-    @ApiResponse({ status: 200, description: 'The user has been deactivated successfully.', type: UserResponseDto })
+    @ApiResponse({ status: 200, description: 'The user has been activated or deactivated successfully.', type: UserResponseDto })
     @HttpCode(HttpStatus.OK)
     async activateOrDeactivateUser(@Param('id') id: string, @Param('action') action: 'activate' | 'deactivate', @CurrentUser() user: AccessTokenPayload): Promise<UserResponseDto> {
         const result = await this.usersService.deactivateOrActivateUser(id, user.id, action === 'activate' ? true : false);
