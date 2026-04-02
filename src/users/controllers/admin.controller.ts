@@ -93,7 +93,6 @@ export class AdminController {
     @HttpCode(HttpStatus.OK)
     async activateOrDeactivateUser(@Param('id') id: string, @Param('action') action: 'activate' | 'deactivate', @CurrentUser() user: AccessTokenPayload): Promise<UserResponseDto> {
         const result = await this.usersService.deactivateOrActivateUser(id, user.id, action === 'activate' ? true : false);
-        await this.accessTokenService.revokeAllRefreshTokens(id);
         return result;
     }
 

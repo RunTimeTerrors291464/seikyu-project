@@ -139,11 +139,10 @@ export class UsersService {
         // Deactivate or activate the user with transaction manager.
         const updatedUser: UsersEntity = await this.dataSource.transaction(async (transactionManager) => {
             const updatedUser: UsersEntity = await this.usersRepository.deactivateOrActivateUser(user, activateMode, transactionManager);
+            if (activateMode === false) await this.accessTokenService.revokeAllRefreshTokens(id, transactionManager);
+
             return updatedUser;
         });
-
-        // Revoke all refresh tokens of the user.
-        if (activateMode === false) await this.accessTokenService.revokeAllRefreshTokens(id);
 
         // Return the user response DTO.
         return this.usersMapper.toUserResponseDto(updatedUser, false);
@@ -219,7 +218,7 @@ export class UsersService {
     // Get a user by username.
     async getUserByUsername(username: string, withPassword: true): Promise<UserResponseWithPasswordDto>;
     async getUserByUsername(username: string, withPassword: false): Promise<UserResponseDto>;
-    
+
     @HandleServiceError(ErrorCode.GET_USER_BY_USERNAME_SERVICE)
     async getUserByUsername(username: string, withPassword: boolean): Promise<UserResponseDto | UserResponseWithPasswordDto> {
 

@@ -3,6 +3,9 @@ import { ApiProperty } from '@nestjs/swagger';
 // Import DTOs.
 import { ProductHistoryItemResponseDto } from '@libs/common/dtos/products/crudProductHistoryResponse.dto';
 
+// Import enums.
+import { StockStatus } from '@libs/common/enums/stockStatus.enum';
+
 export class ProductResponseDto {
 
     @ApiProperty({
@@ -18,7 +21,7 @@ export class ProductResponseDto {
     sku: string;
 
     @ApiProperty({
-        description: 'Array of product names',
+        description: 'Product names. The first one ALWAYS the main name',
         example: ['Product Name 1', 'Product Name 2'],
         type: [String],
     })
@@ -82,9 +85,9 @@ export class ProductResponseDto {
 
     @ApiProperty({
         description: 'Stock status of the product',
-        example: 0,
+        example: StockStatus.IN_STOCK,
     })
-    stockStatus: 0 | 1 | 2;
+    stockStatus: StockStatus;
 
     @ApiProperty({
         description: 'Product creation timestamp',

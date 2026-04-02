@@ -11,6 +11,8 @@ import Redis from 'ioredis';
 // Import entity.
 import { RefreshTokenEntity } from '../entities/refreshToken.entity';
 
+export type RefreshTokenRevokeRedisCleanup = { redisKeys: string[]; redisIdKeys: string[] };
+
 @Injectable()
 export class AuthRepository {
     constructor(
@@ -160,12 +162,10 @@ export class AuthRepository {
     }
 
     // Remove all refresh tokens of a user.
-    async removeAllRefreshTokens(userId: string): Promise<boolean> {
+    async removeAllRefreshTokens(userId: string, manager: EntityManager): Promise<boolean> {
 
         // Find all refresh tokens of the user in database.
-        const userTokens = await this.refreshTokenRepository.find({
-            where: { userId },
-        });
+        const userTokens = await manager.find(RefreshTokenEntity, { where: { userId } });
 
         // Remove all refresh tokens of the user in redis.
         if (userTokens.length > 0) {
@@ -179,7 +179,7 @@ export class AuthRepository {
         }
 
         // Remove all refresh tokens of the user in database.
-        await this.refreshTokenRepository.delete({ userId });
+        await manager.delete(RefreshTokenEntity, { userId });
 
         return true;
     }

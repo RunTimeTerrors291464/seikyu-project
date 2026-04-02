@@ -12,6 +12,7 @@ import { ErrorCode } from '@libs/common/enums/errorCode.enum';
 import { JwtService } from '@nestjs/jwt';
 
 // Import entities.
+import { EntityManager } from 'typeorm';
 import { RefreshTokenEntity } from '../entities/refreshToken.entity';
 
 // Import repositories.
@@ -129,7 +130,7 @@ export class AccessTokenService {
 
     // Revoke all refresh tokens of a user.
     @HandleServiceError(ErrorCode.REVOKE_ALL_REFRESH_TOKENS_SERVICE)
-    async revokeAllRefreshTokens(userId: string): Promise<boolean> {
-        return await this.authRepository.removeAllRefreshTokens(userId);
+    async revokeAllRefreshTokens(userId: string, manager: EntityManager): Promise<boolean> {
+        return await this.authRepository.removeAllRefreshTokens(userId, manager);
     }
 }
