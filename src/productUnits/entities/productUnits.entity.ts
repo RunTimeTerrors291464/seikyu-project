@@ -1,5 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn, UpdateDateColumn, OneToMany, VersionColumn } from 'typeorm';
 
+// Import entities.
+import { ProductsEntity } from '@src/products/entities/products.entity';
+
 @Entity('product_units')
 export class ProductUnitsEntity {
 
@@ -21,4 +24,7 @@ export class ProductUnitsEntity {
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
 
+    // --- Relationships ---
+    @OneToMany(() => ProductsEntity, (product) => product.productUnit)
+    products: ProductsEntity[];
 }

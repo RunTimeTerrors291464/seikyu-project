@@ -170,25 +170,16 @@ export class ProductUnitsService {
         if (!productUnit) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_UNIT_NOT_FOUND, 'The product unit is not found.');
 
         // Get the history list.
-        const historyList = await this.productUnitsRepository.getProductUnitHistoryList(dto.productUnitId);
+        const historyList: ProductUnitsHistoryEntity[] = await this.productUnitsRepository.getProductUnitHistoryList(dto.productUnitId);
 
-        // Get the username of the user who created each history entry.
-        const historyWithUsernames = await Promise.all(
-            historyList.map(async (history) => {
-                const createdByUsername = await this.getCreatedByUsername(history.createdBy);
-
-                return {
-                    id: history.id,
-                    version: history.version,
-                    createdBy: history.createdBy,
-                    createdByUsername,
-                    createdAt: history.createdAt,
-                    eventSummary: history.eventSummary,
-                };
-            }),
-        );
-
-        return historyWithUsernames;
+        return historyList.map((history) => ({
+            id: history.id,
+            version: history.version,
+            createdBy: history.createdBy,
+            createdByUsername: history.createdByUser?.username ?? '[UNKNOWN] USER',
+            createdAt: history.createdAt,
+            eventSummary: history.eventSummary,
+        }));
     }
 
     // Get a specific history version of a product unit.
@@ -203,15 +194,11 @@ export class ProductUnitsService {
         const history = await this.productUnitsRepository.getProductUnitHistoryByVersion(dto.productUnitId, dto.version);
         if (!history) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_UNIT_NOT_FOUND, `The product unit version ${dto.version} is not found.`);
 
-        // Get the username of the user who created this version.
-        const createdByUsername = await this.getCreatedByUsername(history.createdBy);
-
-        // Return the history response.
         return {
             id: history.id,
             version: history.version,
             createdBy: history.createdBy,
-            createdByUsername,
+            createdByUsername: history.createdByUser?.username ?? '[UNKNOWN] USER',
             createdAt: history.createdAt,
             events: history.events,
             eventSummary: history.eventSummary,

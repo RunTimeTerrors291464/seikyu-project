@@ -37,6 +37,9 @@ import { ProductUnitsController } from './controllers/productUnits.controller';
         ProductUnitsRepository,
         ProductUnitsService,
     ],
-    exports: [ProductUnitsService],
+    exports: [
+        ProductUnitsRepository,
+        ProductUnitsService
+    ],
 })
 export class ProductUnitsModule { }

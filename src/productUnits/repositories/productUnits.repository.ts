@@ -225,27 +225,30 @@ export class ProductUnitsRepository {
 
     // --- History methods ---
     // Get a list of history versions for a product unit.
-    async getProductUnitHistoryList(productUnitId: string): Promise<Omit<ProductUnitsHistoryEntity, 'data' | 'events'>[]> {
-        const histories = await this.productUnitsHistoryRepository.find({
+    async getProductUnitHistoryList(productUnitId: string): Promise<ProductUnitsHistoryEntity[]> {
+        return await this.productUnitsHistoryRepository.find({
             where: { productUnitId },
-            order: { version: 'DESC' },
+            relations: ['createdByUser'],
             select: {
                 id: true,
-                productUnitId: true,
                 version: true,
                 createdBy: true,
                 createdAt: true,
                 eventSummary: true,
-                isSnapshot: true,
+                createdByUser: {
+                    id: true,
+                    username: true,
+                },
             },
+            order: { version: 'DESC' },
         });
-        return histories as Omit<ProductUnitsHistoryEntity, 'data' | 'events'>[];
     }
 
     // Get a specific history version for a product unit.
     async getProductUnitHistoryByVersion(productUnitId: string, version: number): Promise<ProductUnitsHistoryEntity | null> {
         return await this.productUnitsHistoryRepository.findOne({
             where: { productUnitId, version },
+            relations: ['createdByUser'],
         });
     }
 

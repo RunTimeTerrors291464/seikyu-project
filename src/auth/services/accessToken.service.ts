@@ -93,7 +93,7 @@ export class AccessTokenService {
         });
 
         // Get the user information from the database.
-        const user: UserResponseDto = await this.usersService.getUserInformationById(payload.id, false);
+        const user: UserResponseDto = await this.usersService.getUserInformationById(payload.userId, false);
 
         // Generate a new access token using signAccessToken.
         const accessToken: string = await this.signAccessToken(
