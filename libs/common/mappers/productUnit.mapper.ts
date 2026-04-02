@@ -32,7 +32,6 @@ export class ProductUnitMapper {
     toProductUnitResponseDtoWithHistory(
         productUnitEntity: ProductUnitsEntity,
         history: ProductUnitsHistoryEntity,
-        createdByUsername: string,
     ): ProductUnitResponseDtoWithHistory {
         return {
             productUnit: this.toProductUnitResponseDto(productUnitEntity),
@@ -40,7 +39,7 @@ export class ProductUnitMapper {
                 id: history.id,
                 version: history.version,
                 createdBy: history.createdBy,
-                createdByUsername,
+                createdByUsername: history.createdByUser.username,
                 createdAt: history.createdAt,
                 eventSummary: history.eventSummary,
             },

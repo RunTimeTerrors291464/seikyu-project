@@ -107,9 +107,7 @@ export class ProductUnitsService {
             return this.productUnitsRepository.editProductUnit(productUnit, dto, user, transactionManager);
         });
 
-        // Get the username of the user who created the product unit.
-        const createdByUsername: string = await this.getCreatedByUsername(result.history.createdBy);
-        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(result.productUnit, result.history, createdByUsername);
+        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(result.productUnit, result.history);
     }
 
     // Get a product unit by id.
@@ -155,9 +153,7 @@ export class ProductUnitsService {
             return this.productUnitsRepository.deactivateOrActivateProductUnit(productUnit, activateMode, user, transactionManager);
         });
 
-        // Get the username of the user who created the product unit.   
-        const createdByUsername: string = await this.getCreatedByUsername(result.history.createdBy);
-        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(result.productUnit, result.history, createdByUsername);
+        return this.productUnitMapper.toProductUnitResponseDtoWithHistory(result.productUnit, result.history);
     }
 
     // --- History APIs ---

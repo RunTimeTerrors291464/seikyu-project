@@ -101,7 +101,7 @@ export class ProductUnitsRepository {
 
         // Create a product unit history - ProductUnitsHistoryEntity.
         const isSnapshot: boolean = nextVersion % 5 === 0;
-        const productUnitHistory: ProductUnitsHistoryEntity = await manager.save(ProductUnitsHistoryEntity, {
+        const savedHistory: ProductUnitsHistoryEntity = await manager.save(ProductUnitsHistoryEntity, {
             productUnitId: productUnit.id,
             version: nextVersion,
             createdBy: user.id,
@@ -109,6 +109,12 @@ export class ProductUnitsRepository {
             eventSummary: changeSummary,
             isSnapshot: isSnapshot,
             data: isSnapshot ? currentSnapshot : null,
+        });
+
+        // Get the product unit history with the created by user - ProductUnitsHistoryEntity.
+        const productUnitHistory: ProductUnitsHistoryEntity = await manager.findOneOrFail(ProductUnitsHistoryEntity, {
+            where: { id: savedHistory.id },
+            relations: ['createdByUser'],
         });
 
         // Clean up old product unit history versions if exceeding 16 versions.
@@ -207,7 +213,8 @@ export class ProductUnitsRepository {
         const isSnapshot: boolean = nextVersion % 5 === 0;
         const currentSnapshot: ProductUnitSnapshotDto = this.productUnitMapper.toProductUnitSnapshotDto(updatedProductUnit);
 
-        const history: ProductUnitsHistoryEntity = await manager.save(ProductUnitsHistoryEntity, {
+        // Create a product unit history - ProductUnitsHistoryEntity.
+        const savedHistory: ProductUnitsHistoryEntity = await manager.save(ProductUnitsHistoryEntity, {
             productUnitId: productUnit.id,
             version: nextVersion,
             createdBy: user.id,
@@ -217,10 +224,16 @@ export class ProductUnitsRepository {
             data: isSnapshot ? currentSnapshot : null,
         });
 
+        // Get the product unit history with the created by user - ProductUnitsHistoryEntity.
+        const productUnitHistory: ProductUnitsHistoryEntity = await manager.findOneOrFail(ProductUnitsHistoryEntity, {
+            where: { id: savedHistory.id },
+            relations: ['createdByUser'],
+        });
+
         // Clean up old product unit history versions if exceeding 16 versions.
         await this.cleanupOldProductUnitHistoryVersions(productUnit.id, manager);
 
-        return { productUnit: updatedProductUnit, history };
+        return { productUnit: updatedProductUnit, history: productUnitHistory };
     }
 
     // --- History methods ---
