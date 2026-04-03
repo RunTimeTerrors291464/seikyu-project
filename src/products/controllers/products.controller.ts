@@ -98,11 +98,10 @@ export class ProductsController {
     @ApiResponse({ status: 200, description: 'Inventory stock per product id has been retrieved successfully.', type: ProductInventoryStockItemResponseDto, isArray: true })
     @HttpCode(HttpStatus.OK)
     async getBulkProductInventoryStock(
-        @Query('productIds') productIdsQuery?: string | string[],
+        @Query('productIds') productIds?: string | string[],
     ): Promise<ProductInventoryStockItemResponseDto[]> {
-        const raw = productIdsQuery == null ? [] : Array.isArray(productIdsQuery) ? productIdsQuery : [productIdsQuery];
-        const productIds = raw.flatMap((part) => String(part).split(',')).map((id) => id.trim()).filter((id) => id.length > 0);
-        return await this.productsService.getBulkProductInventoryStock(productIds);
+        const ids: string[] = productIds == null ? [] : Array.isArray(productIds) ? productIds : [productIds];
+        return await this.productsService.getBulkProductInventoryStock(ids);
     }
 
     // Get a product by ID.
@@ -129,9 +128,7 @@ export class ProductsController {
         @Param('sku') sku: string,
         @CurrentUser() user: AccessTokenPayload,
     ): Promise<ProductResponseDto | ProductCashierResponseDto> {
-        if (user.roles.includes(Role.MANAGER)) {
-            return await this.productsService.getProductBySkuResponseDto(sku);
-        }
+        if (user.roles.includes(Role.MANAGER)) return await this.productsService.getProductBySkuResponseDto(sku);
         return await this.productsService.getProductCashierBySkuResponseDto(sku);
     }
 

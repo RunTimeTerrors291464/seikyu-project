@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ProductUnitsModule } from './productUnits/productUnits.module';
+import { InvoicesModule } from './invoices/invoices.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ProductUnitsModule } from './productUnits/productUnits.module';
     ProductsModule,
     DashboardModule,
     ProductUnitsModule,
+    InvoicesModule,
 
   ],
   controllers: [],

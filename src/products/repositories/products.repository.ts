@@ -136,10 +136,10 @@ export class ProductsRepository {
 
         // Create product names - ProductNamesEntity.
         if (productNames.length > 0) {
-            await manager.save(ProductNamesEntity, productNames.map(name => ({
+            await manager.save(ProductNamesEntity, productNames.map((name, index) => ({
                 productId: savedProduct.id,
                 name,
-                isMain: false,
+                isMain: index === 0,
             })));
         }
 
@@ -202,7 +202,9 @@ export class ProductsRepository {
             await manager.delete(ProductNamesEntity, { product: { id: productEntity.id } });
 
             if (productNames.length > 0) {
-                const productNameEntities = productNames.map(name => this.productNamesRepository.create({ name, product: updatedProductEntity }));
+                const productNameEntities = productNames.map((name, index) =>
+                    this.productNamesRepository.create({ name, isMain: index === 0, product: updatedProductEntity }),
+                );
                 const savedProductNames = await manager.save(ProductNamesEntity, productNameEntities);
                 updatedProductEntity.productNames = savedProductNames;
             } else {
@@ -256,7 +258,7 @@ export class ProductsRepository {
     }
 
     // Update the inventory stock of a product.
-    async updateInventoryStock(productEntity: ProductsEntity, quantity: number, action: StockActionType, referenceType: InvoiceType, referenceId: string, manager: EntityManager): Promise<ProductsEntity> {
+    async updateInventoryStock(productEntity: ProductsEntity, quantity: number, action: StockActionType, invoiceType: InvoiceType, invoiceId: string, manager: EntityManager): Promise<ProductsEntity> {
 
         // Lock the product entity with pessimistic write lock to prevent race condition.
         const lockedProduct: ProductsEntity = await manager.findOneOrFail(ProductsEntity, {
@@ -295,8 +297,8 @@ export class ProductsRepository {
             product: { id: lockedProduct.id },
             quantityType: action,
             quantity: quantity,
-            referenceType: referenceType,
-            referenceId: referenceId,
+            invoiceType,
+            invoiceId,
             beforeInventoryStock,
             afterInventoryStock,
         });
@@ -330,7 +332,7 @@ export class ProductsRepository {
         // await this.productRankingRepository.storeProductRankingDaily(
         //     manager,
         //     lockedProduct.id,
-        //     referenceType,
+        //     invoiceType,
         //     quantity,
         //     totalPrice
         // );

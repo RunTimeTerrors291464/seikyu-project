@@ -9,7 +9,7 @@ export class PRODUCTSv1CreateTables1775151056677 implements MigrationInterface {
         `);
 
         await queryRunner.query(`
-            CREATE TYPE "product_stock_history_reference_type_enum" AS ENUM (
+            CREATE TYPE "product_stock_history_invoice_type_enum" AS ENUM (
                 'import',
                 'returnImport',
                 'selling',
@@ -79,8 +79,8 @@ export class PRODUCTSv1CreateTables1775151056677 implements MigrationInterface {
                 "product_id" uuid NOT NULL,
                 "quantity_type" "product_stock_history_quantity_type_enum" NOT NULL,
                 "quantity" integer NOT NULL,
-                "reference_type" "product_stock_history_reference_type_enum" NOT NULL,
-                "reference_id" uuid NOT NULL,
+                "invoice_type" "product_stock_history_invoice_type_enum" NOT NULL,
+                "invoice_id" uuid NOT NULL,
                 "before_inventory_stock" integer NOT NULL,
                 "after_inventory_stock" integer NOT NULL,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -112,7 +112,7 @@ export class PRODUCTSv1CreateTables1775151056677 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE IF EXISTS "product_names"`);
         await queryRunner.query(`DROP TABLE IF EXISTS "products"`);
 
-        await queryRunner.query(`DROP TYPE IF EXISTS "product_stock_history_reference_type_enum"`);
+        await queryRunner.query(`DROP TYPE IF EXISTS "product_stock_history_invoice_type_enum"`);
         await queryRunner.query(`DROP TYPE IF EXISTS "product_stock_history_quantity_type_enum"`);
     }
 }

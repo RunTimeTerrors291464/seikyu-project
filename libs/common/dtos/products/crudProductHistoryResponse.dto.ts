@@ -134,10 +134,10 @@ export class ProductStockHistoryResponseDto {
     quantity: number;
 
     @ApiProperty({ enum: InvoiceType })
-    referenceType: InvoiceType;
+    invoiceType: InvoiceType;
 
     @ApiProperty({ description: 'Related invoice id' })
-    referenceId: string;
+    invoiceId: string;
 
     @ApiProperty({ description: 'Inventory stock before the change' })
     beforeInventoryStock: number;

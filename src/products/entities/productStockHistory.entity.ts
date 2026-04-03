@@ -23,11 +23,11 @@ export class ProductStockHistoryEntity {
     @Column({ name: 'quantity', type: 'integer' })
     quantity: number;
 
-    @Column({ name: 'reference_type', type: 'enum', enum: InvoiceType })
-    referenceType: InvoiceType;
+    @Column({ name: 'invoice_type', type: 'enum', enum: InvoiceType })
+    invoiceType: InvoiceType;
 
-    @Column({ name: 'reference_id', type: 'uuid' })
-    referenceId: string;
+    @Column({ name: 'invoice_id', type: 'uuid' })
+    invoiceId: string;
 
     @Column({ name: 'before_inventory_stock', type: 'integer' })
     beforeInventoryStock: number;

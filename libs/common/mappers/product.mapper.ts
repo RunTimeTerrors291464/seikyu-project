@@ -16,12 +16,18 @@ import { ProductSnapshotDto, ProductChangeEventDto, ProductChangedField } from '
 @Injectable()
 export class ProductMapper {
 
-    // Main name first in the array.
-    private productNamesToOrderedStringArray(productNames: ProductNamesEntity[] | undefined): string[] {
+    // isMain rows first (prefix 0 = primary display name), then aliases; stable order by createdAt within each group.
+    private orderProductNameEntities(productNames: ProductNamesEntity[] | undefined): ProductNamesEntity[] {
         const list = productNames ?? [];
-        const main = list.filter(productName => productName.isMain);
-        const rest = list.filter(productName => !productName.isMain);
-        return [...main, ...rest].map(productName => productName.name);
+        if (list.length === 0) return [];
+
+        const byCreatedAt = (a: ProductNamesEntity, b: ProductNamesEntity) =>
+            a.createdAt.getTime() - b.createdAt.getTime();
+
+        const mains = list.filter((pn) => pn.isMain);
+        const rest = list.filter((pn) => !pn.isMain);
+
+        return [...mains].sort(byCreatedAt).concat([...rest].sort(byCreatedAt));
     }
 
     // FROM: ProductsEntity
@@ -30,7 +36,7 @@ export class ProductMapper {
         return {
             id: productEntity.id,
             sku: productEntity.sku,
-            productNames: this.productNamesToOrderedStringArray(productEntity.productNames),
+            productNames: this.orderProductNameEntities(productEntity.productNames).map((pn) => pn.name),
             productUnitId: productEntity.productUnit.id,
             productUnitName: productEntity.productUnit.unitName,
             isUnitActive: productEntity.productUnit.isActive,
@@ -68,7 +74,7 @@ export class ProductMapper {
         return {
             id: productEntity.id,
             sku: productEntity.sku,
-            productNames: this.productNamesToOrderedStringArray(productEntity.productNames),
+            productNames: this.orderProductNameEntities(productEntity.productNames).map((pn) => pn.name),
             unitName: productEntity.productUnit.unitName,
             productDescription: productEntity.productDescription || null,
             sellingPrice: productEntity.sellingPrice,
@@ -149,10 +155,10 @@ export class ProductMapper {
                 unitDescription: productEntity.productUnit.unitDescription || undefined,
                 createdAt: productEntity.productUnit.createdAt,
             },
-            productNames: productEntity.productNames.map(pn => ({
+            productNames: this.orderProductNameEntities(productEntity.productNames).map((pn) => ({
                 id: pn.id,
                 name: pn.name,
-                createdAt: pn.createdAt
+                createdAt: pn.createdAt,
             })),
             createdAt: productEntity.createdAt,
         };

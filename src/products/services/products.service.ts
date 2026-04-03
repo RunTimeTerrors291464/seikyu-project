@@ -270,7 +270,7 @@ export class ProductsService {
 
             for (const productUpdate of sortedProducts) {
 
-                // Use SELECT FOR UPDATE to lock the row inside the transaction. Pessimistic locking.
+                // Use SELECT FOR UPDATE to lock the row inside the transaction - Pessimistic locking.
                 const product = await transactionManager.findOne(ProductsEntity, {
                     where: { id: productUpdate.id },
                     lock: { mode: 'pessimistic_write' },
@@ -324,20 +324,20 @@ export class ProductsService {
 
         const { data, total } = await this.productsRepository.getProductHistoryList(dto);
 
-        const history: ProductHistoryItemResponseDto[] = data.map((h) => ({
-            id: h.id,
-            version: h.version,
-            createdBy: h.createdBy,
-            createdByUsername: h.createdByUser?.username ?? '[UNKNOWN] USER',
-            createdAt: h.createdAt,
-            eventSummary: h.eventSummary,
+        const historyItems: ProductHistoryItemResponseDto[] = data.map((history) => ({
+            id: history.id,
+            version: history.version,
+            createdBy: history.createdBy,
+            createdByUsername: history.createdByUser?.username ?? '[UNKNOWN] USER',
+            createdAt: history.createdAt,
+            eventSummary: history.eventSummary,
         }));
 
         return {
             page: dto.page || 1,
             limit: dto.limit || 10,
             total,
-            history,
+            history: historyItems,
         };
     }
 
@@ -379,8 +379,8 @@ export class ProductsService {
             productId: history.productId,
             quantityType: history.quantityType,
             quantity: history.quantity,
-            referenceType: history.referenceType,
-            referenceId: history.referenceId,
+            invoiceType: history.invoiceType,
+            invoiceId: history.invoiceId,
             beforeInventoryStock: history.beforeInventoryStock,
             afterInventoryStock: history.afterInventoryStock,
             createdAt: history.createdAt,

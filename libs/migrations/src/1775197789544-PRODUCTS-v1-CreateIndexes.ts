@@ -137,15 +137,15 @@ export class PRODUCTSv1CreateIndexes1775197789544 implements MigrationInterface 
 
         // --- Single column B-tree index ---
         await queryRunner.query(`
-            CREATE INDEX idx_product_stock_history_reference_id
-            ON product_stock_history (reference_id)
+            CREATE INDEX idx_product_stock_history_invoice_id
+            ON product_stock_history (invoice_id)
         `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
 
         // --- PRODUCT STOCK HISTORY ---
-        await queryRunner.query(`DROP INDEX IF EXISTS idx_product_stock_history_reference_id`);
+        await queryRunner.query(`DROP INDEX IF EXISTS idx_product_stock_history_invoice_id`);
         await queryRunner.query(`DROP INDEX IF EXISTS idx_product_stock_history_product_id_created_at`);
 
         // --- PRODUCTS HISTORY ---
