@@ -206,7 +206,7 @@ export class ProductUnitsRepository {
 
         // Compute the changes.
         const events: ProductUnitChangeEventDto[] = [{
-            fieldName: ProductUnitChangedField.ACTIVE,
+            fieldName: ProductUnitChangedField.IS_ACTIVE,
             previousValue: previousActive ? 'true' : 'false',
             newValue: isActive ? 'true' : 'false',
         }];
@@ -219,7 +219,7 @@ export class ProductUnitsRepository {
             version: nextVersion,
             createdBy: user.id,
             events,
-            eventSummary: [ProductUnitChangedField.ACTIVE],
+            eventSummary: [ProductUnitChangedField.IS_ACTIVE],
             isSnapshot,
             data: isSnapshot ? currentSnapshot : null,
         });

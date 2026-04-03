@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
 
 @Entity('product_overview')
 export class ProductOverviewEntity {
@@ -23,4 +23,4 @@ export class ProductOverviewEntity {
 
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
-}
+}   

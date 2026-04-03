@@ -34,7 +34,7 @@ import {
 } from '@libs/common/dtos/productUnits/crudProductUnitHistoryResponse.dto';
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
-@ApiTags('[Product Units] These APIs are for product units management (manager platform).')
+@ApiTags('[Product Units] These APIs are for product units management.')
 @Controller({
     path: 'api/v1/product-units',
     version: '1',

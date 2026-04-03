@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength, IsArray, IsUUID, Min, IsNumber, IsBoolean, ValidateIf, IsIn, ValidateNested, IsEnum, Max } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength, IsArray, IsUUID, Min, IsNumber, IsBoolean, ValidateIf, IsIn, ValidateNested, IsEnum, Max, ArrayMaxSize, ArrayUnique } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -28,6 +28,7 @@ export class CreateProductRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(8, { message: 'productNames must contain at most 8 items' })
     @IsString({ each: true })
     productNames: string[];
 
@@ -115,6 +116,7 @@ export class EditProductRequestDto {
     })
     @IsOptional()
     @IsArray()
+    @ArrayMaxSize(8, { message: 'productNames must contain at most 8 items' })
     @IsString({ each: true })
     productNames?: string[];
 
@@ -245,8 +247,9 @@ export class GetListOfProductRequestDto {
         example: StockStatus.IN_STOCK,
         enum: StockStatus,
     })
-    @IsIn([StockStatus.IN_STOCK, StockStatus.REORDER_THRESHOLD_REACHED, StockStatus.OUT_OF_STOCK])
     @IsOptional()
+    @Type(() => Number)
+    @IsIn([StockStatus.IN_STOCK, StockStatus.REORDER_THRESHOLD_REACHED, StockStatus.OUT_OF_STOCK])
     stockStatus?: StockStatus;
 
 }
@@ -318,7 +321,7 @@ export class UpdateProductInventoryRequestDto {
 
 export class UpdateProductInventoryBulkRequestDto {
     @ApiProperty({
-        description: 'List of products to update inventory',
+        description: 'List of products to update inventory (each product id must appear at most once)',
         type: [UpdateProductInventoryRequestDto],
         example: [
             {
@@ -330,6 +333,7 @@ export class UpdateProductInventoryBulkRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayUnique((item: UpdateProductInventoryRequestDto) => item.id, { message: 'Each product id must appear only once in the list.' })
     @ValidateNested({ each: true })
     @Type(() => UpdateProductInventoryRequestDto)
     products: UpdateProductInventoryRequestDto[];

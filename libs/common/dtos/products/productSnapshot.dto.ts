@@ -13,7 +13,7 @@ export enum ProductChangedField {
     REORDER_THRESHOLD = 'reorderThreshold',
     PRODUCT_UNIT = 'productUnit',
     PRODUCT_NAMES = 'productNames',
-    ACTIVE = 'isActive',
+    IS_ACTIVE = 'isActive',
 }
 
 export class ProductSnapshotDto {

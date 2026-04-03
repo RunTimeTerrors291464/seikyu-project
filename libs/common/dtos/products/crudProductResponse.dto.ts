@@ -253,3 +253,17 @@ export class GetListOfProductCashierResponseDto {
     products: ProductCashierResponseDto[];
 }
 
+export class ProductInventoryStockItemResponseDto {
+    @ApiProperty({
+        description: 'The unique identifier of the product',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    })
+    productId: string;
+
+    @ApiProperty({
+        description: 'Current inventory stock for the product',
+        example: 42,
+    })
+    inventoryStock: number;
+}
+
