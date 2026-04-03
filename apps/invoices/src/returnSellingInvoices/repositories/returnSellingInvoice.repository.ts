@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, In, Brackets } from 'typeorm';
 
 // Import enums.
-import { Role } from '@app/common/enums/role.enum';
 import { ReturnSellingInvoiceStatus, SellingInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
 import { InvoiceType } from '@app/common/enums/invoiceType.enum';
 import { StockActionType } from '@app/common/enums/stockActionType.enum';
@@ -346,15 +345,6 @@ export class ReturnSellingInvoiceRepository {
         // Apply status filter.
         if (status !== undefined) {
             queryBuilder.andWhere('invoice.status = :status', { status });
-        }
-
-        // Apply role-based for ADMIN to filter by userId.
-        const isAdmin = user.roles.some(role => role === Role.ADMIN);
-        if (!isAdmin) {
-            queryBuilder.andWhere(new Brackets(qb => {
-                qb.where('invoice.status != :draftStatus', { draftStatus: ReturnSellingInvoiceStatus.DRAFT })
-                    .orWhere('invoice.draftBy = :userId', { userId: user.id });
-            }));
         }
 
         // Apply date range filters.

@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, In, Brackets } from 'typeorm';
 
 // Import enums.
-import { Role } from '@app/common/enums/role.enum';
 import { StockAdjustmentInvoiceStatus } from '@app/common/enums/invoiceStatus.enum';
 import { InvoiceType } from '@app/common/enums/invoiceType.enum';
 
@@ -278,15 +277,6 @@ export class StockAdjustmentInvoiceRepository {
         // Apply action reason filter.
         if (actionReason !== undefined) {
             queryBuilder.andWhere('invoice.actionReason = :actionReason', { actionReason });
-        }
-
-        // Apply role-based filter: non-admin can only see their own drafts.
-        const isAdmin = user.roles.some(role => role === Role.ADMIN);
-        if (!isAdmin) {
-            queryBuilder.andWhere(new Brackets(qb => {
-                qb.where('invoice.status != :draftStatus', { draftStatus: StockAdjustmentInvoiceStatus.DRAFT })
-                    .orWhere('invoice.draftBy = :userId', { userId: user.id });
-            }));
         }
 
         // Apply date range filters.
