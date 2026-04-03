@@ -346,8 +346,6 @@ export class ProductsRepository {
         return productToReturn;
     }
 
-
-
     // Get a product by sku.
     async getProductBySku(sku: string): Promise<ProductsEntity | null> {
         const productEntity: ProductsEntity | null = await this.productsRepository.findOne({

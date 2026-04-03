@@ -137,7 +137,7 @@ export class ProductsService {
         const createdByUsername = await this.getCreatedByUsername(updatedProduct.history.createdBy);
 
         return this.productMapper.toProductResponseDtoWithHistory(updatedProduct.product, updatedProduct.history, createdByUsername);
-    }
+    } 
 
     // Get a product by id.
     @HandleServiceError(ErrorCode.GET_PRODUCT_SERVICE)
