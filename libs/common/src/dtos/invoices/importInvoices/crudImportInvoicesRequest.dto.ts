@@ -182,11 +182,11 @@ export class GetListOfImportInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'Sort by which field',
         example: 'invoiceId',
-        enum: ['invoiceId', 'totalImportPrice', 'createdAt'],
+        enum: ['invoiceId', 'totalImportPrice', 'createdAt', 'confirmedAt'],
     })
-    @IsIn(['invoiceId', 'totalImportPrice', 'createdAt'])
+    @IsIn(['invoiceId', 'totalImportPrice', 'createdAt', 'confirmedAt'])
     @IsOptional()
-    sortBy?: 'invoiceId' | 'totalImportPrice' | 'createdAt';
+    sortBy?: 'invoiceId' | 'totalImportPrice' | 'createdAt' | 'confirmedAt';
 
     @ApiPropertyOptional({
         description: 'Sort order',

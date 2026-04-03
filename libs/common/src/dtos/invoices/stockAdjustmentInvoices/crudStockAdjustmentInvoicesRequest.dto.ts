@@ -202,11 +202,11 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'Sort by which field',
         example: 'invoiceId',
-        enum: ['invoiceId', 'totalQuantity', 'createdAt'],
+        enum: ['invoiceId', 'totalQuantity', 'createdAt', 'confirmedAt'],
     })
-    @IsIn(['invoiceId', 'totalQuantity', 'createdAt'])
+    @IsIn(['invoiceId', 'totalQuantity', 'createdAt', 'confirmedAt'])
     @IsOptional()
-    sortBy?: 'invoiceId' | 'totalQuantity' | 'createdAt';
+    sortBy?: 'invoiceId' | 'totalQuantity' | 'createdAt' | 'confirmedAt';
 
     @ApiPropertyOptional({
         description: 'Sort order',

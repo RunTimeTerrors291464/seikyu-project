@@ -393,6 +393,8 @@ export class ReturnSellingInvoiceRepository {
         else if (sortBy === 'createdAt') {
             if (status === ReturnSellingInvoiceStatus.DRAFT) sortField = 'invoice.draftAt';
             else sortField = 'invoice.confirmedAt';
+        } else if (sortBy === 'confirmedAt') {
+            sortField = 'invoice.confirmedAt';
         }
 
         queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');

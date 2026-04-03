@@ -312,6 +312,8 @@ export class StockAdjustmentInvoiceRepository {
         else if (sortBy === 'totalQuantity') sortField = 'invoice.totalQuantity';
         else if (sortBy === 'createdAt') {
             sortField = status === StockAdjustmentInvoiceStatus.DRAFT ? 'invoice.draftAt' : 'invoice.confirmedAt';
+        } else if (sortBy === 'confirmedAt') {
+            sortField = 'invoice.confirmedAt';
         }
 
         queryBuilder.orderBy(sortField, sortOrder.toUpperCase() as 'ASC' | 'DESC');
