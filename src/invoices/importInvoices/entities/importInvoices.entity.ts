@@ -1,8 +1,9 @@
-import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 
 // Import entities.
 import { ImportInvoiceProductsEntity } from './importInvocieProducts.entity';
 import { ReturnImportInvoiceEntity } from './returnImportInvoices.entity';
+import { UsersEntity } from '@src/users/entities/users.entity';
 
 // Import enums.
 import { ImportInvoiceStatus } from '@libs/common/enums/invoiceStatus.enum';
@@ -46,10 +47,21 @@ export class ImportInvoiceEntity {
     @Column({ name: 'confirmed_at', type: 'timestamp', nullable: true })
     confirmedAt: Date | null;
 
+    @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+    createdAt: Date;
+
     // --- Relationships ---
     @OneToMany(() => ImportInvoiceProductsEntity, (importInvoiceProduct) => importInvoiceProduct.importInvoice)
     importInvoiceProducts: ImportInvoiceProductsEntity[];
 
     @OneToMany(() => ReturnImportInvoiceEntity, (returnImportInvoice) => returnImportInvoice.importInvoice)
     returnImportInvoices: ReturnImportInvoiceEntity[];
+
+    @ManyToOne(() => UsersEntity)
+    @JoinColumn({ name: 'draft_by', referencedColumnName: 'id' })
+    draftByUser: UsersEntity;
+
+    @ManyToOne(() => UsersEntity)
+    @JoinColumn({ name: 'confirmed_by', referencedColumnName: 'id' })
+    confirmedByUser: UsersEntity;
 }

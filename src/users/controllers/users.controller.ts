@@ -6,6 +6,7 @@ import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiBearerAuth } from '@nes
 // Import guards.
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { RateLimitGuard } from '@src/auth/guards/rateLimit.guard';
 
 // Import decorators.
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -30,7 +31,7 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
     path: 'api/v1/users',
     version: '1',
 })
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
 export class UsersController {
     constructor(

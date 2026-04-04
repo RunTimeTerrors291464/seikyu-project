@@ -453,7 +453,7 @@ export class ProductsRepository {
 
     // Get list of products.
     async getListOfProducts(dto: GetListOfProductRequestDto): Promise<{ products: ProductsEntity[], total: number }> {
-        const { page = 1, limit = 10, search, searchBy, sortBy, sortOrder = 'asc', isActive, stockStatus } = dto;
+        const { page = 1, limit = 25, search, searchBy, sortBy, sortOrder = 'asc', isActive, stockStatus } = dto;
 
         // Calculate the offset and limit.
         const offset = (page - 1) * limit;

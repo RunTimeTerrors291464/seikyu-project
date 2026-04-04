@@ -6,6 +6,7 @@ import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiParam, ApiBearerAuth } 
 // Import guards.
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { RateLimitGuard } from '@src/auth/guards/rateLimit.guard';
 
 // Import decorators.
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -39,7 +40,7 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
     path: 'api/v1/product-units',
     version: '1',
 })
-@UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, RateLimitGuard)
 @ApiBearerAuth()
 export class ProductUnitsController {
     constructor(private readonly productUnitsService: ProductUnitsService) { }

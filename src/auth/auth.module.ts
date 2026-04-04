@@ -26,6 +26,7 @@ import { CleanUpAuthService } from './services/cleanUpAuth.service';
 import { JwtStrategy } from './guards/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { RateLimitGuard } from './guards/rateLimit.guard';
 
 @Module({
     imports: [
@@ -55,12 +56,14 @@ import { RolesGuard } from './guards/roles.guard';
         JwtStrategy,
         JwtAuthGuard,
         RolesGuard,
+        RateLimitGuard,
     ],
     exports: [
         AuthRepository,
         AccessTokenService,
         JwtAuthGuard,
         RolesGuard,
+        RateLimitGuard,
     ],
 })
 export class AuthModule { }

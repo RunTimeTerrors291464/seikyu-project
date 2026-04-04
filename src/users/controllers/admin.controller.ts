@@ -6,6 +6,7 @@ import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiParam, ApiBearerAuth } 
 // Import guards.
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { RateLimitGuard } from '@src/auth/guards/rateLimit.guard';
 
 // Import decorators.
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -36,13 +37,12 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
     path: 'api/v1/admin',
     version: '1',
 })
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @ApiBearerAuth()
 export class AdminController {
     constructor(
         private readonly usersService: UsersService,
-        private readonly accessTokenService: AccessTokenService,
     ) { }
 
     // POST /api/v1/admin/users

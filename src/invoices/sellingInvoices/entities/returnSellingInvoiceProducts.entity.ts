@@ -1,18 +1,21 @@
 import { Entity, Column, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 // Import entities.
-import { ReturnImportInvoiceEntity } from './returnImportInvoices.entity';
-import { ImportInvoiceProductsEntity } from './importInvocieProducts.entity';
+import { ReturnSellingInvoiceEntity } from './returnSellingInvoices.entity';
+import { SellingInvoiceProductsEntity } from '../../sellingInvoices/entities/sellingInvoiceProducts.entity';
 import { ProductsEntity } from '@src/products/entities/products.entity';
 
 // Import enums.
 import { ReturnReason } from '@libs/common/enums/returnReasons.enum';
 
-@Entity('return_import_invoice_products')
-export class ReturnImportInvoiceProductsEntity {
+@Entity('return_selling_invoice_products')
+export class ReturnSellingInvoiceProductsEntity {
 
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    @Column({ name: 'return_selling_invoice_id', type: 'uuid' }) // FK: return_selling_invoices.id
+    returnSellingInvoiceId: string;
 
     @Column({ name: 'product_id', type: 'uuid' }) // FK: products.id
     productId: string;
@@ -29,8 +32,8 @@ export class ReturnImportInvoiceProductsEntity {
     @Column({ name: 'return_quantity', type: 'integer' })
     returnQuantity: number;
 
-    @Column({ name: 'import_price', type: 'decimal', precision: 10, scale: 2 })
-    importPrice: number;
+    @Column({ name: 'selling_price', type: 'decimal', precision: 10, scale: 2 })
+    sellingPrice: number;
 
     @Column({ name: 'total_return_price', type: 'decimal', precision: 10, scale: 2 })
     totalReturnPrice: number;
@@ -42,13 +45,13 @@ export class ReturnImportInvoiceProductsEntity {
     reasonNotes: string | null;
 
     // --- Relationships ---
-    @ManyToOne(() => ReturnImportInvoiceEntity, (returnImportInvoice) => returnImportInvoice.returnImportInvoiceProducts)
-    @JoinColumn({ name: 'return_import_invoice_id', referencedColumnName: 'id' })
-    returnImportInvoice: ReturnImportInvoiceEntity;
+    @ManyToOne(() => ReturnSellingInvoiceEntity, (returnSellingInvoice) => returnSellingInvoice.returnSellingInvoiceProducts)
+    @JoinColumn({ name: 'return_selling_invoice_id', referencedColumnName: 'id' })
+    returnSellingInvoice: ReturnSellingInvoiceEntity;
 
-    @ManyToOne(() => ImportInvoiceProductsEntity)
-    @JoinColumn({ name: 'import_invoice_product_id', referencedColumnName: 'id' })
-    importInvoiceProduct: ImportInvoiceProductsEntity;
+    @ManyToOne(() => SellingInvoiceProductsEntity)
+    @JoinColumn({ name: 'selling_invoice_product_id', referencedColumnName: 'id' })
+    sellingInvoiceProduct: SellingInvoiceProductsEntity;
 
     @ManyToOne(() => ProductsEntity)
     @JoinColumn({ name: 'product_id', referencedColumnName: 'id' })

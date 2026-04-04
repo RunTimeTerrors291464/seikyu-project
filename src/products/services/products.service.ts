@@ -187,10 +187,27 @@ export class ProductsService {
     // Get multiple products by their ids.
     @HandleServiceError(ErrorCode.GET_PRODUCT_SERVICE)
     async getProductsByIds(ids: string[]): Promise<ProductResponseDto[]> {
+
         const products: ProductsEntity[] = await this.productsRepository.getProductsByIds(ids);
-        const foundIds: Set<string> = new Set(products.map((p) => p.id));
-        const notFoundProductIds: string[] = ids.filter((id) => !foundIds.has(id));
-        if (notFoundProductIds.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'One or more products were not found.', { productIds: [...new Set(notFoundProductIds)] });
+
+        // Check if the products are found and active.
+        const productById = new Map(products.map((product) => [product.id, product] as const));
+        const notFoundIds: Set<string> = new Set<string>();
+        const inactiveIds: Set<string> = new Set<string>();
+        for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
+            const product = productById.get(id);
+            if (product === undefined) notFoundIds.add(id);
+            else if (!product.isActive) inactiveIds.add(product.id);
+        }
+
+        if (notFoundIds.size > 0) {
+            throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'One or more products were not found.', { productIds: [...notFoundIds] });
+        }
+        if (inactiveIds.size > 0) {
+            throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, 'One or more products are not active.', { productIds: [...inactiveIds] });
+        }
+
         return products.map((product) => this.productMapper.toProductResponseDto(product));
     }
 
@@ -198,9 +215,25 @@ export class ProductsService {
     @HandleServiceError(ErrorCode.GET_PRODUCT_SERVICE)
     async getProductsBySkus(skus: string[]): Promise<ProductResponseDto[]> {
         const products: ProductsEntity[] = await this.productsRepository.getProductsBySkus(skus);
-        const foundSkus: Set<string> = new Set(products.map((p) => p.sku));
-        const notFoundSkus: string[] = skus.filter((sku) => !foundSkus.has(sku));
-        if (notFoundSkus.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'One or more products were not found.', { skus: [...new Set(notFoundSkus)] });
+
+        const productBySku = new Map(products.map((p) => [p.sku, p] as const));
+
+        const notFoundSkus = new Set<string>();
+        const inactiveSkus = new Set<string>();
+        for (let i = 0; i < skus.length; i++) {
+            const sku = skus[i];
+            const product = productBySku.get(sku);
+            if (product === undefined) notFoundSkus.add(sku);
+            else if (!product.isActive) inactiveSkus.add(product.sku);
+        }
+
+        if (notFoundSkus.size > 0) {
+            throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'One or more products were not found.', { skus: [...notFoundSkus] });
+        }
+        if (inactiveSkus.size > 0) {
+            throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, 'One or more products are not active.', { skus: [...inactiveSkus] });
+        }
+
         return products.map((product) => this.productMapper.toProductResponseDto(product));
     }
 
