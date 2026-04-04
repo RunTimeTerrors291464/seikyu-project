@@ -110,9 +110,9 @@ export class ProductMapper {
             });
         }
 
-        // productNames: compare by sorted name strings
-        const prevNames = previous?.productNames?.map(n => n.name).sort().join('|') ?? '';
-        const currNames = current.productNames?.map(n => n.name).sort().join('|') ?? '';
+        // productNames: order matters (main name + alias order); do not sort or reorder-only edits look unchanged.
+        const prevNames = previous?.productNames?.map(n => n.name).join('|') ?? '';
+        const currNames = current.productNames?.map(n => n.name).join('|') ?? '';
         if (prevNames !== currNames) {
             events.push({
                 fieldName: ProductChangedField.PRODUCT_NAMES,
