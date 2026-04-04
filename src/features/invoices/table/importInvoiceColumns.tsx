@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 
 import ImportInvoiceStatusPill from "../components/ImportInvoiceStatusPill";
-import type { ImportInvoiceRow } from "../types/useImportInvoices";
+import type { ImportInvoiceRow } from "../hooks/useImportInvoices";
 
 function formatInvoiceNumber(
   invoiceId: string | null,

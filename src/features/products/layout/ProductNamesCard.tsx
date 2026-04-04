@@ -90,27 +90,28 @@ export default function ProductNamesCard({
               />
 
               {canAdd && (
-                <button
+                <Button
                   onClick={handleAdd}
                   disabled={disabled || safeNames.length >= max}
+                  accent="primary"
                 >
                   {dict.add}
-                </button>
+                </Button>
               )}
 
               {isDuplicate && (
                 <span className="text-xs text-danger">{dict.isDuplicate}</span>
               )}
 
-              <button
+              <Button
                 onClick={() => {
                   setAdding(false);
                   setValue("");
                 }}
-                className="h-8 rounded-md border border-border px-2 text-xs text-muted hover:bg-hover transition"
+                accent="danger"
               >
                 {dict.cancel}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-3 border-border justify-between">

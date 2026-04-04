@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { ACCENT_STYLES } from "@/components/types/ui";
 import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
 
@@ -33,6 +32,7 @@ import AddNewProductPopup from "@/features/products/layout/AddNewProductPopup";
 import ProductTableHeader from "@/features/products/layout/ProductTableHeader";
 import { productColumns } from "@/features/products/table/productColumns";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
 /* ============================= */
 /* PAGE */
@@ -243,19 +243,20 @@ export default function ProductInventoryPage() {
                       stockStatus: String(opt.value) as ProductQuery["stockStatus"],
                     });
                   }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${
-                    opt.value === "all"
-                      ? statusFilter === opt.value
-                        ? "border-text bg-text text-bg"
-                        : "border-border bg-card text-muted"
-                      : `${ACCENT_STYLES[
-                          opt.value === 0
-                            ? "success"
-                            : opt.value === 1
-                              ? "warning"
-                              : "danger"
-                        ]} ${statusFilter === opt.value ? "opacity-100" : "opacity-70"}`
-                  }`}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
+                    opt.value,
+                    statusFilter,
+                    "all",
+                    (value) => {
+                      if (value === 0) {
+                        return "success";
+                      }
+                      if (value === 1) {
+                        return "warning";
+                      }
+                      return "danger";
+                    },
+                  )}`}
                 >
                   {dict[opt.dictKey]}
                 </button>
@@ -280,15 +281,12 @@ export default function ProductInventoryPage() {
                       isActive: opt.value as ProductQuery["isActive"],
                     });
                   }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${
-                    opt.value === "all"
-                      ? activeFilter === opt.value
-                        ? "border-text bg-text text-bg"
-                        : "border-border bg-card text-muted"
-                      : `${ACCENT_STYLES[opt.value ? "success" : "danger"]} ${
-                          activeFilter === opt.value ? "opacity-100" : "opacity-70"
-                        }`
-                  }`}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
+                    opt.value,
+                    activeFilter,
+                    "all",
+                    (value) => (value ? "success" : "danger"),
+                  )}`}
                 >
                   {dict[opt.dictKey]}
                 </button>
@@ -329,7 +327,6 @@ export default function ProductInventoryPage() {
         dict={dict}
         onCreated={() => {
           table.refetch();
-          console.log("Product created!");
         }}
       />
     </div>

@@ -18,8 +18,36 @@ import {
   Textarea,
 } from "@/components/ui/Fields";
 import { Dictionary } from "@/lib/lang/i18n";
-import { useEffect, useState } from "react";
+import {
+  normalizeIntegerStringInput,
+  normalizeMoneyStringInput,
+  normalizedIntegerStringToNumber,
+  normalizedMoneyStringToNumber,
+} from "@/lib/numeric/integerAndMoneyInputs";
+import { useCallback, useEffect, useState } from "react";
+
+/**
+ * Holds the last saved reorder threshold for stock accent/label only.
+ *
+ * Updates when the product row is loaded or refreshed from the server
+ * (`id` / `updatedAt`), not when the user edits the reorder field locally.
+ *
+ * @param product - Current product from the detail form.
+ * @returns Reorder threshold to use when comparing against `inventoryStock`.
+ */
+function useReorderThresholdBaseline(product: Product): number {
+  const [baseline, setBaseline] = useState(
+    () => product.reorderThreshold ?? 0
+  );
+
+  useEffect(() => {
+    setBaseline(product.reorderThreshold ?? 0);
+  }, [product.id, product.updatedAt]);
+
+  return baseline;
+}
 import useSkuValidation from "../hooks/useSkuValidation";
+import { useProductUnitActiveState } from "../hooks/useProductUnitActiveState";
 import { Product } from "../types/product";
 import UnitPickerPopup from "./UnitPickerPopup";
 
@@ -45,11 +73,12 @@ export default function ProductDetailsCard({
   errors = {},
   onSkuStateChange,
 }: Props) {
-  const stock = getStockStatus(product, dict);
+  const reorderThresholdBaseline = useReorderThresholdBaseline(product);
+  const stock = getStockStatus(product, dict, reorderThresholdBaseline);
   const [unitOpen, setUnitOpen] = useState(false);
+  const [unitServerNonce, setUnitServerNonce] = useState(0);
 
   const isDisabled = disabled || !product.isActive;
-  const MAX_INT = 2147483647;
 
   const [initialSku] = useState(product.sku || "");
 
@@ -65,6 +94,22 @@ export default function ProductDetailsCard({
 
   const skuValue = String(product.sku || "");
   const hasValidSkuFormat = /^\d{13}$/.test(skuValue);
+
+  const bumpUnitServerState = useCallback(function bumpUnitServerState(): void {
+    setUnitServerNonce((n) => n + 1);
+  }, []);
+
+  const unitActiveOnServer = useProductUnitActiveState(
+    product.productUnitId,
+    product.productUnitName,
+    product.updatedAt,
+    unitServerNonce
+  );
+
+  const unitFieldError =
+    errors.productUnitId ??
+    (!product.productUnitId?.trim() ? dict.unitRequired : undefined) ??
+    (unitActiveOnServer === false ? dict.selectedUnitInactive : undefined);
 
   const skuError =
     errors.sku ||
@@ -132,7 +177,7 @@ export default function ProductDetailsCard({
       <Field
         label={dict.unit}
         icon={<Ruler className="h-3 w-3" />}
-        error={errors.productUnitId}
+        error={unitFieldError}
       >
         <SelectButton
           value={product.productUnitName}
@@ -150,6 +195,11 @@ export default function ProductDetailsCard({
           update("productUnitId", unit.id);
           update("productUnitName", unit.unitName);
         }}
+        onClearSelection={() => {
+          update("productUnitId", "");
+          update("productUnitName", "");
+        }}
+        onUnitServerStateChanged={bumpUnitServerState}
       />
 
       {/* IMPORT PRICE */}
@@ -163,20 +213,13 @@ export default function ProductDetailsCard({
           value={product.importPrice || 0}
           disabled={isDisabled}
           onChange={(v) => {
-            if (v === "") return update("importPrice", 0);
-
-            const num = Number(v);
-
-            // invalid number
-            if (isNaN(num)) return;
-
-            // exceed max
-            if (num > MAX_INT) return;
-
-            // more than 2 decimal places
-            const decimalPart = v.split(".")[1];
-            if (decimalPart && decimalPart.length > 2) return;
-
+            const normalized = normalizeMoneyStringInput(v, {
+              allowEmpty: false,
+            });
+            const num = normalizedMoneyStringToNumber(normalized);
+            if (num === null) {
+              return;
+            }
             update("importPrice", num);
           }}
         />
@@ -193,20 +236,13 @@ export default function ProductDetailsCard({
           value={product.sellingPrice || 0}
           disabled={isDisabled}
           onChange={(v) => {
-            if (v === "") return update("sellingPrice", 0);
-
-            const num = Number(v);
-
-            // invalid number
-            if (isNaN(num)) return;
-
-            // exceed max
-            if (num > MAX_INT) return;
-
-            // more than 2 decimal places
-            const decimalPart = v.split(".")[1];
-            if (decimalPart && decimalPart.length > 2) return;
-
+            const normalized = normalizeMoneyStringInput(v, {
+              allowEmpty: false,
+            });
+            const num = normalizedMoneyStringToNumber(normalized);
+            if (num === null) {
+              return;
+            }
             update("sellingPrice", num);
           }}
         />
@@ -223,19 +259,13 @@ export default function ProductDetailsCard({
           disabled={isDisabled}
           value={product.reorderThreshold || 0}
           onChange={(v) => {
-            if (v === "") return update("reorderThreshold", 0);
-
-            const num = Number(v);
-
-            // invalid
-            if (isNaN(num)) return;
-
-            // decimal not allowed
-            if (!Number.isInteger(num)) return;
-
-            // exceed max
-            if (num > MAX_INT) return;
-
+            const normalized = normalizeIntegerStringInput(v, {
+              allowEmpty: false,
+            });
+            const num = normalizedIntegerStringToNumber(normalized);
+            if (num === null) {
+              return;
+            }
             update("reorderThreshold", num);
           }}
         />
@@ -260,9 +290,18 @@ export default function ProductDetailsCard({
 
 /* ───────────────── Helpers ───────────────── */
 
+/**
+ * Derives stock label and accent from inventory and a stable reorder threshold.
+ *
+ * @param product - Product row (uses `inventoryStock`).
+ * @param dict - Copy for out/low/in stock labels.
+ * @param reorderThresholdForComparison - Threshold for low-stock (not draft edits).
+ * @returns Display label and accent for the current stock stat.
+ */
 function getStockStatus(
   product: Product,
-  dict: Dictionary
+  dict: Dictionary,
+  reorderThresholdForComparison: number
 ): { label: string; accent: Accent } {
   if (!product) {
     return { label: "", accent: "neutral" };
@@ -272,7 +311,7 @@ function getStockStatus(
     return { label: dict.outOfStock, accent: "danger" };
   }
 
-  if (product.inventoryStock <= product.reorderThreshold) {
+  if (product.inventoryStock <= reorderThresholdForComparison) {
     return { label: dict.lowStock, accent: "warning" };
   }
 

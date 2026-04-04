@@ -328,6 +328,11 @@ export default function AddNewProductForm({
           setValue("productUnitName", unit.unitName);
           validateField("productUnitId", unit.id);
         }}
+        onClearSelection={() => {
+          setValue("productUnitId", "");
+          setValue("productUnitName", "");
+          validateField("productUnitId", "");
+        }}
       />
 
       {/* IMPORT PRICE */}

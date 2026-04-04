@@ -5,8 +5,9 @@ import DataTable, { type Column } from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
 import { Hash, Package, RotateCcw, Trash2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
 import { toNumberOrZero } from "../types/importInvoiceDetail";
 
 type ReturnImportProductsCardLine = {
@@ -57,27 +58,18 @@ export default function ReturnImportProductsCard<
 }: ReturnImportProductsCardProps<T>) {
   const dict = useDict();
 
-  const [searchRule, setSearchRule] = useState<"sku" | "productName">("sku");
-  const [searchText, setSearchText] = useState<string>("");
+  const {
+    searchRule,
+    setSearchRule,
+    searchText,
+    setSearchText,
+    filteredRows: filteredLines,
+    resetSearch,
+  } = useSkuNameRuleFilter(lines);
 
   useEffect(() => {
-    setSearchRule("sku");
-    setSearchText("");
-  }, [resetKey]);
-
-  const filteredLines = useMemo(() => {
-    if (!searchText) {
-      return lines;
-    }
-
-    const keyword = searchText.toLowerCase();
-
-    return lines.filter((line) => {
-      const target =
-        searchRule === "sku" ? line.productSku : line.productName;
-      return target.toLowerCase().includes(keyword);
-    });
-  }, [lines, searchRule, searchText]);
+    resetSearch();
+  }, [resetKey, resetSearch]);
 
   const hasAnyPositiveReturnLine = useMemo(
     () => lines.some((line) => toNumberOrZero(line.returnQuantity) > 0),
@@ -137,7 +129,7 @@ export default function ReturnImportProductsCard<
       <DataTable<T>
         columns={columns}
         data={filteredLines}
-        getRowId={(row, _index) => getRowId(row)}
+        getRowId={(row) => getRowId(row)}
         emptyMessage={dict.noProductData}
         maxHeight="fill"
       />

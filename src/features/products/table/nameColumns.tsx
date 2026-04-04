@@ -1,6 +1,5 @@
 import Button from "@/components/ui/Buttons";
 import type { Column } from "@/components/ui/DataTable";
-import IconPill from "@/components/ui/IconPill";
 import { Dictionary } from "@/lib/lang/i18n";
 import { FileText, Settings, Star, Trash2 } from "lucide-react";
 
@@ -16,15 +15,9 @@ export function nameColumns(dict: Dictionary, { onRemove, onMakeDefault }: Actio
       header: dict.name,
       icon: <FileText className="h-3.5 w-3.5" />,
       accessor: (n, idx) => (
-        <div className="flex items-center gap-2">
-          <span className="text-text">{n}</span>
-          {idx === 0 && (
-            <IconPill
-              icon={Star}
-              accent="gold"
-            />
-          )}
-        </div>
+        <span className={idx === 0 ? "text-gold" : "text-text"}>
+          {n}
+        </span>
       ),
     },
 

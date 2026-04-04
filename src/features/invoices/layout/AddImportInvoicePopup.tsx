@@ -2,7 +2,6 @@
 
 import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
-import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
@@ -10,6 +9,7 @@ import KpiTile from "@/components/ui/KpiTile";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useImportInvoiceProductsEditor } from "../hooks/useImportInvoiceProductsEditor";
 import { createImportInvoiceDraft } from "../services/importInvoice.service";
 import {
   EditableImportInvoiceProduct,
@@ -56,62 +56,12 @@ export default function AddImportInvoicePopup({
     [products, notes],
   );
 
-  const hasEmptyQuantityOrImportPrice = useMemo(
-    function computeHasEmptyQuantityOrImportPrice(): boolean {
-      return products.some(
-        (product) =>
-          toNumberOrZero(product.quantity) <= 0 ||
-          product.importPrice.trim().length === 0,
-      );
-    },
-    [products],
-  );
-
-  const draftError = useMemo(
-    function computeDraftError():
-      | (typeof INVOICE_DRAFT_ERRORS)[keyof typeof INVOICE_DRAFT_ERRORS]
-      | null {
-      if (!createAttempted) {
-        return null;
-      }
-
-      const hasInvalidQuantity = products.some(
-        (product) => toNumberOrZero(product.quantity) <= 0,
-      );
-      if (hasInvalidQuantity) {
-        return INVOICE_DRAFT_ERRORS.importMissingQuantity;
-      }
-
-      const hasEmptyPrice = products.some(
-        (product) => product.importPrice.trim().length === 0,
-      );
-      if (hasEmptyPrice) {
-        return INVOICE_DRAFT_ERRORS.importMissingPrice;
-      }
-
-      return null;
-    },
-    [createAttempted, products],
-  );
-
-  const totals = useMemo(() => {
-    let totalQuantity = 0;
-    let totalImportPrice = 0;
-
-    products.forEach((product) => {
-      const quantity = toNumberOrZero(product.quantity);
-      const importPrice = toNumberOrZero(product.importPrice);
-
-      totalQuantity += quantity;
-      totalImportPrice += quantity * importPrice;
-    });
-
-    return {
-      totalProducts: products.length,
-      totalQuantity,
-      totalImportPrice,
-    };
-  }, [products]);
+  const {
+    updateRow,
+    totals,
+    hasEmptyQuantityOrImportPrice,
+    draftError,
+  } = useImportInvoiceProductsEditor(products, setProducts, createAttempted);
 
   function resetDraftState(): void {
     setProducts(createInitialProducts());
@@ -200,7 +150,6 @@ export default function AddImportInvoicePopup({
   }
 
   const noteWarning = (noteTouched || createAttempted) && !notes.trim();
-  const productError = createAttempted && (products.length === 0 || hasEmptyQuantityOrImportPrice);
 
   if (!open) {
     return null;
@@ -261,6 +210,7 @@ export default function AddImportInvoicePopup({
             products={products}
             canEditDraft={true}
             onChangeProducts={setProducts}
+            updateRow={updateRow}
           />
 
           <Field

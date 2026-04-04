@@ -28,7 +28,8 @@ function getComparable(p: Product | null) {
 
   return {
     sku: p.sku,
-    productNames: [...p.productNames].sort().join("|"), // normalize array
+    // Order matters: index 0 is the primary/display name; do not sort.
+    productNames: JSON.stringify(p.productNames),
     productUnitId: p.productUnitId,
     productDescription: p.productDescription,
     importPrice: p.importPrice,

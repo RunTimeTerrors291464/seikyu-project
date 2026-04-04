@@ -9,8 +9,12 @@ import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { importInvoiceProductColumns } from "../table/importInvoiceProductColumns";
-import { EditableImportInvoiceProduct } from "../types/importInvoiceDetail";
+import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
+import { importInvoiceProductColumns } from "../table/invoiceProductLineColumns";
+import {
+  EditableImportInvoiceProduct,
+  productToEditableImportLine,
+} from "../types/importInvoiceDetail";
 import AddExistingProductsPopup from "./AddExistingProductsPopup";
 import CreateAndAddProductPopup from "./CreateAndAddProductPopup";
 
@@ -18,33 +22,34 @@ type ImportInvoiceProductsCardProps = {
   products: EditableImportInvoiceProduct[];
   canEditDraft: boolean;
   onChangeProducts: (products: EditableImportInvoiceProduct[]) => void;
+  /**
+   * When provided (e.g. from `useImportInvoiceProductsEditor`), used for table cell updates instead of an internal mapper.
+   */
+  updateRow?: (
+    rowLocalId: string,
+    key: keyof EditableImportInvoiceProduct,
+    value: string,
+  ) => void;
   accent?: Accent;
 };
-
-function toEditableProduct(product: Product, unnamedLabel: string): EditableImportInvoiceProduct {
-  return {
-    localId: `${product.id}-${Date.now()}`,
-    productId: product.id,
-    productSku: product.sku,
-    productName: product.productNames?.[0] ?? unnamedLabel,
-    productUnit: product.productUnitName,
-    quantity: "0",
-    importPrice: String(product.importPrice),
-    notes: "",
-  };
-}
 
 export default function ImportInvoiceProductsCard({
   products,
   canEditDraft,
   onChangeProducts,
+  updateRow: updateRowProp,
   accent = "neutral",
 }: ImportInvoiceProductsCardProps) {
   const dict = useDict();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [searchRule, setSearchRule] = useState<"sku" | "productName">("sku");
-  const [searchText, setSearchText] = useState<string>("");
+  const {
+    searchRule,
+    setSearchRule,
+    searchText,
+    setSearchText,
+    filteredRows: filteredProducts,
+  } = useSkuNameRuleFilter(products);
   const [openAddExistingPopup, setOpenAddExistingPopup] = useState<boolean>(false);
   const [openCreateAndAddPopup, setOpenCreateAndAddPopup] = useState<boolean>(false);
 
@@ -57,25 +62,9 @@ export default function ImportInvoiceProductsCard({
     [canEditDraft],
   );
 
-  const filteredProducts = useMemo(() => {
-    if (!searchText) {
-      return products;
-    }
-
-    const keyword = searchText.toLowerCase();
-
-    return products.filter((product) => {
-      const target = searchRule === "sku"
-        ? product.productSku
-        : product.productName;
-
-      return target.toLowerCase().includes(keyword);
-    });
-  }, [products, searchRule, searchText]);
-
   const selectedCount = selectedIds.size;
 
-  function updateRow(
+  function updateRowInternal(
     rowLocalId: string,
     key: keyof EditableImportInvoiceProduct,
     value: string,
@@ -91,6 +80,8 @@ export default function ImportInvoiceProductsCard({
       ),
     );
   }
+
+  const updateRow = updateRowProp ?? updateRowInternal;
 
   function toggleSelectAll(checked: boolean): void {
     if (!checked) {
@@ -129,7 +120,7 @@ export default function ImportInvoiceProductsCard({
       return;
     }
     const nextProducts = selectedProducts.map(function mapEditableProduct(product) {
-      return toEditableProduct(product, dict.unnamed);
+      return productToEditableImportLine(product, dict.unnamed);
     });
     onChangeProducts([...products, ...nextProducts]);
   }

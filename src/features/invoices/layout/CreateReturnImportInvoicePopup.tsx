@@ -8,8 +8,10 @@ import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
 import type { ImportInvoiceProductDto } from "@/features/invoices/services/importInvoice.service";
+import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
 import { createReturnImportDraft } from "@/features/invoices/services/returnImportInvoice.service";
-import { returnImportDraftProductColumns } from "@/features/invoices/table/returnImportDraftProductColumns";
+import { returnImportDraftProductColumns } from "@/features/invoices/table/invoiceProductLineColumns";
+import { lineTotalFromQuantityAndMoneyStrings } from "@/lib/numeric/integerAndMoneyInputs";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
     EditableReturnImportLine,
@@ -29,11 +31,6 @@ type CreateReturnImportInvoicePopupProps = {
 };
 
 type ConfirmAction = "cancel" | "create" | null;
-
-function parseReturnTotalPrice(value: string): number {
-  const parsed = Number(value.replace(/,/g, ""));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 export default function CreateReturnImportInvoicePopup({
   open,
@@ -57,16 +54,27 @@ export default function CreateReturnImportInvoicePopup({
   const sourceProductsRef = useRef<ImportInvoiceProductDto[]>(sourceProducts);
   sourceProductsRef.current = sourceProducts;
 
+  const { updateLine, handleBlurReturnQuantity } =
+    useReturnImportLinesEditor<EditableReturnImportLine>(
+      setLines,
+      function getLineId(line: EditableReturnImportLine): string {
+        return line.localId;
+      },
+    );
+
   const totals = useMemo(() => {
     let totalQuantity = 0;
     let totalReturnPrice = 0;
 
     lines.forEach((line) => {
       const qty = toNumberOrZero(line.returnQuantity);
-      const unitPrice = parseReturnTotalPrice(line.importPrice);
+      const lineTotal = lineTotalFromQuantityAndMoneyStrings(
+        line.returnQuantity,
+        line.importPrice,
+      );
 
       totalQuantity += qty;
-      totalReturnPrice += qty * unitPrice;
+      totalReturnPrice += lineTotal;
     });
 
     return {
@@ -113,34 +121,6 @@ export default function CreateReturnImportInvoicePopup({
 
   function handleCancelConfirmed(): void {
     handleClose();
-  }
-
-  function updateLine(
-    localId: string,
-    key: keyof EditableReturnImportLine,
-    value: string,
-  ): void {
-    setLines((current) =>
-      current.map((line) =>
-        line.localId === localId ? { ...line, [key]: value } : line,
-      ),
-    );
-  }
-
-  function handleBlurReturnQuantity(localId: string): void {
-    setLines((current) =>
-      current.map((line) => {
-        if (line.localId !== localId) {
-          return line;
-        }
-
-        if (toNumberOrZero(line.returnQuantity) <= 0) {
-          return { ...line, returnQuantity: "0", notes: "" };
-        }
-
-        return line;
-      }),
-    );
   }
 
   async function handleCreateConfirmed(): Promise<void> {

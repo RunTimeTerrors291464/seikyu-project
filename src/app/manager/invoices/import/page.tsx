@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import { ACCENT_STYLES } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
@@ -14,10 +13,12 @@ import {
   IMPORT_INVOICE_STATUS_OPTIONS,
   ImportInvoiceStatusFilter,
 } from "@/features/invoices/filters/importInvoiceFilters";
+import type { ImportInvoiceStatus } from "@/features/invoices/services/importInvoice.service";
 import type { ReturnImportInvoiceWithoutProductsDto } from "@/features/invoices/services/returnImportInvoice.service";
 import { getReturnImportInvoiceList } from "@/features/invoices/services/returnImportInvoice.service";
 import { importInvoiceColumns } from "@/features/invoices/table/importInvoiceColumns";
 import { returnImportInvoiceListColumns } from "@/features/invoices/table/returnImportInvoiceListColumns";
+import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { useDict } from "@/lib/lang/DictProvider";
 
 import {
@@ -29,8 +30,8 @@ import {
   User as UserIcon
 } from "lucide-react";
 
-import AddImportInvoicePopup from "@/features/invoices/layout/CreateImportInvoicePopup";
-import { ImportInvoiceRow, useImportInvoices } from "@/features/invoices/types/useImportInvoices";
+import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePopup";
+import { ImportInvoiceRow, useImportInvoices } from "@/features/invoices/hooks/useImportInvoices";
 import { useRouter } from "next/navigation";
 
 const RETURN_CHILDREN_LIMIT = 100;
@@ -42,14 +43,12 @@ function getStatusFilterClass(
   optionValue: ImportInvoiceStatusFilter,
   statusFilter: ImportInvoiceStatusFilter,
 ): string {
-  if (optionValue === "all") {
-    return statusFilter === optionValue
-      ? "border-text bg-text text-bg"
-      : "border-border bg-card text-muted";
-  }
-
-  const accent = STATUS_ACCENT[optionValue] ?? "neutral";
-  return `${ACCENT_STYLES[accent]} ${statusFilter === optionValue ? "opacity-100" : "opacity-70"}`;
+  return getFilterPillClassName(
+    optionValue,
+    statusFilter,
+    "all",
+    (value) => STATUS_ACCENT[value as ImportInvoiceStatus] ?? "neutral",
+  );
 }
 
 export default function ImportInvoicesListPage() {

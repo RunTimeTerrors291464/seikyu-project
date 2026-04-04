@@ -20,6 +20,16 @@ type Props = {
   selectedUnitId?: string;
   onClose: () => void;
   onSelect: (unit: ProductUnit) => void;
+  /**
+   * Called when the unit matching `selectedUnitId` is deactivated and persisted,
+   * so the parent can clear an invalid selection.
+   */
+  onClearSelection?: () => void;
+  /**
+   * Called after unit changes are saved to the server from this popup (activate,
+   * deactivate, or name/description update) so clients can refetch derived state.
+   */
+  onUnitServerStateChanged?: () => void;
 };
 
 export default function UnitPickerPopup({
@@ -27,6 +37,8 @@ export default function UnitPickerPopup({
   selectedUnitId,
   onClose,
   onSelect,
+  onClearSelection,
+  onUnitServerStateChanged,
 }: Props) {
   const dict = useDict();
 
@@ -39,7 +51,7 @@ export default function UnitPickerPopup({
   const [updating, setUpdating] = useState(false);
 
   const [confirmingActiveUnit, setConfirmingActiveUnit] = useState<ProductUnit | null>(null);
-  const [confirmingSaveUnit, setConfirmingSaveUnit] = useState<ProductUnit | null>(null);;
+  const [confirmingSaveUnit, setConfirmingSaveUnit] = useState<ProductUnit | null>(null);
 
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -366,6 +378,16 @@ export default function UnitPickerPopup({
                 });
 
                 setEditingId(null);
+
+                if (
+                  hasActiveChange &&
+                  !confirmingSaveUnit.isActive &&
+                  confirmingSaveUnit.id === selectedUnitId
+                ) {
+                  onClearSelection?.();
+                }
+
+                onUnitServerStateChanged?.();
 
               } finally {
                 setUpdating(false);

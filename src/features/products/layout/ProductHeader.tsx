@@ -11,6 +11,7 @@ import Button from "@/components/ui/Buttons";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import { StatusToggle } from "@/components/ui/StatusToggle";
 import { useDict } from "@/lib/lang/DictProvider";
+import type { MouseEvent } from "react";
 import { useState } from "react";
 
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
   onToggleActive: () => void;
   onSave?: () => Promise<boolean>;
   canSave?: boolean;
+  /** When set, intercepts back navigation (e.g. unsaved-changes confirmation). */
+  onBack?: () => void;
 };
 
 export default function ProductHeader({
@@ -31,8 +34,18 @@ export default function ProductHeader({
   onToggleActive,
   onSave,
   canSave,
+  onBack,
 }: Props) {
   const dict = useDict();
+
+  function handleBackClick(event: MouseEvent<HTMLAnchorElement>): void {
+    if (!onBack) {
+      return;
+    }
+
+    event.preventDefault();
+    onBack();
+  }
 
   const [saving, setSaving] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
@@ -63,6 +76,8 @@ export default function ProductHeader({
         <Link
           href="/manager/product-inventory"
           className="flex items-center gap-2 text-xl font-semibold text-text hover:text-muted"
+          aria-label={dict.back}
+          onClick={handleBackClick}
         >
           <ArrowLeft className="h-5 w-5" />
           {name}

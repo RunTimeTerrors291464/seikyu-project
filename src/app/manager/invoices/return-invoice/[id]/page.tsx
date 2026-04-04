@@ -1,7 +1,11 @@
 "use client";
 
 import { ConfirmPopup, DeletePopup } from "@/components/layout/Popup";
-import { formatDate } from "@/components/types/ui";
+import {
+  formatDate,
+  INVOICE_DRAFT_ERRORS,
+} from "@/components/types/ui";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import { Field, Textarea } from "@/components/ui/Fields";
 import KpiTile from "@/components/ui/KpiTile";
 import ReturnImportInvoiceHeader from "@/features/invoices/layout/ReturnImportInvoiceHeader";
@@ -14,18 +18,21 @@ import {
   getReturnImportInvoiceById,
   type ReturnImportInvoiceResponseDto,
 } from "@/features/invoices/services/returnImportInvoice.service";
-import { returnImportInvoiceDetailProductColumns } from "@/features/invoices/table/returnImportInvoiceDetailProductColumns";
+import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
+import { returnImportInvoiceDetailProductColumns } from "@/features/invoices/table/invoiceProductLineColumns";
+import { lineTotalFromQuantityAndMoneyStrings } from "@/lib/numeric/integerAndMoneyInputs";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
   EditableReturnInvoiceDetailLine,
   toEditableReturnDetailLine,
   toReturnLinesSignature,
 } from "@/features/invoices/types/returnImportDetail";
+import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
 import { Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function ReturnImportInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -53,16 +60,19 @@ export default function ReturnImportInvoiceDetailPage() {
     useState<boolean>(false);
   const [returnAllConfirming, setReturnAllConfirming] =
     useState<boolean>(false);
-  const [discardNavigateOpen, setDiscardNavigateOpen] =
-    useState<boolean>(false);
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [initialNotes, setInitialNotes] = useState<string>("");
   const [initialLinesSignature, setInitialLinesSignature] =
     useState<string>("[]");
+  const [draftValidationAttempted, setDraftValidationAttempted] =
+    useState<boolean>(false);
 
-  const allowNavigationRef = useRef<boolean>(false);
-  const currentHrefRef = useRef<string>("");
-  const historyTrapInsertedRef = useRef<boolean>(false);
+  const { updateLine, handleBlurReturnQuantity } =
+    useReturnImportLinesEditor<EditableReturnInvoiceDetailLine>(
+      setLines,
+      function getLineId(line: EditableReturnInvoiceDetailLine): string {
+        return line.lineId;
+      },
+    );
 
   useEffect(() => {
     let isMounted = true;
@@ -117,8 +127,10 @@ export default function ReturnImportInvoiceDetailPage() {
 
     lines.forEach((line) => {
       const qty = toNumberOrZero(line.returnQuantity);
-      const unit = Number(String(line.importPrice).replace(/,/g, ""));
-      const lineTotal = Number.isFinite(unit) ? qty * unit : 0;
+      const lineTotal = lineTotalFromQuantityAndMoneyStrings(
+        line.returnQuantity,
+        line.importPrice,
+      );
       totalQuantity += qty;
       totalReturnPrice += lineTotal;
     });
@@ -130,43 +142,50 @@ export default function ReturnImportInvoiceDetailPage() {
     };
   }, [lines]);
 
-  function updateLine(
-    lineId: string,
-    key: keyof EditableReturnInvoiceDetailLine,
-    value: string,
-  ): void {
-    setLines((current) =>
-      current.map((line) =>
-        line.lineId === lineId ? { ...line, [key]: value } : line,
+  const hasPositiveReturnLine = useMemo(
+    () =>
+      lines.some((line) => toNumberOrZero(line.returnQuantity) > 0),
+    [lines],
+  );
+
+  const hasMissingNotesForPositiveLines = useMemo(
+    () =>
+      lines.some(
+        (line) =>
+          toNumberOrZero(line.returnQuantity) > 0 &&
+          line.notes.trim() === "",
       ),
-    );
-  }
-
-  function handleBlurReturnQuantity(lineId: string): void {
-    setLines((current) =>
-      current.map((line) => {
-        if (line.lineId !== lineId) {
-          return line;
-        }
-
-        if (toNumberOrZero(line.returnQuantity) <= 0) {
-          return { ...line, returnQuantity: "0", notes: "" };
-        }
-
-        return line;
-      }),
-    );
-  }
+    [lines],
+  );
 
   const columns = returnImportInvoiceDetailProductColumns({
     dict,
     canEditDraft: Boolean(canEditDraft),
     onUpdateLine: updateLine,
     onBlurReturnQuantity: handleBlurReturnQuantity,
+    shouldShowReturnQuantityError:
+      draftValidationAttempted && !hasPositiveReturnLine,
+    showNoteErrorForLine: function showNoteErrorForLine(
+      line: EditableReturnInvoiceDetailLine,
+    ): boolean {
+      if (!draftValidationAttempted) {
+        return false;
+      }
+
+      const hasPositiveLine = toNumberOrZero(line.returnQuantity) > 0;
+      return hasPositiveLine && line.notes.trim() === "";
+    },
   });
 
   async function handleSaveDraft(): Promise<void> {
     if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    setDraftValidationAttempted(true);
+
+    if (!hasPositiveReturnLine || hasMissingNotesForPositiveLines) {
+      setSaveConfirmOpen(false);
       return;
     }
 
@@ -196,6 +215,7 @@ export default function ReturnImportInvoiceDetailPage() {
         toReturnLinesSignature(response.products.map(toEditableReturnDetailLine)),
       );
       setSaveConfirmOpen(false);
+      setDraftValidationAttempted(false);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : dict.somethingWentWrong,
@@ -207,6 +227,13 @@ export default function ReturnImportInvoiceDetailPage() {
 
   async function handleConfirm(): Promise<void> {
     if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    setDraftValidationAttempted(true);
+
+    if (!hasPositiveReturnLine || hasMissingNotesForPositiveLines) {
+      setConfirmDraftPopupOpen(false);
       return;
     }
 
@@ -222,6 +249,7 @@ export default function ReturnImportInvoiceDetailPage() {
       setInitialLinesSignature(
         toReturnLinesSignature(response.products.map(toEditableReturnDetailLine)),
       );
+      setDraftValidationAttempted(false);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : dict.somethingWentWrong,
@@ -243,71 +271,28 @@ export default function ReturnImportInvoiceDetailPage() {
     },
   );
 
-  function requestNavigate(href: string): void {
-    if (!canEditDraft || !isDirty) {
-      router.push(href);
-      return;
-    }
-
-    setPendingHref(href);
-    setDiscardNavigateOpen(true);
-  }
-
-  useEffect(function installNavigationGuards(): (() => void) | void {
-    if (!canEditDraft || !isDirty) {
-      return;
-    }
-
-    currentHrefRef.current = window.location.href;
-    allowNavigationRef.current = false;
-
-    if (!historyTrapInsertedRef.current) {
-      window.history.pushState({ __discardNavigateGuard: true }, "", window.location.href);
-      historyTrapInsertedRef.current = true;
-    }
-
-    function handleBeforeUnload(event: BeforeUnloadEvent): void {
-      if (!canEditDraft || !isDirty) {
-        return;
-      }
-
-      event.preventDefault();
-      event.returnValue = "";
-    }
-
-    function handlePopState(): void {
-      if (allowNavigationRef.current) {
-        return;
-      }
-      if (!canEditDraft || !isDirty) {
-        return;
-      }
-
-      const nextHref = window.location.href;
-      setPendingHref(nextHref);
-      setDiscardNavigateOpen(true);
-
-      window.history.pushState(
-        { __discardNavigateGuard: true },
-        "",
-        currentHrefRef.current,
-      );
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("popstate", handlePopState);
-      historyTrapInsertedRef.current = false;
-    };
-  }, [canEditDraft, isDirty]);
+  const {
+    requestNavigate,
+    discardNavigateOpen,
+    confirmDiscardNavigate,
+    closeDiscardNavigate,
+  } = useDraftNavigationGuard(Boolean(canEditDraft), isDirty);
 
   function handleOpenSaveConfirm(): void {
     if (!isDirty || !canEditDraft) {
       return;
     }
+
+    setDraftValidationAttempted(true);
+
+    if (!hasPositiveReturnLine) {
+      return;
+    }
+
+    if (hasMissingNotesForPositiveLines) {
+      return;
+    }
+
     setSaveConfirmOpen(true);
   }
 
@@ -315,6 +300,17 @@ export default function ReturnImportInvoiceDetailPage() {
     if (!canEditDraft) {
       return;
     }
+
+    setDraftValidationAttempted(true);
+
+    if (!hasPositiveReturnLine) {
+      return;
+    }
+
+    if (hasMissingNotesForPositiveLines) {
+      return;
+    }
+
     setConfirmDraftPopupOpen(true);
   }
 
@@ -448,6 +444,29 @@ export default function ReturnImportInvoiceDetailPage() {
         onBack={function handleBack(): void {
           requestNavigate(`/manager/invoices/import/${invoice.importInvoiceId}`);
         }}
+        centerSlot={
+          canEditDraft && draftValidationAttempted ? (
+            <>
+              {!hasPositiveReturnLine && (
+                <HeaderMeta
+                  label={dict.error}
+                  value={dict[INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.key]}
+                  accent={INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.accent}
+                  format="text"
+                />
+              )}
+              {hasPositiveReturnLine &&
+                hasMissingNotesForPositiveLines && (
+                  <HeaderMeta
+                    label={dict.error}
+                    value={dict[INVOICE_DRAFT_ERRORS.returnMissingNote.key]}
+                    accent={INVOICE_DRAFT_ERRORS.returnMissingNote.accent}
+                    format="text"
+                  />
+                )}
+            </>
+          ) : null
+        }
       />
 
       {errorMessage && (
@@ -577,23 +596,8 @@ export default function ReturnImportInvoiceDetailPage() {
         description={dict.confirmDiscardReturnDraftDescription}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
-        onConfirm={function confirmDiscardNavigate(): void {
-          if (!pendingHref) {
-            setDiscardNavigateOpen(false);
-            return;
-          }
-
-          const nextHref = pendingHref;
-          setDiscardNavigateOpen(false);
-          setPendingHref(null);
-          allowNavigationRef.current = true;
-          historyTrapInsertedRef.current = false;
-          router.push(nextHref);
-        }}
-        onClose={function closeDiscardNavigate(): void {
-          setDiscardNavigateOpen(false);
-          setPendingHref(null);
-        }}
+        onConfirm={confirmDiscardNavigate}
+        onClose={closeDiscardNavigate}
         accent="danger"
       />
     </div>

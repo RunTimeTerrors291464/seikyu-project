@@ -4,7 +4,7 @@ import Button from "@/components/ui/Buttons";
 import { useDict } from "@/lib/lang/DictProvider";
 import { ArrowLeft, Save, Send, Trash2 } from "lucide-react";
 import Link from "next/link";
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import ReturnImportInvoiceStatusPill from "../components/ReturnImportInvoiceStatusPill";
 import type { ReturnImportInvoiceStatus } from "../services/returnImportInvoice.service";
 
@@ -21,6 +21,8 @@ type ReturnImportInvoiceHeaderProps = {
   onConfirm: () => void;
   onDelete: () => void;
   onBack?: () => void;
+  /** Optional centered content (e.g. inline validation messages). */
+  centerSlot?: ReactNode;
 };
 
 export default function ReturnImportInvoiceHeader({
@@ -36,6 +38,7 @@ export default function ReturnImportInvoiceHeader({
   onConfirm,
   onDelete,
   onBack,
+  centerSlot,
 }: ReturnImportInvoiceHeaderProps) {
   const dict = useDict();
 
@@ -49,8 +52,8 @@ export default function ReturnImportInvoiceHeader({
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
+    <div className="flex w-full min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-shrink-0 items-center gap-2">
         <Link
           href={`/manager/invoices/import/${sourceImportInvoiceId}`}
           className="flex items-center text-xl font-semibold text-text hover:text-muted"
@@ -64,7 +67,11 @@ export default function ReturnImportInvoiceHeader({
         <ReturnImportInvoiceStatusPill status={status} />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+        {centerSlot}
+      </div>
+
+      <div className="flex flex-shrink-0 items-center gap-2">
         {canEditDraft && (
           <Button
             icon={<Trash2 className="h-3.5 w-3.5" />}

@@ -11,13 +11,18 @@ import {
 } from "@features/products/components/HistoryRow";
 import {
   ChevronRight,
+  CircleOff,
   Crown,
   Edit2,
+  Loader2,
   Minus,
   Plus,
+  PowerCircle,
 } from "lucide-react";
-import { useState } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
+  JsonValue,
   ProductHistoryDetail,
   ProductHistoryEvent,
   ProductHistoryItem,
@@ -32,6 +37,68 @@ type Props = {
   fetchDetail: (version: number) => void;
 };
 
+/**
+ * Returns whether the history row only records an `isActive` change.
+ *
+ * @param eventSummary - Field names included in the history entry.
+ */
+function isActiveOnlySummary(eventSummary: string[]): boolean {
+  return eventSummary.length === 1 && eventSummary[0] === "isActive";
+}
+
+/**
+ * Reads the new active flag from history detail, if present.
+ *
+ * @param detail - Loaded history detail for this version.
+ * @returns `true` if activated, `false` if deactivated, or `null` if unknown.
+ */
+function getBecameActiveFromDetail(
+  detail: ProductHistoryDetail | undefined
+): boolean | null {
+  const event = detail?.events.find((e) => e.fieldName === "isActive");
+  if (!event) {
+    return null;
+  }
+
+  const value: JsonValue | undefined = event.newValue as JsonValue | undefined;
+  if (value === true) {
+    return true;
+  }
+  if (value === false) {
+    return false;
+  }
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+
+  return null;
+}
+
+/**
+ * Timeline dot styles for activation vs deactivation-only rows.
+ *
+ * @param activated - Whether the product became active.
+ */
+function getActiveToggleMeta(activated: boolean): {
+  icon: ReactNode;
+  ring: string;
+} {
+  if (activated) {
+    return {
+      icon: <PowerCircle className="h-3 w-3 text-success" />,
+      ring: "ring-success",
+    };
+  }
+
+  return {
+    icon: <CircleOff className="h-3 w-3 text-danger" />,
+    ring: "ring-danger",
+  };
+}
+
 export default function HistoryGroupRow({
   group,
   isLast,
@@ -44,8 +111,52 @@ export default function HistoryGroupRow({
   const detail = detailMap[group.version];
   const loading = loadingMap[group.version];
 
-  const meta = getChangeMeta("edit");
   const dict = useDict();
+
+  const isActiveOnly = isActiveOnlySummary(group.eventSummary);
+  const becameActive = getBecameActiveFromDetail(detail);
+
+  useEffect(
+    function prefetchActiveDetail(): void {
+      if (!isActiveOnly) {
+        return;
+      }
+      if (detailMap[group.version] || loadingMap[group.version]) {
+        return;
+      }
+      fetchDetail(group.version);
+    },
+    [
+      isActiveOnly,
+      group.version,
+      detailMap,
+      loadingMap,
+      fetchDetail,
+    ]
+  );
+
+  function resolveTimelineMeta(): { icon: ReactNode; ring: string } {
+    if (!isActiveOnly) {
+      return getChangeMeta("edit");
+    }
+    if (becameActive !== null) {
+      return getActiveToggleMeta(becameActive);
+    }
+    if (loading) {
+      return {
+        icon: (
+          <Loader2 className="h-3 w-3 animate-spin text-muted" />
+        ),
+        ring: "ring-border",
+      };
+    }
+    return {
+      icon: <CircleOff className="h-3 w-3 text-muted" />,
+      ring: "ring-border",
+    };
+  }
+
+  const meta = resolveTimelineMeta();
 
   function handleToggle() {
     const next = !open;
@@ -130,25 +241,56 @@ export default function HistoryGroupRow({
     );
   }
 
-  return (
-    <div className="relative flex gap-3 pb-5">
+  if (isActiveOnly) {
+    const titleLine =
+      loading && becameActive === null
+        ? dict.loading
+        : becameActive === null && !loading
+          ? dict.noDetailAvailable
+          : becameActive
+            ? dict.productActivated
+            : dict.productDeactivated;
+
+    return (
       <div className="relative flex gap-3 pb-5">
-        {/* DOT */}
-        <div
-          className={`flex h-4 w-4 items-center justify-center rounded-full bg-card ring-2 ${meta.ring}`}
-        >
-          {meta.icon}
-          {/* vertical line */}
+        <div className="relative flex shrink-0 flex-col items-center">
+          <div
+            className={`relative flex h-4 w-4 items-center justify-center rounded-full bg-card ring-2 ${meta.ring}`}
+          >
+            {meta.icon}
+          </div>
           {!isLast && (
-            <div className="absolute left-2 top-4 h-full w-px bg-border" />
+            <div className="absolute left-1/2 top-4 h-full w-px -translate-x-1/2 bg-border" />
           )}
         </div>
 
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-text">{titleLine}</p>
+          <p className="mt-0.5 text-xs text-muted">
+            {group.createdByUsername} · {formatDate(group.createdAt)}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex gap-3 pb-5">
+      <div className="relative flex shrink-0 flex-col items-center">
+        <div
+          className={`relative flex h-4 w-4 items-center justify-center rounded-full bg-card ring-2 ${meta.ring}`}
+        >
+          {meta.icon}
+        </div>
+        {!isLast && (
+          <div className="absolute left-1/2 top-4 h-full w-px -translate-x-1/2 bg-border" />
+        )}
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         {/* HEADER */}
         <button
+          type="button"
           onClick={handleToggle}
           className="flex w-full items-start justify-between text-left"
         >
@@ -159,13 +301,13 @@ export default function HistoryGroupRow({
                 .map((f) => getFieldLabel(f, dict))
                 .join(", ")}
             </p>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="mt-0.5 text-xs text-muted">
               {group.createdByUsername} · {formatDate(group.createdAt)}
             </p>
           </div>
 
           <ChevronRight
-            className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""
+            className={`h-3 w-3 shrink-0 transition-transform ${open ? "rotate-90" : ""
               }`}
           />
         </button>
@@ -203,12 +345,12 @@ export default function HistoryGroupRow({
                             {formatValue(e.previousValue)}
                           </span>
                           <span className="mx-1">→</span>
-                          <span className="text-text font-medium">
+                          <span className="font-medium text-text">
                             {formatValue(e.newValue)}
                           </span>
                         </span>
                       ) : (
-                        <span className="text-success font-medium">
+                        <span className="font-medium text-success">
                           {formatValue(e.newValue)}
                         </span>
                       )}

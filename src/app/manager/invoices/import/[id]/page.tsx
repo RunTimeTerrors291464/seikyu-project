@@ -1,7 +1,7 @@
 "use client";
 
 import { ConfirmPopup, DeletePopup } from "@/components/layout/Popup";
-import { INVOICE_DRAFT_ERRORS, formatDate } from "@/components/types/ui";
+import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
@@ -16,16 +16,18 @@ import {
   editImportInvoiceDraft,
   getImportInvoiceById,
 } from "@/features/invoices/services/importInvoice.service";
+import { useImportInvoiceProductsEditor } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import {
   EditableImportInvoiceProduct,
-  toEditableProduct,
+  importLineDtoToEditable,
   toNumberOrZero,
 } from "@/features/invoices/types/importInvoiceDetail";
+import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ImportInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -44,8 +46,6 @@ export default function ImportInvoiceDetailPage() {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [saveConfirmOpen, setSaveConfirmOpen] = useState<boolean>(false);
   const [confirmDraftPopupOpen, setConfirmDraftPopupOpen] = useState<boolean>(false);
-  const [discardNavigateOpen, setDiscardNavigateOpen] = useState<boolean>(false);
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [returnPopupOpen, setReturnPopupOpen] = useState<boolean>(false);
   const [initialNotes, setInitialNotes] = useState<string>("");
   const [initialProductsSignature, setInitialProductsSignature] = useState<string>("[]");
@@ -79,10 +79,10 @@ export default function ImportInvoiceDetailPage() {
         }
 
         setInvoice(response);
-        setProducts(response.products.map(toEditableProduct));
+        setProducts(response.products.map(importLineDtoToEditable));
         setNotes(response.notes ?? "");
         setInitialNotes(response.notes ?? "");
-        setInitialProductsSignature(toProductsSignature(response.products.map(toEditableProduct)));
+        setInitialProductsSignature(toProductsSignature(response.products.map(importLineDtoToEditable)));
       } catch (error) {
         if (!isMounted) {
           return;
@@ -109,54 +109,12 @@ export default function ImportInvoiceDetailPage() {
   const canReturn =
     invoice?.status === "confirmed" || invoice?.status === "partiallyReturned";
 
-  const hasEmptyQuantityOrImportPrice = useMemo(() => {
-    return products.some(
-      (product) =>
-        toNumberOrZero(product.quantity) <= 0 ||
-        product.importPrice.trim().length === 0,
-    );
-  }, [products]);
-
-  const draftError = useMemo(() => {
-    if (!canEditDraft) {
-      return null;
-    }
-
-    const hasInvalidQuantity = products.some(
-      (product) => toNumberOrZero(product.quantity) <= 0,
-    );
-    if (hasInvalidQuantity) {
-      return INVOICE_DRAFT_ERRORS.importMissingQuantity;
-    }
-
-    const hasEmptyPrice = products.some(
-      (product) => product.importPrice.trim().length === 0,
-    );
-    if (hasEmptyPrice) {
-      return INVOICE_DRAFT_ERRORS.importMissingPrice;
-    }
-
-    return null;
-  }, [canEditDraft, products]);
-
-  const totals = useMemo(() => {
-    let totalQuantity = 0;
-    let totalImportPrice = 0;
-
-    products.forEach((product) => {
-      const quantity = toNumberOrZero(product.quantity);
-      const importPrice = toNumberOrZero(product.importPrice);
-
-      totalQuantity += quantity;
-      totalImportPrice += quantity * importPrice;
-    });
-
-    return {
-      totalProducts: products.length,
-      totalQuantity,
-      totalImportPrice,
-    };
-  }, [products]);
+  const {
+    updateRow,
+    totals,
+    hasEmptyQuantityOrImportPrice,
+    draftError,
+  } = useImportInvoiceProductsEditor(products, setProducts, Boolean(canEditDraft));
 
   async function handleSaveDraft(): Promise<void> {
     if (!invoice || !canEditDraft) {
@@ -186,10 +144,10 @@ export default function ImportInvoiceDetailPage() {
       });
 
       setInvoice(response);
-      setProducts(response.products.map(toEditableProduct));
+      setProducts(response.products.map(importLineDtoToEditable));
       setNotes(response.notes ?? "");
       setInitialNotes(response.notes ?? "");
-      setInitialProductsSignature(toProductsSignature(response.products.map(toEditableProduct)));
+      setInitialProductsSignature(toProductsSignature(response.products.map(importLineDtoToEditable)));
       setSaveConfirmOpen(false);
     } catch (error) {
       setErrorMessage(
@@ -211,7 +169,7 @@ export default function ImportInvoiceDetailPage() {
     try {
       const response = await confirmImportInvoice(invoice.id);
       setInvoice(response);
-      setProducts(response.products.map(toEditableProduct));
+      setProducts(response.products.map(importLineDtoToEditable));
       setNotes(response.notes ?? "");
     } catch (error) {
       setErrorMessage(
@@ -234,71 +192,12 @@ export default function ImportInvoiceDetailPage() {
     },
   );
 
-  const allowNavigationRef = useRef<boolean>(false);
-  const currentHrefRef = useRef<string>("");
-  const historyTrapInsertedRef = useRef<boolean>(false);
-
-  function requestNavigate(href: string): void {
-    if (!canEditDraft || !isDirty) {
-      router.push(href);
-      return;
-    }
-
-    setPendingHref(href);
-    setDiscardNavigateOpen(true);
-  }
-
-  useEffect(function installNavigationGuards(): (() => void) | void {
-    if (!canEditDraft || !isDirty) {
-      return;
-    }
-
-    currentHrefRef.current = window.location.href;
-    allowNavigationRef.current = false;
-
-    if (!historyTrapInsertedRef.current) {
-      window.history.pushState({ __discardNavigateGuard: true }, "", window.location.href);
-      historyTrapInsertedRef.current = true;
-    }
-
-    function handleBeforeUnload(event: BeforeUnloadEvent): void {
-      if (!canEditDraft || !isDirty) {
-        return;
-      }
-
-      event.preventDefault();
-      event.returnValue = "";
-    }
-
-    function handlePopState(): void {
-      if (allowNavigationRef.current) {
-        return;
-      }
-      if (!canEditDraft || !isDirty) {
-        return;
-      }
-
-      const nextHref = window.location.href;
-      setPendingHref(nextHref);
-      setDiscardNavigateOpen(true);
-
-      // Revert the URL so the user stays on this page until they confirm.
-      window.history.pushState(
-        { __discardNavigateGuard: true },
-        "",
-        currentHrefRef.current,
-      );
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("popstate", handlePopState);
-      historyTrapInsertedRef.current = false;
-    };
-  }, [canEditDraft, isDirty]);
+  const {
+    requestNavigate,
+    discardNavigateOpen,
+    confirmDiscardNavigate,
+    closeDiscardNavigate,
+  } = useDraftNavigationGuard(Boolean(canEditDraft), isDirty);
 
   function handleOpenSaveConfirm(): void {
     if (!isDirty || !canEditDraft || hasEmptyQuantityOrImportPrice) {
@@ -436,6 +335,7 @@ export default function ImportInvoiceDetailPage() {
         products={products}
         canEditDraft={canEditDraft}
         onChangeProducts={setProducts}
+        updateRow={updateRow}
       />
 
       <div className="flex max-h-[30vh] min-h-0 shrink-0 flex-col gap-3 overflow-hidden lg:flex-row lg:items-stretch">
@@ -485,23 +385,8 @@ export default function ImportInvoiceDetailPage() {
         description={dict.confirmDiscardImportDraftDescription}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
-        onConfirm={function confirmDiscardNavigate(): void {
-          if (!pendingHref) {
-            setDiscardNavigateOpen(false);
-            return;
-          }
-
-          const nextHref = pendingHref;
-          setDiscardNavigateOpen(false);
-          setPendingHref(null);
-          allowNavigationRef.current = true;
-          historyTrapInsertedRef.current = false;
-          router.push(nextHref);
-        }}
-        onClose={function closeDiscardNavigate(): void {
-          setDiscardNavigateOpen(false);
-          setPendingHref(null);
-        }}
+        onConfirm={confirmDiscardNavigate}
+        onClose={closeDiscardNavigate}
         accent="danger"
       />
 

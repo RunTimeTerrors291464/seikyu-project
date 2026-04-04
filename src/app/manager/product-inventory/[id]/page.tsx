@@ -6,12 +6,14 @@ import ProductDetailsCard from "@/features/products/layout/ProductDetailsCard";
 import ProductHeader from "@/features/products/layout/ProductHeader";
 import ProductHistoryCard from "@/features/products/layout/ProductHistoryCard";
 import ProductNamesCard from "@/features/products/layout/ProductNamesCard";
+import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useDict } from "@/lib/lang/DictProvider";
 import { CircleOff, PowerCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
-export default function Page() {
+export default function ProductInventoryDetailPage() {
   const [skuState, setSkuState] = useState({
     debouncing: false,
     checking: false,
@@ -50,14 +52,15 @@ export default function Page() {
     isDirty,
   } = useProductDetail(productId);
 
+  const canEditDraft = Boolean(product?.isActive);
+  const {
+    requestNavigate,
+    discardNavigateOpen,
+    confirmDiscardNavigate,
+    closeDiscardNavigate,
+  } = useDraftNavigationGuard(canEditDraft, isDirty);
 
   const dict = useDict();
-
-  console.log("[ProductPage] render", {
-    productId: id,
-    isDirty,
-    loading,
-  });
 
   if (loading || !product) return null;
 
@@ -69,6 +72,17 @@ export default function Page() {
     String(product.sku || "")
   );
 
+  const hasUnitSelected = Boolean(product.productUnitId?.trim());
+
+  async function handleSave(): Promise<boolean> {
+    if (!hasUnitSelected) {
+      toast.error(dict.unitRequired);
+      return false;
+    }
+
+    return saveProduct();
+  }
+
   return (
     <div className="flex flex-col h-full space-y-6 max-h-[100vh]">
       {/* HEADER */}
@@ -78,14 +92,18 @@ export default function Page() {
         updatedAt={product.updatedAt}
         active={product.isActive}
         onToggleActive={requestToggleActive}
-        onSave={saveProduct}
+        onSave={handleSave}
         canSave={
           isDirty &&
           hasValidSkuFormat &&
+          hasUnitSelected &&
           !skuState.debouncing &&
           !skuState.checking &&
           !skuState.duplicate
         }
+        onBack={function handleBack(): void {
+          requestNavigate("/manager/product-inventory");
+        }}
       />
 
       <ConfirmPopup
@@ -114,6 +132,17 @@ export default function Page() {
           )
         }
         accent={product.isActive ? "danger" : "neutral"}
+      />
+
+      <ConfirmPopup
+        open={discardNavigateOpen}
+        title={dict.confirmDiscardProductUnsavedTitle}
+        description={dict.confirmDiscardProductUnsavedDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        onConfirm={confirmDiscardNavigate}
+        onClose={closeDiscardNavigate}
+        accent="danger"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">

@@ -8,7 +8,10 @@ import { createProduct } from "@/features/products/services/product.service";
 import type { CreateProductPayload, Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
 import { useState } from "react";
-import type { EditableImportInvoiceProduct } from "../types/importInvoiceDetail";
+import {
+  type EditableImportInvoiceProduct,
+  productToEditableImportLine,
+} from "../types/importInvoiceDetail";
 
 type CreateAndAddProductPopupProps = {
   open: boolean;
@@ -27,19 +30,6 @@ type AddProductFormData = {
   sellingPrice: number;
   reorderThreshold: number;
 };
-
-function toEditableImportInvoiceProduct(product: Product, productName: string): EditableImportInvoiceProduct {
-  return {
-    localId: `${product.id}-${Date.now()}`,
-    productId: product.id,
-    productSku: product.sku,
-    productName: product.productNames?.[0] ?? productName,
-    productUnit: product.productUnitName,
-    quantity: "0",
-    importPrice: String(product.importPrice),
-    notes: "",
-  };
-}
 
 export default function CreateAndAddProductPopup({
   open,
@@ -70,7 +60,7 @@ export default function CreateAndAddProductPopup({
     setLoading(true);
     try {
       const createdProduct = (await createProduct(payload)) as Product;
-      onCreatedAndAdd(toEditableImportInvoiceProduct(createdProduct, formData.name));
+      onCreatedAndAdd(productToEditableImportLine(createdProduct, formData.name));
       setConfirmAction(null);
       setFormData(null);
       onClose();
