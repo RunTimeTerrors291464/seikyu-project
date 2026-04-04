@@ -16,6 +16,11 @@ type FieldProps = {
   error?: string;
   warning?: string;
   children: React.ReactNode;
+  /**
+   * When true, the field is a flex column that grows with its parent (`flex-1 min-h-0`),
+   * and the control slot expands so inputs like `Textarea` can fill remaining height.
+   */
+  fillHeight?: boolean;
 };
 
 export function Field({
@@ -26,45 +31,53 @@ export function Field({
   error,
   warning,
   children,
+  fillHeight = false,
 }: FieldProps) {
   const hasError = !!error;
   const hasWarning = !error && !!warning;
 
   return (
-    <div className="space-y-1">
+    <div
+      className={clsx(
+        "space-y-1",
+        fillHeight && "flex min-h-0 flex-1 flex-col",
+      )}
+    >
       {/* LABEL */}
-      <div className="flex items-center gap-1.5 text-xs text-muted">
+      <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
         {icon && <span className="flex items-center text-muted">{icon}</span>}
         <span>{label}</span>
         {required && <span className="text-danger">*</span>}
       </div>
 
       {/* INPUT */}
-      <div>
-        {React.isValidElement(children)
+      <div className={clsx(fillHeight && "flex min-h-0 flex-1 flex-col")}>
+        {React.isValidElement(children) &&
+        typeof children.type !== "string" &&
+        children.type !== React.Fragment
           ? React.cloneElement(
-            children as React.ReactElement<{
-              error?: boolean;
-              warning?: boolean;
-            }>,
-            {
-              // Avoid passing explicit false values down to DOM elements.
-              // React warns when non-boolean attributes receive `false`, so
-              // only provide these props when they are actually active.
-              error: hasError || undefined,
-              warning: hasWarning || undefined,
-            }
-          )
+              children as React.ReactElement<{
+                error?: boolean;
+                warning?: boolean;
+              }>,
+              {
+                // Avoid passing explicit false values down to DOM elements.
+                // React warns when non-boolean attributes receive `false`, so
+                // only provide these props when they are actually active.
+                error: hasError || undefined,
+                warning: hasWarning || undefined,
+              }
+            )
           : children}
       </div>
 
       {/* MESSAGE */}
       {hasError ? (
-        <p className="text-xs text-danger">{error}</p>
+        <p className="shrink-0 text-xs text-danger">{error}</p>
       ) : hasWarning ? (
-        <p className="text-xs text-warning">{warning}</p>
+        <p className="shrink-0 text-xs text-warning">{warning}</p>
       ) : hint ? (
-        <p className="text-xs text-muted">{hint}</p>
+        <p className="shrink-0 text-xs text-muted">{hint}</p>
       ) : null}
     </div>
   );
@@ -196,6 +209,8 @@ type TextareaProps = {
   error?: boolean;
   onBlur?: () => void;
   warning?: boolean;
+  rows?: number;
+  className?: string;
 };
 
 export function Textarea({
@@ -206,6 +221,8 @@ export function Textarea({
   disabled = false,
   error = false,
   warning = false,
+  rows = 3,
+  className,
 }: TextareaProps) {
   return (
     <textarea
@@ -214,7 +231,7 @@ export function Textarea({
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
       disabled={disabled}
-      rows={3}
+      rows={rows}
       className={clsx(
         "w-full rounded-md border bg-card px-3 py-2 text-sm text-text",
         "outline-none transition-colors duration-150",
@@ -236,7 +253,9 @@ export function Textarea({
             : "focus:border-primary",
 
         /* disabled */
-        disabled && "opacity-60 cursor-not-allowed bg-hover"
+        disabled && "opacity-60 cursor-not-allowed bg-hover",
+
+        className,
       )}
     />
   );

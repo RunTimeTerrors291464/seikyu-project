@@ -1,7 +1,6 @@
 "use client";
 
 import Popup from "@/components/layout/BlurPopupWrapper";
-import { ConfirmPopup } from "@/components/layout/Popup";
 import { ACCENT_STYLES, ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import type { Column } from "@/components/ui/DataTable";
@@ -38,7 +37,6 @@ export default function AddExistingProductsPopup({
   const [statusFilter, setStatusFilter] = useState<ProductStockFilter>("all");
   const [activeFilter, setActiveFilter] = useState<ProductStatusFilter>("all");
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
-  const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
 
   const initialTableQuery: ProductQuery = {
     page: 1,
@@ -59,14 +57,22 @@ export default function AddExistingProductsPopup({
   useEffect(function clearSelectionOnClose(): void {
     if (!open) {
       setSelectedProductIds(new Set());
-      setConfirmOpen(false);
     }
   }, [open]);
+
+  /**
+   * Returns whether a product can be selected in this popup.
+   *
+   * Inactive products and already-excluded products must never be selectable.
+   */
+  function isProductSelectable(product: Product): boolean {
+    return !excludedProductIds.has(product.id) && product.isActive;
+  }
 
   const selectableRows = useMemo(
     function getSelectableRows(): Product[] {
       return table.data.filter(function filterSelectable(product): boolean {
-        return !excludedProductIds.has(product.id);
+        return isProductSelectable(product);
       });
     },
     [excludedProductIds, table.data],
@@ -87,7 +93,7 @@ export default function AddExistingProductsPopup({
   const selectedProducts = useMemo(
     function getSelectedProducts(): Product[] {
       return table.data.filter(function filterSelected(product): boolean {
-        return selectedProductIds.has(product.id) && !excludedProductIds.has(product.id);
+        return selectedProductIds.has(product.id) && isProductSelectable(product);
       });
     },
     [excludedProductIds, selectedProductIds, table.data],
@@ -119,19 +125,26 @@ export default function AddExistingProductsPopup({
       ),
       accessor: function renderSelectColumn(product) {
         const alreadyAdded = excludedProductIds.has(product.id);
+        const inactive = !product.isActive;
+        const isDisabled = alreadyAdded || inactive;
         return (
           <input
             type="checkbox"
-            checked={selectedProductIds.has(product.id)}
-            disabled={alreadyAdded}
+            checked={selectedProductIds.has(product.id) && !isDisabled}
+            disabled={isDisabled}
             onChange={function handleToggleOne(event): void {
               setSelectedProductIds(function applyNextSelection(previous) {
+                if (event.target.checked && !isProductSelectable(product)) {
+                  return previous;
+                }
+
                 const next = new Set(previous);
                 if (event.target.checked) {
                   next.add(product.id);
-                } else {
-                  next.delete(product.id);
+                  return next;
                 }
+
+                next.delete(product.id);
                 return next;
               });
             }}
@@ -224,18 +237,22 @@ export default function AddExistingProductsPopup({
     },
   ];
 
-  function handleRemoveSelected(): void {
+  function handleDeleteSelected(): void {
     setSelectedProductIds(new Set());
   }
 
-  function handleConfirmSelection(): void {
+  /**
+   * Finalizes the current selection and closes the popup.
+   *
+   * Products must be selected before this action can run.
+   */
+  function handleSelectProducts(): void {
     if (selectedProducts.length === 0) {
-      setConfirmOpen(false);
       return;
     }
+
     onConfirmSelect(selectedProducts);
     setSelectedProductIds(new Set());
-    setConfirmOpen(false);
     onClose();
   }
 
@@ -289,16 +306,16 @@ export default function AddExistingProductsPopup({
               <Button
                 icon={<Trash2 className="h-3.5 w-3.5" />}
                 accent="danger"
-                onClick={handleRemoveSelected}
+                onClick={handleDeleteSelected}
                 disabled={selectedProductIds.size === 0}
               >
-                {dict.removeSelected}
+                {dict.deleteSelected}
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 space-y-3 overflow-auto p-4">
+        <div className="flex min-h-0 flex-1 flex-col space-y-3 p-4">
           {showFilters && (
             <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
               <div className="flex items-center gap-2">
@@ -336,7 +353,7 @@ export default function AddExistingProductsPopup({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center gap-2">
                 <span className="text-xs text-muted">{dict.status}</span>
                 <div className="flex gap-1">
                   {PRODUCT_STATUS_OPTIONS.map(function renderStatusOption(option) {
@@ -402,9 +419,7 @@ export default function AddExistingProductsPopup({
             </Button>
             <Button
               accent="primary"
-              onClick={function openConfirmPopup(): void {
-                setConfirmOpen(true);
-              }}
+              onClick={handleSelectProducts}
               disabled={selectedProducts.length === 0}
             >
               {dict.select}
@@ -412,18 +427,6 @@ export default function AddExistingProductsPopup({
           </div>
         </div>
       </div>
-
-      <ConfirmPopup
-        open={confirmOpen}
-        title={dict.confirmSelectProductsTitle}
-        description={dict.confirmSelectProductsDescription.replace("{count}", String(selectedProducts.length))}
-        confirmText={dict.confirm}
-        cancelText={dict.cancel}
-        onConfirm={handleConfirmSelection}
-        onClose={function closeConfirmPopup(): void {
-          setConfirmOpen(false);
-        }}
-      />
     </Popup>
   );
 }

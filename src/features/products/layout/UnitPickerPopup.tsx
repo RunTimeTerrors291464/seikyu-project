@@ -105,38 +105,41 @@ export default function UnitPickerPopup({
       <div className="flex flex-col max-w-[50vw] max-h-[70vh]">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between p-4 border-b border-border gap-3">
+        <div className="flex items-center justify-between p-4 border-b border-border">
 
           {/* LEFT: Title */}
           <span className="flex items-center text-sm font-semibold text-text gap-2 whitespace-nowrap">
-            <Ruler className="w-4 h-4" />
+            <Ruler className="h-4 w-4" />
             {dict.unit}
           </span>
 
           {/* CENTER: SEARCH */}
-          <div className="flex-1 max-w-md">
-            <Input
-              value={search}
-              onChange={setSearch}
-              placeholder={dict.searchPlaceholder}
-            />
-          </div>
+          {!adding && (
+            <div className="w-xl">
+              <Input
+                value={search}
+                onChange={setSearch}
+                placeholder={dict.searchPlaceholder}
+              />
+            </div>
+          )}
 
           {/* RIGHT: Add / Adding */}
           {adding ? (
-            <div className="flex items-center gap-2 animate-shoot">
+            <div className="flex flex-end items-center gap-2 animate-shoot">
+              <div className="flex gap-2">
+                <Input
+                  value={name}
+                  onChange={setName}
+                  placeholder={dict.name}
+                />
 
-              <Input
-                value={name}
-                onChange={setName}
-                placeholder={dict.name}
-              />
-
-              <Input
-                value={desc}
-                onChange={setDesc}
-                placeholder={dict.description}
-              />
+                <Input
+                  value={desc}
+                  onChange={setDesc}
+                  placeholder={dict.description}
+                />
+              </div>
 
               {canAdd && (
                 <Button onClick={handleAdd} accent="primary">
@@ -150,15 +153,18 @@ export default function UnitPickerPopup({
                   setName("");
                   setDesc("");
                 }}
-                accent="neutral"
+                accent="danger"
               >
                 {dict.cancel}
               </Button>
 
             </div>
           ) : (
-            <Button onClick={() => setAdding(true)}>
-              <Plus className="h-3.5 w-3.5" />
+            <Button
+              icon={<Plus className="h-3.5 w-3.5" />}
+              onClick={() => setAdding(true)}
+              accent="primary"
+            >
               {dict.add}
             </Button>
           )}
@@ -188,7 +194,7 @@ export default function UnitPickerPopup({
               onEdit: (unit) => {
                 setEditingId(unit.id);
                 setDraftMap({
-                  [unit.id]: { ...unit }, // eset all drafts
+                  [unit.id]: { ...unit }, // reset all drafts
                 });
               },
 
@@ -199,7 +205,7 @@ export default function UnitPickerPopup({
 
                   setConfirmingActiveUnit({
                     ...unit,
-                    isActive: value,
+                    isActive: value as boolean,
                   });
 
                   return;

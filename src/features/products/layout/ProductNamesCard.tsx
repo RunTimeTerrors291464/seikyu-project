@@ -60,14 +60,14 @@ export default function ProductNamesCard({
     <div className="flex grow overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex flex-col gap-4 p-4 w-full">
         {/* HEADER */}
-        <div className="flex items-center gap-2 border-border justify-between">
+        <div className="flex items-center justify-between border-border">
           <span className="flex items-center text-sm font-semibold text-text gap-2">
             <Edit2 className="w-3 h-3" />
             {dict.productName}
           </span>
 
           {adding ? (
-            <div className="ml-auto flex items-center gap-2 animate-shoot">
+            <div className="flex flex-end items-center gap-2 animate-shoot">
               <input
                 autoFocus
                 disabled={disabled}
@@ -93,7 +93,6 @@ export default function ProductNamesCard({
                 <button
                   onClick={handleAdd}
                   disabled={disabled || safeNames.length >= max}
-                  className="h-8 rounded-md border border-border px-2 text-xs text-text hover:bg-hover transition"
                 >
                   {dict.add}
                 </button>
@@ -119,8 +118,8 @@ export default function ProductNamesCard({
                 onClick={() => safeNames.length < max && setAdding(true)}
                 disabled={disabled || safeNames.length >= max}
                 accent="neutral"
+                icon={<Plus className="h-3.5 w-3.5" />}
               >
-                <Plus className="h-3.5 w-3.5" />
                 {dict.add}
               </Button>
               <span className="text-sm text-text">

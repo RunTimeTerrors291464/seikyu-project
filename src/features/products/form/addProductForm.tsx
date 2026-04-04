@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  AlertTriangle,
+  Barcode,
+  DollarSign,
+  Package,
+  Ruler,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -41,11 +48,17 @@ type SubmitFormValues = Omit<
 type Props = {
   dict: Dictionary;
   onSubmit: (data: SubmitFormValues) => void;
+  /**
+   * Called whenever the form changes from its initial empty state.
+   * Useful for guarding destructive actions like "discard changes".
+   */
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
 export default function AddNewProductForm({
   dict,
   onSubmit,
+  onDirtyChange,
 }: Props) {
   const { setValue, watch, handleSubmit } =
     useForm<FormValues>({
@@ -62,6 +75,22 @@ export default function AddNewProductForm({
     });
 
   const values = watch();
+
+  /**
+   * Computes whether the form differs from its initial empty state, and reports it upward.
+   */
+  useEffect(function reportDirtyState(): void {
+    const isDirty =
+      values.sku !== "" ||
+      values.name.trim() !== "" ||
+      values.productUnitId !== "" ||
+      values.importPrice !== "" ||
+      values.sellingPrice !== "" ||
+      values.reorderThreshold !== "" ||
+      values.productDescription.trim() !== "";
+
+    onDirtyChange?.(isDirty);
+  }, [onDirtyChange, values]);
 
   const [unitOpen, setUnitOpen] = useState(false);
 
@@ -231,6 +260,7 @@ export default function AddNewProductForm({
       {/* SKU */}
       <Field
         label={dict.sku}
+        icon={<Barcode className="h-3 w-3" />}
         error={errors.sku}
         hint={
           skuDebouncing || skuChecking
@@ -259,7 +289,11 @@ export default function AddNewProductForm({
       </Field>
 
       {/* NAME */}
-      <Field label={dict.productName} error={errors.name}>
+      <Field
+        label={dict.productName}
+        icon={<Package className="h-3 w-3" />}
+        error={errors.name}
+      >
         <Input
           value={values.name}
           onChange={(v) => {
@@ -273,7 +307,11 @@ export default function AddNewProductForm({
       </Field>
 
       {/* UNIT */}
-      <Field label={dict.unit} error={errors.productUnitId}>
+      <Field
+        label={dict.unit}
+        icon={<Ruler className="h-3 w-3" />}
+        error={errors.productUnitId}
+      >
         <SelectButton
           value={values.productUnitName}
           placeholder={dict.selectUnit}
@@ -295,6 +333,7 @@ export default function AddNewProductForm({
       {/* IMPORT PRICE */}
       <Field
         label={dict.importPrice}
+        icon={<DollarSign className="h-3 w-3" />}
         error={errors.importPrice}
         warning={
           warnings.importPrice
@@ -321,6 +360,7 @@ export default function AddNewProductForm({
       {/* SELLING PRICE */}
       <Field
         label={dict.sellingPrice}
+        icon={<DollarSign className="h-3 w-3" />}
         error={errors.sellingPrice}
         warning={
           warnings.sellingPrice
@@ -347,6 +387,7 @@ export default function AddNewProductForm({
       {/* REORDER */}
       <Field
         label={dict.reorderThreshold}
+        icon={<AlertTriangle className="h-3 w-3" />}
         error={errors.reorderThreshold}
         warning={
           warnings.reorderThreshold
@@ -373,6 +414,7 @@ export default function AddNewProductForm({
       {/* DESCRIPTION */}
       <Field
         label={dict.description}
+        icon={<Ruler className="h-3 w-3" />}
         warning={
           warnings.description
             ? dict.emptyDescription

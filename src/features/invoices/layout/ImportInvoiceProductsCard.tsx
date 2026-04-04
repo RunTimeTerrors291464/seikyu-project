@@ -8,7 +8,7 @@ import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { importInvoiceProductColumns } from "../table/importInvoiceProductColumns";
 import { EditableImportInvoiceProduct } from "../types/importInvoiceDetail";
 import AddExistingProductsPopup from "./AddExistingProductsPopup";
@@ -47,6 +47,15 @@ export default function ImportInvoiceProductsCard({
   const [searchText, setSearchText] = useState<string>("");
   const [openAddExistingPopup, setOpenAddExistingPopup] = useState<boolean>(false);
   const [openCreateAndAddPopup, setOpenCreateAndAddPopup] = useState<boolean>(false);
+
+  useEffect(
+    function clearSelectionWhenNotDraft(): void {
+      if (!canEditDraft) {
+        setSelectedIds(new Set());
+      }
+    },
+    [canEditDraft],
+  );
 
   const filteredProducts = useMemo(() => {
     if (!searchText) {
@@ -161,15 +170,15 @@ export default function ImportInvoiceProductsCard({
   return (
     <div
       className={clsx(
-        "rounded-lg p-3 flex flex-col gap-3 grow",
+        "flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg p-3",
         accent !== "neutral"
           ? `${ACCENT_STYLES[accent]} text-text`
-          : "border border-border bg-card grid-cols-1",
+          : "border border-border bg-card",
       )}
     >
-      <div className="mb-3 flex items-center justify-between gap-2 grid-cols-1">
-        <div className="flex min-w-0 w-full max-w-xl items-center gap-3 pr-3 grid-cols-1">
-          <div className="w-full max-w-xl grid-cols-1">
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 w-full max-w-xl items-center gap-3 pr-3">
+          <div className="w-full max-w-xl">
             <RuleInput
               options={[
                 { label: dict.sku, icon: <Hash className="h-3 w-3" /> },
@@ -184,12 +193,16 @@ export default function ImportInvoiceProductsCard({
               }}
             />
           </div>
-          <div className="whitespace-nowrap text-xs text-muted grid-cols-1">
-            <span>{selectedCount} {dict.selected}</span>
-          </div>
+          {canEditDraft && (
+            <div className="whitespace-nowrap text-xs text-muted ">
+              <span>
+                {selectedCount} {dict.selected}
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 grid-cols-1">
+        <div className="flex items-center gap-2 ">
           <Button
             icon={<Plus className="h-3.5 w-3.5" />}
             onClick={function openAddExistingProductPopup(): void {
@@ -211,14 +224,16 @@ export default function ImportInvoiceProductsCard({
             {dict.createAndAddProduct}
           </Button>
 
-          <Button
-            icon={<Trash2 className="h-3.5 w-3.5" />}
-            accent="danger"
-            onClick={handleDeleteSelected}
-            disabled={!canEditDraft || selectedCount === 0}
-          >
-            {dict.deleteSelected}
-          </Button>
+          {canEditDraft && (
+            <Button
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+              accent="danger"
+              onClick={handleDeleteSelected}
+              disabled={selectedCount === 0}
+            >
+              {dict.deleteSelected}
+            </Button>
+          )}
         </div>
       </div>
 

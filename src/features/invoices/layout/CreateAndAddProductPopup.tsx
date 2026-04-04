@@ -49,6 +49,7 @@ export default function CreateAndAddProductPopup({
   const dict = useDict();
   const [formData, setFormData] = useState<AddProductFormData | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   async function handleCreateAndAdd(): Promise<void> {
@@ -78,6 +79,22 @@ export default function CreateAndAddProductPopup({
     }
   }
 
+  /**
+   * Discards the popup.
+   *
+   * If the form has user input, we show a confirmation first.
+   */
+  function requestCancel(): void {
+    if (isDirty) {
+      setConfirmAction("cancel");
+      return;
+    }
+
+    setConfirmAction(null);
+    setFormData(null);
+    onClose();
+  }
+
   function handleRequestCreate(): void {
     const formElement = document.querySelector("form");
     formElement?.requestSubmit();
@@ -88,9 +105,7 @@ export default function CreateAndAddProductPopup({
   }
 
   return (
-    <Popup open={open} onClose={function requestCancel(): void {
-      setConfirmAction("cancel");
-    }}>
+    <Popup open={open} onClose={requestCancel}>
       <div className="flex w-[520px] max-w-[92vw] flex-col overflow-hidden">
         <div className="border-b border-border px-4 py-3 text-sm font-semibold">
           {dict.createAndAddProduct}
@@ -99,6 +114,7 @@ export default function CreateAndAddProductPopup({
         <div className="max-h-[72vh] overflow-auto p-4">
           <AddProductForm
             dict={dict}
+            onDirtyChange={setIsDirty}
             onSubmit={function submitCreateForm(data): void {
               setFormData(data);
               setConfirmAction("create");
@@ -107,9 +123,7 @@ export default function CreateAndAddProductPopup({
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
-          <Button accent="neutral" onClick={function requestCancel(): void {
-            setConfirmAction("cancel");
-          }}>
+          <Button accent="neutral" onClick={requestCancel}>
             {dict.cancel}
           </Button>
           <Button accent="primary" onClick={handleRequestCreate}>

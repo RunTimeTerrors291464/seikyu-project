@@ -1,28 +1,31 @@
 "use client";
 
-import { ConfirmPopup } from "@/components/layout/Popup";
-import { formatDate } from "@/components/types/ui";
+import { ConfirmPopup, DeletePopup } from "@/components/layout/Popup";
+import { INVOICE_DRAFT_ERRORS, formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
-import ImportInvoiceHeader from "@/features/import-invoices/layout/ImportInvoiceHeader";
-import ImportInvoiceProductsCard from "@/features/import-invoices/layout/ImportInvoiceProductsCard";
+import CreateReturnImportInvoicePopup from "@/features/invoices/layout/CreateReturnImportInvoicePopup";
+import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader";
+import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
+import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
 import {
   ImportInvoiceResponseDto,
   confirmImportInvoice,
   deleteImportInvoiceDrafts,
   editImportInvoiceDraft,
   getImportInvoiceById,
-} from "@/features/import-invoices/services/importInvoice.service";
+} from "@/features/invoices/services/importInvoice.service";
 import {
   EditableImportInvoiceProduct,
   toEditableProduct,
   toNumberOrZero,
-} from "@/features/import-invoices/types/importInvoiceDetail";
+} from "@/features/invoices/types/importInvoiceDetail";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
-import { Boxes, DollarSign, Package, User } from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function ImportInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -37,9 +40,13 @@ export default function ImportInvoiceDetailPage() {
   const [saving, setSaving] = useState<boolean>(false);
   const [confirming, setConfirming] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [saveConfirmOpen, setSaveConfirmOpen] = useState<boolean>(false);
   const [confirmDraftPopupOpen, setConfirmDraftPopupOpen] = useState<boolean>(false);
+  const [discardNavigateOpen, setDiscardNavigateOpen] = useState<boolean>(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [returnPopupOpen, setReturnPopupOpen] = useState<boolean>(false);
   const [initialNotes, setInitialNotes] = useState<string>("");
   const [initialProductsSignature, setInitialProductsSignature] = useState<string>("[]");
 
@@ -99,6 +106,38 @@ export default function ImportInvoiceDetailPage() {
   }, [invoiceId, dict.somethingWentWrong]);
 
   const canEditDraft = invoice?.status === "draft";
+  const canReturn =
+    invoice?.status === "confirmed" || invoice?.status === "partiallyReturned";
+
+  const hasEmptyQuantityOrImportPrice = useMemo(() => {
+    return products.some(
+      (product) =>
+        toNumberOrZero(product.quantity) <= 0 ||
+        product.importPrice.trim().length === 0,
+    );
+  }, [products]);
+
+  const draftError = useMemo(() => {
+    if (!canEditDraft) {
+      return null;
+    }
+
+    const hasInvalidQuantity = products.some(
+      (product) => toNumberOrZero(product.quantity) <= 0,
+    );
+    if (hasInvalidQuantity) {
+      return INVOICE_DRAFT_ERRORS.importMissingQuantity;
+    }
+
+    const hasEmptyPrice = products.some(
+      (product) => product.importPrice.trim().length === 0,
+    );
+    if (hasEmptyPrice) {
+      return INVOICE_DRAFT_ERRORS.importMissingPrice;
+    }
+
+    return null;
+  }, [canEditDraft, products]);
 
   const totals = useMemo(() => {
     let totalQuantity = 0;
@@ -121,6 +160,10 @@ export default function ImportInvoiceDetailPage() {
 
   async function handleSaveDraft(): Promise<void> {
     if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    if (hasEmptyQuantityOrImportPrice) {
       return;
     }
 
@@ -191,8 +234,74 @@ export default function ImportInvoiceDetailPage() {
     },
   );
 
+  const allowNavigationRef = useRef<boolean>(false);
+  const currentHrefRef = useRef<string>("");
+  const historyTrapInsertedRef = useRef<boolean>(false);
+
+  function requestNavigate(href: string): void {
+    if (!canEditDraft || !isDirty) {
+      router.push(href);
+      return;
+    }
+
+    setPendingHref(href);
+    setDiscardNavigateOpen(true);
+  }
+
+  useEffect(function installNavigationGuards(): (() => void) | void {
+    if (!canEditDraft || !isDirty) {
+      return;
+    }
+
+    currentHrefRef.current = window.location.href;
+    allowNavigationRef.current = false;
+
+    if (!historyTrapInsertedRef.current) {
+      window.history.pushState({ __discardNavigateGuard: true }, "", window.location.href);
+      historyTrapInsertedRef.current = true;
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent): void {
+      if (!canEditDraft || !isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    function handlePopState(): void {
+      if (allowNavigationRef.current) {
+        return;
+      }
+      if (!canEditDraft || !isDirty) {
+        return;
+      }
+
+      const nextHref = window.location.href;
+      setPendingHref(nextHref);
+      setDiscardNavigateOpen(true);
+
+      // Revert the URL so the user stays on this page until they confirm.
+      window.history.pushState(
+        { __discardNavigateGuard: true },
+        "",
+        currentHrefRef.current,
+      );
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+      historyTrapInsertedRef.current = false;
+    };
+  }, [canEditDraft, isDirty]);
+
   function handleOpenSaveConfirm(): void {
-    if (!isDirty || !canEditDraft) {
+    if (!isDirty || !canEditDraft || hasEmptyQuantityOrImportPrice) {
       return;
     }
     setSaveConfirmOpen(true);
@@ -200,6 +309,10 @@ export default function ImportInvoiceDetailPage() {
 
   function handleOpenConfirmDraftPopup(): void {
     if (!canEditDraft) {
+      return;
+    }
+
+    if (hasEmptyQuantityOrImportPrice) {
       return;
     }
     setConfirmDraftPopupOpen(true);
@@ -222,6 +335,7 @@ export default function ImportInvoiceDetailPage() {
       );
     } finally {
       setDeleting(false);
+      setDeleteConfirmOpen(false);
     }
   }
 
@@ -242,18 +356,35 @@ export default function ImportInvoiceDetailPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
       <ImportInvoiceHeader
         title={invoice.invoiceId ?? dict.draft}
         status={invoice.status}
         canEditDraft={canEditDraft}
+        canReturn={canReturn}
         saving={saving}
         confirming={confirming}
         deleting={deleting}
-        saveDisabled={!isDirty}
+        saveDisabled={!isDirty || hasEmptyQuantityOrImportPrice}
+        confirmDisabled={hasEmptyQuantityOrImportPrice}
         onSave={handleOpenSaveConfirm}
         onConfirm={handleOpenConfirmDraftPopup}
-        onDelete={handleDeleteDraft}
+        onDelete={() => setDeleteConfirmOpen(true)}
+        onReturn={() => setReturnPopupOpen(true)}
+        onBack={function handleBack(): void {
+          requestNavigate("/manager/invoices/import");
+        }}
+        middle={
+          draftError ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4"/>}
+              label={dict.error}
+              value={dict[draftError.key]}
+              accent={draftError.accent}
+              format="text"
+            />
+          ) : null
+        }
       />
 
       {errorMessage && (
@@ -262,7 +393,7 @@ export default function ImportInvoiceDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 xl:grid-cols-5">
         <KpiTile
           label={dict.totalImportPriceLabel}
           value={totals.totalImportPrice.toLocaleString()}
@@ -307,14 +438,24 @@ export default function ImportInvoiceDetailPage() {
         onChangeProducts={setProducts}
       />
 
-      <Field label={dict.noteLabel}>
-        <Textarea
-          value={notes}
-          onChange={setNotes}
-          disabled={!canEditDraft}
-          placeholder={dict.descriptionPlaceholder}
-        />
-      </Field>
+      <div className="flex max-h-[30vh] min-h-0 shrink-0 flex-col gap-3 overflow-hidden lg:flex-row lg:items-stretch">
+        <div className="flex min-h-0 min-w-0 flex-[2] flex-col">
+          <ImportInvoiceReturnInvoicesCard importInvoiceNo={invoice.invoiceId} />
+        </div>
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <Field fillHeight label={dict.noteLabel}>
+            <Textarea
+              value={notes}
+              onChange={setNotes}
+              disabled={!canEditDraft}
+              placeholder={dict.descriptionPlaceholder}
+              rows={1}
+              className="min-h-0 flex-1 overflow-y-auto"
+            />
+          </Field>
+        </div>
+      </div>
 
       <ConfirmPopup
         open={saveConfirmOpen}
@@ -336,6 +477,54 @@ export default function ImportInvoiceDetailPage() {
         loading={confirming}
         onConfirm={handleConfirm}
         onClose={() => setConfirmDraftPopupOpen(false)}
+      />
+
+      <ConfirmPopup
+        open={discardNavigateOpen}
+        title={dict.confirmDiscardImportDraftTitle}
+        description={dict.confirmDiscardImportDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        onConfirm={function confirmDiscardNavigate(): void {
+          if (!pendingHref) {
+            setDiscardNavigateOpen(false);
+            return;
+          }
+
+          const nextHref = pendingHref;
+          setDiscardNavigateOpen(false);
+          setPendingHref(null);
+          allowNavigationRef.current = true;
+          historyTrapInsertedRef.current = false;
+          router.push(nextHref);
+        }}
+        onClose={function closeDiscardNavigate(): void {
+          setDiscardNavigateOpen(false);
+          setPendingHref(null);
+        }}
+        accent="danger"
+      />
+
+      <DeletePopup
+        open={deleteConfirmOpen}
+        title={dict.confirmDeleteImportDraftTitle}
+        description={dict.confirmDeleteImportDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        loading={deleting}
+        onConfirm={handleDeleteDraft}
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
+
+      <CreateReturnImportInvoicePopup
+        open={returnPopupOpen}
+        importInvoiceId={invoice.id}
+        sourceProducts={invoice.products}
+        onClose={() => setReturnPopupOpen(false)}
+        onCreated={(newReturnId) => {
+          setReturnPopupOpen(false);
+          router.push(`/manager/invoices/return-invoice/${newReturnId}`);
+        }}
       />
     </div>
   );

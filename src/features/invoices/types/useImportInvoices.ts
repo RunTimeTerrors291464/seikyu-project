@@ -11,11 +11,13 @@ export type ImportInvoiceRow = {
   id: string;
   invoiceId: string | null;
   status: ImportInvoiceStatus;
-  createdByUsername: string | null;
-  createdAt: string;
+  draftAt: string | null;
+  confirmedByUsername: string | null;
+  confirmedAt: string | null;
   totalImportPrice: number;
   totalProducts: number;
   totalQuantity: number;
+  returnCount: number;
   notes: string | null;
 };
 
@@ -39,17 +41,17 @@ type InvoiceListState = {
 };
 
 function mapToRow(dto: ImportInvoiceWithoutProductsDto): ImportInvoiceRow {
-  const createdAtCandidate = dto.draftAt ?? dto.confirmedAt ?? "";
-
   return {
     id: dto.id,
     invoiceId: dto.invoiceId,
     status: dto.status,
-    createdByUsername: dto.draftByUsername ?? dto.confirmedByUsername,
-    createdAt: createdAtCandidate,
+    draftAt: dto.draftAt,
+    confirmedByUsername: dto.confirmedByUsername,
+    confirmedAt: dto.confirmedAt,
     totalImportPrice: dto.totalImportPrice,
     totalProducts: dto.totalProducts,
     totalQuantity: dto.totalQuantity,
+    returnCount: dto.returnCount,
     notes: dto.notes,
   };
 }

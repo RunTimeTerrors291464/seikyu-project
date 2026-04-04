@@ -2,12 +2,13 @@
 
 import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
+import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useDict } from "@/lib/lang/DictProvider";
-import { Boxes, DollarSign, Package } from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useMemo, useState } from "react";
 import { createImportInvoiceDraft } from "../services/importInvoice.service";
 import {
@@ -19,7 +20,10 @@ import ImportInvoiceProductsCard from "./ImportInvoiceProductsCard";
 type AddImportInvoicePopupProps = {
   open: boolean;
   onClose: () => void;
-  onCreated?: () => void;
+  /**
+   * Called after a draft is created successfully with the new invoice row id.
+   */
+  onCreated?: (invoiceId: string) => void;
 };
 
 type ConfirmAction = "cancel" | "create" | null;
@@ -44,6 +48,51 @@ export default function AddImportInvoicePopup({
   const [creating, setCreating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const nowText = useMemo(() => new Date().toISOString(), [open]);
+
+  const isDraftDirty = useMemo(
+    function computeDraftDirty(): boolean {
+      return products.length > 0 || notes.trim().length > 0;
+    },
+    [products, notes],
+  );
+
+  const hasEmptyQuantityOrImportPrice = useMemo(
+    function computeHasEmptyQuantityOrImportPrice(): boolean {
+      return products.some(
+        (product) =>
+          toNumberOrZero(product.quantity) <= 0 ||
+          product.importPrice.trim().length === 0,
+      );
+    },
+    [products],
+  );
+
+  const draftError = useMemo(
+    function computeDraftError():
+      | (typeof INVOICE_DRAFT_ERRORS)[keyof typeof INVOICE_DRAFT_ERRORS]
+      | null {
+      if (!createAttempted) {
+        return null;
+      }
+
+      const hasInvalidQuantity = products.some(
+        (product) => toNumberOrZero(product.quantity) <= 0,
+      );
+      if (hasInvalidQuantity) {
+        return INVOICE_DRAFT_ERRORS.importMissingQuantity;
+      }
+
+      const hasEmptyPrice = products.some(
+        (product) => product.importPrice.trim().length === 0,
+      );
+      if (hasEmptyPrice) {
+        return INVOICE_DRAFT_ERRORS.importMissingPrice;
+      }
+
+      return null;
+    },
+    [createAttempted, products],
+  );
 
   const totals = useMemo(() => {
     let totalQuantity = 0;
@@ -83,8 +132,27 @@ export default function AddImportInvoicePopup({
     handleClose();
   }
 
+  /**
+   * Handles closing/discarding the popup.
+   *
+   * Only shows the discard confirmation when the user has provided input.
+   */
+  function requestCancel(): void {
+    if (isDraftDirty) {
+      setConfirmAction("cancel");
+      return;
+    }
+
+    setConfirmAction(null);
+    handleClose();
+  }
+
   async function handleCreateConfirmed(): Promise<void> {
     if (products.length === 0) {
+      return;
+    }
+
+    if (hasEmptyQuantityOrImportPrice) {
       return;
     }
 
@@ -92,7 +160,7 @@ export default function AddImportInvoicePopup({
     setErrorMessage("");
 
     try {
-      await createImportInvoiceDraft({
+      const created = await createImportInvoiceDraft({
         products: products.map((product) => ({
           productId: product.productId,
           productSku: product.productSku,
@@ -106,7 +174,7 @@ export default function AddImportInvoicePopup({
       });
 
       handleClose();
-      onCreated?.();
+      onCreated?.(created.id);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : dict.somethingWentWrong,
@@ -123,25 +191,39 @@ export default function AddImportInvoicePopup({
       return;
     }
 
+    if (hasEmptyQuantityOrImportPrice) {
+      setConfirmAction(null);
+      return;
+    }
+
     setConfirmAction("create");
   }
 
   const noteWarning = (noteTouched || createAttempted) && !notes.trim();
-  const productError = createAttempted && products.length === 0;
+  const productError = createAttempted && (products.length === 0 || hasEmptyQuantityOrImportPrice);
 
   if (!open) {
     return null;
   }
 
   return (
-    <Popup open={open} onClose={() => setConfirmAction("cancel")}>
+    <Popup open={open} onClose={requestCancel}>
       <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h1 className="text-sm font-semibold text-text">{dict.importDraft}</h1>
+          {draftError ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={dict[draftError.key]}
+                accent={draftError.accent}
+                format="text"
+              />
+            ) : null}
           <HeaderMeta label={dict.createdDate} value={nowText} />
         </div>
 
-        <div className="flex-1 space-y-4 overflow-auto p-5">
+        <div className="flex flex-1 gap-4 flex-col overflow-auto p-5">
           {errorMessage && (
             <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
               {errorMessage}
@@ -178,7 +260,6 @@ export default function AddImportInvoicePopup({
           <ImportInvoiceProductsCard
             products={products}
             canEditDraft={true}
-            accent={productError ? "danger" : "neutral"}
             onChangeProducts={setProducts}
           />
 
@@ -196,7 +277,7 @@ export default function AddImportInvoicePopup({
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-          <Button accent="neutral" onClick={() => setConfirmAction("cancel")}>
+          <Button accent="neutral" onClick={requestCancel}>
             {dict.cancel}
           </Button>
           <Button accent="primary" onClick={handleOpenCreateConfirm}>

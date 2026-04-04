@@ -1,0 +1,601 @@
+"use client";
+
+import { ConfirmPopup, DeletePopup } from "@/components/layout/Popup";
+import { formatDate } from "@/components/types/ui";
+import { Field, Textarea } from "@/components/ui/Fields";
+import KpiTile from "@/components/ui/KpiTile";
+import ReturnImportInvoiceHeader from "@/features/invoices/layout/ReturnImportInvoiceHeader";
+import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
+import { getImportInvoiceById } from "@/features/invoices/services/importInvoice.service";
+import {
+  confirmReturnImportInvoice,
+  deleteReturnImportDrafts,
+  editReturnImportDraft,
+  getReturnImportInvoiceById,
+  type ReturnImportInvoiceResponseDto,
+} from "@/features/invoices/services/returnImportInvoice.service";
+import { returnImportInvoiceDetailProductColumns } from "@/features/invoices/table/returnImportInvoiceDetailProductColumns";
+import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
+import {
+  EditableReturnInvoiceDetailLine,
+  toEditableReturnDetailLine,
+  toReturnLinesSignature,
+} from "@/features/invoices/types/returnImportDetail";
+import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { useDict } from "@/lib/lang/DictProvider";
+import { Boxes, DollarSign, Package, User } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+export default function ReturnImportInvoiceDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const dict = useDict();
+  const returnId = params.id;
+
+  const [invoice, setInvoice] = useState<ReturnImportInvoiceResponseDto | null>(
+    null,
+  );
+  const [lines, setLines] = useState<EditableReturnInvoiceDetailLine[]>([]);
+  const [notes, setNotes] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [confirming, setConfirming] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState<boolean>(false);
+  const [confirmDraftPopupOpen, setConfirmDraftPopupOpen] =
+    useState<boolean>(false);
+  const [returnAllConfirmOpen, setReturnAllConfirmOpen] =
+    useState<boolean>(false);
+  const [clearAllConfirmOpen, setClearAllConfirmOpen] =
+    useState<boolean>(false);
+  const [returnAllConfirming, setReturnAllConfirming] =
+    useState<boolean>(false);
+  const [discardNavigateOpen, setDiscardNavigateOpen] =
+    useState<boolean>(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [initialNotes, setInitialNotes] = useState<string>("");
+  const [initialLinesSignature, setInitialLinesSignature] =
+    useState<string>("[]");
+
+  const allowNavigationRef = useRef<boolean>(false);
+  const currentHrefRef = useRef<string>("");
+  const historyTrapInsertedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadInvoice(): Promise<void> {
+      setLoading(true);
+      setErrorMessage("");
+
+      try {
+        const response = await getReturnImportInvoiceById(returnId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setInvoice(response);
+        setLines(response.products.map(toEditableReturnDetailLine));
+        setNotes(response.notes ?? "");
+        setInitialNotes(response.notes ?? "");
+        setInitialLinesSignature(
+          toReturnLinesSignature(
+            response.products.map(toEditableReturnDetailLine),
+          ),
+        );
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setErrorMessage(
+          error instanceof Error ? error.message : dict.somethingWentWrong,
+        );
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInvoice();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [returnId, dict.somethingWentWrong]);
+
+  const canEditDraft = invoice?.status === "draft";
+
+  const totals = useMemo(() => {
+    let totalQuantity = 0;
+    let totalReturnPrice = 0;
+
+    lines.forEach((line) => {
+      const qty = toNumberOrZero(line.returnQuantity);
+      const unit = Number(String(line.importPrice).replace(/,/g, ""));
+      const lineTotal = Number.isFinite(unit) ? qty * unit : 0;
+      totalQuantity += qty;
+      totalReturnPrice += lineTotal;
+    });
+
+    return {
+      totalProducts: lines.length,
+      totalQuantity,
+      totalReturnPrice,
+    };
+  }, [lines]);
+
+  function updateLine(
+    lineId: string,
+    key: keyof EditableReturnInvoiceDetailLine,
+    value: string,
+  ): void {
+    setLines((current) =>
+      current.map((line) =>
+        line.lineId === lineId ? { ...line, [key]: value } : line,
+      ),
+    );
+  }
+
+  function handleBlurReturnQuantity(lineId: string): void {
+    setLines((current) =>
+      current.map((line) => {
+        if (line.lineId !== lineId) {
+          return line;
+        }
+
+        if (toNumberOrZero(line.returnQuantity) <= 0) {
+          return { ...line, returnQuantity: "0", notes: "" };
+        }
+
+        return line;
+      }),
+    );
+  }
+
+  const columns = returnImportInvoiceDetailProductColumns({
+    dict,
+    canEditDraft: Boolean(canEditDraft),
+    onUpdateLine: updateLine,
+    onBlurReturnQuantity: handleBlurReturnQuantity,
+  });
+
+  async function handleSaveDraft(): Promise<void> {
+    if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    const productsPayload = lines
+      .filter((line) => toNumberOrZero(line.returnQuantity) > 0)
+      .map((line) => ({
+        productId: line.productId,
+        returnQuantity: Math.floor(toNumberOrZero(line.returnQuantity)),
+        notes: line.notes.trim() ? line.notes.trim() : undefined,
+      }));
+
+    setSaving(true);
+    setErrorMessage("");
+
+    try {
+      const response = await editReturnImportDraft({
+        id: invoice.id,
+        products: productsPayload,
+        notes: notes.trim() ? notes.trim() : undefined,
+      });
+
+      setInvoice(response);
+      setLines(response.products.map(toEditableReturnDetailLine));
+      setNotes(response.notes ?? "");
+      setInitialNotes(response.notes ?? "");
+      setInitialLinesSignature(
+        toReturnLinesSignature(response.products.map(toEditableReturnDetailLine)),
+      );
+      setSaveConfirmOpen(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : dict.somethingWentWrong,
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirm(): Promise<void> {
+    if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    setConfirming(true);
+    setErrorMessage("");
+
+    try {
+      const response = await confirmReturnImportInvoice(invoice.id);
+      setInvoice(response);
+      setLines(response.products.map(toEditableReturnDetailLine));
+      setNotes(response.notes ?? "");
+      setInitialNotes(response.notes ?? "");
+      setInitialLinesSignature(
+        toReturnLinesSignature(response.products.map(toEditableReturnDetailLine)),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : dict.somethingWentWrong,
+      );
+    } finally {
+      setConfirming(false);
+      setConfirmDraftPopupOpen(false);
+    }
+  }
+
+  const isDirty = useIsDirty<{ notes: string; linesSignature: string }>()(
+    {
+      notes: initialNotes,
+      linesSignature: initialLinesSignature,
+    },
+    {
+      notes,
+      linesSignature: toReturnLinesSignature(lines),
+    },
+  );
+
+  function requestNavigate(href: string): void {
+    if (!canEditDraft || !isDirty) {
+      router.push(href);
+      return;
+    }
+
+    setPendingHref(href);
+    setDiscardNavigateOpen(true);
+  }
+
+  useEffect(function installNavigationGuards(): (() => void) | void {
+    if (!canEditDraft || !isDirty) {
+      return;
+    }
+
+    currentHrefRef.current = window.location.href;
+    allowNavigationRef.current = false;
+
+    if (!historyTrapInsertedRef.current) {
+      window.history.pushState({ __discardNavigateGuard: true }, "", window.location.href);
+      historyTrapInsertedRef.current = true;
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent): void {
+      if (!canEditDraft || !isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    function handlePopState(): void {
+      if (allowNavigationRef.current) {
+        return;
+      }
+      if (!canEditDraft || !isDirty) {
+        return;
+      }
+
+      const nextHref = window.location.href;
+      setPendingHref(nextHref);
+      setDiscardNavigateOpen(true);
+
+      window.history.pushState(
+        { __discardNavigateGuard: true },
+        "",
+        currentHrefRef.current,
+      );
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+      historyTrapInsertedRef.current = false;
+    };
+  }, [canEditDraft, isDirty]);
+
+  function handleOpenSaveConfirm(): void {
+    if (!isDirty || !canEditDraft) {
+      return;
+    }
+    setSaveConfirmOpen(true);
+  }
+
+  function handleOpenConfirmDraftPopup(): void {
+    if (!canEditDraft) {
+      return;
+    }
+    setConfirmDraftPopupOpen(true);
+  }
+
+  async function handleDeleteDraft(): Promise<void> {
+    if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    setDeleting(true);
+    setErrorMessage("");
+
+    try {
+      await deleteReturnImportDrafts([invoice.id]);
+      router.push(`/manager/invoices/import/${invoice.importInvoiceId}`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : dict.somethingWentWrong,
+      );
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  }
+
+  function handleOpenReturnAllConfirm(): void {
+    if (!canEditDraft) {
+      return;
+    }
+
+    setReturnAllConfirmOpen(true);
+  }
+
+  function handleOpenClearAllConfirm(): void {
+    if (!canEditDraft) {
+      return;
+    }
+
+    setClearAllConfirmOpen(true);
+  }
+
+  async function handleReturnAllConfirmed(): Promise<void> {
+    if (!invoice || !canEditDraft) {
+      return;
+    }
+
+    setReturnAllConfirming(true);
+    setErrorMessage("");
+
+    try {
+      const sourceImportInvoice = await getImportInvoiceById(
+        invoice.importInvoiceId,
+      );
+
+      const maxQuantityByProductId = new Map<string, number>();
+
+      sourceImportInvoice.products.forEach((product) => {
+        maxQuantityByProductId.set(product.productId, product.quantity);
+      });
+
+      setLines((current) =>
+        current.map((line) => {
+          const maxQuantity =
+            maxQuantityByProductId.get(line.productId) ?? 0;
+
+          if (maxQuantity <= 0) {
+            return {
+              ...line,
+              returnQuantity: "0",
+              notes: "",
+            };
+          }
+
+          return {
+            ...line,
+            returnQuantity: String(Math.floor(maxQuantity)),
+          };
+        }),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : dict.somethingWentWrong,
+      );
+    } finally {
+      setReturnAllConfirming(false);
+      setReturnAllConfirmOpen(false);
+    }
+  }
+
+  function handleClearAllConfirmed(): void {
+    setLines((current) =>
+      current.map((line) => ({
+        ...line,
+        returnQuantity: "0",
+        notes: "",
+      })),
+    );
+
+    setClearAllConfirmOpen(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted">
+        {dict.loading}
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-danger">
+        {errorMessage || dict.notFound}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col w-full gap-4 ">
+      <ReturnImportInvoiceHeader
+        title={invoice.returnInvoiceId ?? dict.draft}
+        status={invoice.status}
+        sourceImportInvoiceId={invoice.importInvoiceId}
+        canEditDraft={canEditDraft}
+        saving={saving}
+        confirming={confirming}
+        deleting={deleting}
+        saveDisabled={!isDirty}
+        onSave={handleOpenSaveConfirm}
+        onConfirm={handleOpenConfirmDraftPopup}
+        onDelete={() => setDeleteConfirmOpen(true)}
+        onBack={function handleBack(): void {
+          requestNavigate(`/manager/invoices/import/${invoice.importInvoiceId}`);
+        }}
+      />
+
+      {errorMessage && (
+        <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
+          {errorMessage}
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <KpiTile
+          label={dict.totalReturnPriceLabel}
+          value={totals.totalReturnPrice.toLocaleString()}
+          icon={<DollarSign className="h-4 w-4 text-muted" />}
+          accent="primary"
+          helpText={dict.totalReturnPriceKpiHelp}
+          sub={dict.totalReturnPriceKpiSub}
+        />
+        <KpiTile
+          label={dict.totalProducts}
+          value={totals.totalProducts.toLocaleString()}
+          icon={<Package className="h-4 w-4 text-muted" />}
+          helpText={dict.totalProductsKpiHelp}
+          sub={dict.totalProductsKpiSub}
+        />
+        <KpiTile
+          label={dict.totalQuantity}
+          value={totals.totalQuantity.toLocaleString()}
+          icon={<Boxes className="h-4 w-4 text-muted" />}
+          helpText={dict.totalQuantityKpiHelp}
+          sub={dict.totalQuantityKpiSub}
+        />
+        <KpiTile
+          label={dict.draftBy}
+          value={invoice.draftByUsername ?? "—"}
+          sub={invoice.draftAt ? formatDate(invoice.draftAt) : "—"}
+          icon={<User className="h-4 w-4 text-muted" />}
+          helpText={dict.draftByKpiHelp}
+        />
+        <KpiTile
+          label={dict.confirmedBy}
+          value={invoice.confirmedByUsername ?? dict.notConfirmed}
+          sub={invoice.confirmedAt ? formatDate(invoice.confirmedAt) : "—"}
+          icon={<User className="h-4 w-4 text-muted" />}
+          helpText={dict.confirmedByKpiHelp}
+        />
+      </div>
+
+      <ReturnImportProductsCard<EditableReturnInvoiceDetailLine>
+        lines={lines}
+        columns={columns}
+        canEditDraft={canEditDraft}
+        getRowId={(row) => row.lineId}
+        onClearAll={handleOpenClearAllConfirm}
+        onReturnAll={handleOpenReturnAllConfirm}
+        resetKey={invoice.id}
+        className="flex-1"
+      />
+
+      <Field label={dict.noteLabel}>
+        <Textarea
+          value={notes}
+          onChange={setNotes}
+          disabled={!canEditDraft}
+          placeholder={dict.descriptionPlaceholder}
+        />
+      </Field>
+
+      <ConfirmPopup
+        open={saveConfirmOpen}
+        title={dict.confirmSaveReturnDraftTitle}
+        description={dict.confirmSaveReturnDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        loading={saving}
+        onConfirm={handleSaveDraft}
+        onClose={() => setSaveConfirmOpen(false)}
+      />
+
+      <ConfirmPopup
+        open={confirmDraftPopupOpen}
+        title={dict.confirmConfirmReturnDraftTitle}
+        description={dict.confirmConfirmReturnDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        loading={confirming}
+        onConfirm={handleConfirm}
+        onClose={() => setConfirmDraftPopupOpen(false)}
+      />
+
+      <DeletePopup
+        open={deleteConfirmOpen}
+        title={dict.confirmDeleteReturnDraftTitle}
+        description={dict.confirmDeleteReturnDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        loading={deleting}
+        onConfirm={handleDeleteDraft}
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
+
+      <ConfirmPopup
+        open={returnAllConfirmOpen}
+        title={dict.confirmReturnAllTitle}
+        description={dict.confirmReturnAllDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        loading={returnAllConfirming}
+        onConfirm={handleReturnAllConfirmed}
+        onClose={() => setReturnAllConfirmOpen(false)}
+        accent="danger"
+      />
+
+      <ConfirmPopup
+        open={clearAllConfirmOpen}
+        title={dict.confirmClearAllReturnsTitle}
+        description={dict.confirmClearAllReturnsDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        onConfirm={handleClearAllConfirmed}
+        onClose={() => setClearAllConfirmOpen(false)}
+        accent="danger"
+      />
+
+      <ConfirmPopup
+        open={discardNavigateOpen}
+        title={dict.confirmDiscardReturnDraftTitle}
+        description={dict.confirmDiscardReturnDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        onConfirm={function confirmDiscardNavigate(): void {
+          if (!pendingHref) {
+            setDiscardNavigateOpen(false);
+            return;
+          }
+
+          const nextHref = pendingHref;
+          setDiscardNavigateOpen(false);
+          setPendingHref(null);
+          allowNavigationRef.current = true;
+          historyTrapInsertedRef.current = false;
+          router.push(nextHref);
+        }}
+        onClose={function closeDiscardNavigate(): void {
+          setDiscardNavigateOpen(false);
+          setPendingHref(null);
+        }}
+        accent="danger"
+      />
+    </div>
+  );
+}

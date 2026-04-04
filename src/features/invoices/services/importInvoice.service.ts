@@ -63,7 +63,7 @@ export type ImportInvoiceListQuery = {
   limit?: number;
   search?: string;
   searchBy?: "invoiceId" | "userId" | "productId";
-  sortBy?: "invoiceId" | "totalImportPrice" | "createdAt";
+  sortBy?: "invoiceId" | "userId" | "totalImportPrice" | "createdAt";
   sortOrder?: "asc" | "desc";
   status?: ImportInvoiceStatus;
   fromDate?: string;

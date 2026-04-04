@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 
 import { ACCENT_STYLES } from "@/components/types/ui";
-import DataTable from "@/components/ui/DataTable";
 import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
 
-import { productColumns } from "@/features/products/table/productColumns";
 
 import { ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
 import { PRODUCT_STATUS_OPTIONS, PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
@@ -30,8 +28,10 @@ import {
   productService,
 } from "@/features/products/services/product.service";
 
+import DataTable from "@/components/ui/DataTable";
 import AddNewProductPopup from "@/features/products/layout/AddNewProductPopup";
 import ProductTableHeader from "@/features/products/layout/ProductTableHeader";
+import { productColumns } from "@/features/products/table/productColumns";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 
 /* ============================= */
@@ -145,7 +145,7 @@ export default function ProductInventoryPage() {
   /* ============================= */
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-hidden max-h-[100vh]">
+    <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
 
       {/* HEADER */}
       <ProductTableHeader
@@ -299,21 +299,17 @@ export default function ProductInventoryPage() {
       )}
 
       {/* TABLE */}
-      <div className="min-h-0 grow flex flex-col">
-        <DataTable
-          columns={productColumns(dict)}
-          data={table.data}
-          loading={table.loading}
-          getRowId={(p) => p.id}
-          showIndex
-          sortField={table.query.sortBy}
-          sortDirection={table.query.sortOrder}
-          onSort={(field) =>
-            table.setSort(field as ProductQuery["sortBy"])
-          }
-          maxHeight="fill"
-        />
-      </div>
+      <DataTable
+        columns={productColumns(dict)}
+        data={table.data}
+        loading={table.loading}
+        getRowId={(p) => p.id}
+        showIndex
+        maxHeight="fill"
+        sortField={table.query.sortBy}
+        sortDirection={table.query.sortOrder}
+        onSort={(field) => table.setSort(field as ProductQuery["sortBy"])}
+      />
 
       {/* PAGINATION */}
       <TablePagination

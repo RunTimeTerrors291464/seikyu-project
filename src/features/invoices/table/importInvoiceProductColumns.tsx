@@ -3,7 +3,7 @@
 import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
-import { DollarSign, Hash, MessageSquare, Package, Ruler, Sigma } from "lucide-react";
+import { Barcode, DollarSign, MessageSquare, Package, Ruler, Sigma } from "lucide-react";
 import type { EditableImportInvoiceProduct } from "../types/importInvoiceDetail";
 
 type ImportInvoiceProductColumnsParams = {
@@ -25,6 +25,10 @@ function isZeroValue(value: string): boolean {
   return Number(value) === 0;
 }
 
+function isEmptyValue(value: string): boolean {
+  return value.trim().length === 0;
+}
+
 export function importInvoiceProductColumns({
   dict,
   canEditDraft,
@@ -35,42 +39,42 @@ export function importInvoiceProductColumns({
   onToggleSelectOne,
   onUpdateRow,
 }: ImportInvoiceProductColumnsParams): Column<EditableImportInvoiceProduct>[] {
-  return [
-    {
-      id: "select",
-      header: "",
-      icon: (
+  const selectColumn: Column<EditableImportInvoiceProduct> = {
+    id: "select",
+    header: "",
+    icon: (
+      <input
+        type="checkbox"
+        checked={allSelected}
+        onChange={function handleSelectAll(event): void {
+          onToggleSelectAll(event.target.checked);
+        }}
+        className="h-4 w-4 rounded border-border"
+        disabled={!hasRows}
+        aria-label={dict.selected}
+      />
+    ),
+    accessor: function renderRowSelect(row) {
+      return (
         <input
           type="checkbox"
-          checked={allSelected}
-          onChange={function handleSelectAll(event): void {
-            onToggleSelectAll(event.target.checked);
+          checked={selectedIds.has(row.localId)}
+          onChange={function handleSelectOne(event): void {
+            onToggleSelectOne(row.localId, event.target.checked);
           }}
           className="h-4 w-4 rounded border-border"
-          disabled={!canEditDraft || !hasRows}
-          aria-label={dict.selected}
         />
-      ),
-      accessor: function renderRowSelect(row) {
-        return (
-          <input
-            type="checkbox"
-            checked={selectedIds.has(row.localId)}
-            onChange={function handleSelectOne(event): void {
-              onToggleSelectOne(row.localId, event.target.checked);
-            }}
-            className="h-4 w-4 rounded border-border"
-            disabled={!canEditDraft}
-          />
-        );
-      },
-      thClassName: "w-[46px]",
-      tdClassName: "w-[46px]",
+      );
     },
+    thClassName: "w-[46px]",
+    tdClassName: "w-[46px]",
+  };
+
+  const columns: Column<EditableImportInvoiceProduct>[] = [
     {
       id: "productSku",
       header: dict.sku,
-      icon: <Hash className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      icon: <Barcode className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderSku(row) {
         return <span className="text-text">{row.productSku || "—"}</span>;
       },
@@ -99,6 +103,7 @@ export function importInvoiceProductColumns({
       header: dict.quantityLabel,
       icon: <Sigma className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderQuantity(row) {
+        const isEmpty = isEmptyValue(row.quantity);
         return (
           <Input
             value={row.quantity}
@@ -106,7 +111,8 @@ export function importInvoiceProductColumns({
               onUpdateRow(row.localId, "quantity", value);
             }}
             disabled={!canEditDraft}
-            warning={isZeroValue(row.quantity)}
+            error={canEditDraft ? isEmpty : false}
+            warning={canEditDraft ? !isEmpty && isZeroValue(row.quantity) : false}
             inputMode="numeric"
           />
         );
@@ -118,6 +124,7 @@ export function importInvoiceProductColumns({
       header: dict.importPrice,
       icon: <DollarSign className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderImportPrice(row) {
+        const isEmpty = isEmptyValue(row.importPrice);
         return (
           <Input
             value={row.importPrice}
@@ -125,7 +132,8 @@ export function importInvoiceProductColumns({
               onUpdateRow(row.localId, "importPrice", value);
             }}
             disabled={!canEditDraft}
-            warning={isZeroValue(row.importPrice)}
+            error={canEditDraft ? isEmpty : false}
+            warning={canEditDraft ? !isEmpty && isZeroValue(row.importPrice) : false}
             inputMode="numeric"
           />
         );
@@ -150,4 +158,6 @@ export function importInvoiceProductColumns({
       tdClassName: "max-w-[280px]",
     },
   ];
+
+  return canEditDraft ? [selectColumn, ...columns] : columns;
 }

@@ -81,3 +81,42 @@ export function ConfirmPopup({
     </Popup>
   );
 }
+
+type DeletePopupProps = {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmText: string;
+  cancelText: string;
+  loading?: boolean;
+  onConfirm: () => void | Promise<void>;
+  onClose: () => void;
+  icon?: ReactNode;
+};
+
+export function DeletePopup({
+  open,
+  title,
+  description,
+  confirmText,
+  cancelText,
+  loading,
+  onConfirm,
+  onClose,
+  icon,
+}: DeletePopupProps) {
+  return (
+    <ConfirmPopup
+      open={open}
+      title={title}
+      description={description}
+      confirmText={confirmText}
+      cancelText={cancelText}
+      loading={loading}
+      onConfirm={onConfirm}
+      onClose={onClose}
+      icon={icon}
+      accent="danger"
+    />
+  );
+}

@@ -34,6 +34,8 @@ export function importInvoiceColumns(
       id: "invoiceNumber",
       header: dict.invoiceNumber,
       icon: <Hash className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      field: "invoiceId",
+      sortable: true,
       accessor: (row) => (
         <Link
           href={`/manager/invoices/import/${row.id}`}
@@ -52,30 +54,43 @@ export function importInvoiceColumns(
       thClassName: "w-[140px]",
     },
     {
-      id: "createdByUsername",
-      header: dict.createdBy,
+      id: "userId",
+      header: dict.confirmBy,
       icon: <UserIcon className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      sortable: true,
       accessor: (row) => (
         <span className="text-text">
-          {row.createdByUsername ?? "—"}
+          {row.confirmedByUsername ?? "—"}
         </span>
       ),
       thClassName: "w-[160px]",
     },
     {
-      id: "createdAt",
-      header: dict.createdDate,
+      id: "confirmedAt",
+      header: dict.confirmDate,
       icon: <Clock className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: (row) => (
         <span className="tabular-nums text-text">
-          {formatDate(row.createdAt)}
+          {row.confirmedAt ? formatDate(row.confirmedAt) : "—"}
+        </span>
+      ),
+      thClassName: "w-[180px]",
+    },
+    {
+      id: "createdAt",
+      header: dict.createdAt,
+      icon: <Clock className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      sortable: true,
+      accessor: (row) => (
+        <span className="tabular-nums text-text">
+          {row.draftAt ? formatDate(row.draftAt) : "—"}
         </span>
       ),
       thClassName: "w-[180px]",
     },
     {
       id: "totalImportPrice",
-      header: dict.totalImportPriceLabel,
+      header: dict.totalPriceLabel,
       icon: <Receipt className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: (row) => (
         <span className="tabular-nums text-text">
@@ -117,6 +132,7 @@ export function importInvoiceColumns(
           {row.notes && row.notes !== "" ? row.notes : "—"}
         </span>
       ),
+      thClassName: "w-[320px]",
       tdClassName: "max-w-[320px]",
     },
   ];

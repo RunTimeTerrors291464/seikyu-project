@@ -46,6 +46,31 @@ export const FIELD_KEYS: Record<string, keyof Dictionary> = {
   newProduct: "newProduct"
 };
 
+export const INVOICE_DRAFT_ERRORS = {
+  returnAtLeastOneLine: {
+    key: "returnAtLeastOneLineError",
+    accent: "danger" as Accent,
+  },
+  returnMissingNote: {
+    key: "emptyNote",
+    accent: "danger" as Accent,
+  },
+  importMissingQuantity: {
+    key: "importDraftMissingQuantityError",
+    accent: "danger" as Accent,
+  },
+  importMissingPrice: {
+    key: "importDraftMissingPriceError",
+    accent: "danger" as Accent,
+  },
+} as const satisfies Record<
+  string,
+  {
+    key: keyof Dictionary;
+    accent: Accent;
+  }
+>;
+
 export type Size = "sm" | "md";
 
 export type ProductStockFilter =

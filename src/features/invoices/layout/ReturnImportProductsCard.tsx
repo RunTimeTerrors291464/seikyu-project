@@ -1,0 +1,147 @@
+"use client";
+
+import Button from "@/components/ui/Buttons";
+import DataTable, { type Column } from "@/components/ui/DataTable";
+import RuleInput from "@/components/ui/RuleInput";
+import { useDict } from "@/lib/lang/DictProvider";
+import clsx from "clsx";
+import { useEffect, useMemo, useState } from "react";
+import { Hash, Package, RotateCcw, Trash2 } from "lucide-react";
+import { toNumberOrZero } from "../types/importInvoiceDetail";
+
+type ReturnImportProductsCardLine = {
+  productSku: string;
+  productName: string;
+  returnQuantity: string;
+  notes: string;
+};
+
+type ReturnImportProductsCardProps<T extends ReturnImportProductsCardLine> = {
+  lines: T[];
+  columns: Column<T>[];
+  canEditDraft: boolean;
+  getRowId: (row: T) => string | number;
+  onClearAll?: () => void;
+  onReturnAll?: () => void;
+  className?: string;
+  /**
+   * When this value changes, the card resets its internal search input.
+   * Useful when the parent modal opens/closes.
+   */
+  resetKey?: string | number;
+};
+
+/**
+ * Reusable return-products card (search + table + draft actions).
+ *
+ * @param lines - Current return product lines.
+ * @param columns - DataTable column definitions for the line type.
+ * @param canEditDraft - When true, shows Clear All and Return All actions.
+ * @param getRowId - Returns a stable row id for the DataTable.
+ * @param onClearAll - Clears return quantities (draft only).
+ * @param onReturnAll - Sets return quantities to maximum (draft only).
+ * @param resetKey - Resets internal search state when it changes.
+ * @returns JSX element with search + table.
+ */
+export default function ReturnImportProductsCard<
+  T extends ReturnImportProductsCardLine,
+>({
+  lines,
+  columns,
+  canEditDraft,
+  getRowId,
+  onClearAll,
+  onReturnAll,
+  className,
+  resetKey,
+}: ReturnImportProductsCardProps<T>) {
+  const dict = useDict();
+
+  const [searchRule, setSearchRule] = useState<"sku" | "productName">("sku");
+  const [searchText, setSearchText] = useState<string>("");
+
+  useEffect(() => {
+    setSearchRule("sku");
+    setSearchText("");
+  }, [resetKey]);
+
+  const filteredLines = useMemo(() => {
+    if (!searchText) {
+      return lines;
+    }
+
+    const keyword = searchText.toLowerCase();
+
+    return lines.filter((line) => {
+      const target =
+        searchRule === "sku" ? line.productSku : line.productName;
+      return target.toLowerCase().includes(keyword);
+    });
+  }, [lines, searchRule, searchText]);
+
+  const hasAnyPositiveReturnLine = useMemo(
+    () => lines.some((line) => toNumberOrZero(line.returnQuantity) > 0),
+    [lines],
+  );
+
+  const canClearAll = canEditDraft && Boolean(onClearAll) && hasAnyPositiveReturnLine;
+  const canReturnAll = canEditDraft && Boolean(onReturnAll) && lines.length > 0;
+
+  return (
+    <div
+      className={clsx(
+        "flex min-h-0 flex-col gap-3 rounded-lg border border-border bg-card p-3",
+        className,
+      )}
+    >
+      <div className="mb-3 flex w-full items-center justify-between gap-3">
+        <div className="w-full max-w-xl pr-3">
+          <RuleInput
+            options={[
+              { label: dict.sku, icon: <Hash className="h-3 w-3" /> },
+              { label: dict.name, icon: <Package className="h-3 w-3" /> },
+            ]}
+            rule={searchRule === "sku" ? dict.sku : dict.name}
+            value={searchText}
+            placeholder={dict.searchPlaceholder}
+            onChange={({ rule, value }) => {
+              setSearchRule(rule === dict.name ? "productName" : "sku");
+              setSearchText(value);
+            }}
+          />
+        </div>
+
+        {canEditDraft && (
+          <div className="flex items-center gap-2">
+            <Button
+              accent="danger"
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+              onClick={onClearAll}
+              disabled={!canClearAll}
+            >
+              {dict.clearAll}
+            </Button>
+
+            <Button
+              accent="danger"
+              icon={<RotateCcw className="h-3.5 w-3.5" />}
+              onClick={onReturnAll}
+              disabled={!canReturnAll}
+            >
+              {dict.returnAction} {dict.all}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <DataTable<T>
+        columns={columns}
+        data={filteredLines}
+        getRowId={(row, _index) => getRowId(row)}
+        emptyMessage={dict.noProductData}
+        maxHeight="fill"
+      />
+    </div>
+  );
+}
+
