@@ -35,3 +35,36 @@ export enum ReturnReason {
   // --- Other ---
   OTHER = 'other',
 }
+
+export enum StockAdjustmentReason {
+
+  // --- Count & reconciliation ---
+  CYCLE_COUNT_VARIANCE = 'cycleCountVariance',
+  PHYSICAL_INVENTORY = 'physicalInventory',
+  INVENTORY_CORRECTION = 'inventoryCorrection',
+
+  // --- Loss, damage & expiry ---
+  DAMAGE = 'damage',
+  EXPIRED = 'expired',
+  SHRINKAGE = 'shrinkage',
+  OBSOLESCENCE = 'obsolescence',
+
+  // --- Quality & compliance ---
+  QUALITY_REJECTION = 'qualityRejection',
+  RECALL = 'recall',
+
+  // --- Operational variance ---
+  RECEIVING_VARIANCE = 'receivingVariance',
+  PICKING_ERROR = 'pickingError',
+  SHIPPING_ERROR = 'shippingError',
+  TRANSFER_VARIANCE = 'transferVariance',
+
+  // --- Positive adjustments ---
+  FOUND_INVENTORY = 'foundInventory',
+
+  // --- System & data ---
+  DATA_CORRECTION = 'dataCorrection',
+
+  // --- Other ---
+  OTHER = 'other',
+}
