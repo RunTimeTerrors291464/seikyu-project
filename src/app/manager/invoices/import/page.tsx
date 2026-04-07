@@ -18,8 +18,8 @@ import type { ReturnImportInvoiceWithoutProductsDto } from "@/features/invoices/
 import { getReturnImportInvoiceList } from "@/features/invoices/services/returnImportInvoice.service";
 import { importInvoiceColumns } from "@/features/invoices/table/importInvoiceColumns";
 import { returnImportInvoiceListColumns } from "@/features/invoices/table/returnImportInvoiceListColumns";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { useDict } from "@/lib/lang/DictProvider";
+import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
 import {
   Filter,
@@ -30,8 +30,8 @@ import {
   User as UserIcon
 } from "lucide-react";
 
-import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePopup";
 import { ImportInvoiceRow, useImportInvoices } from "@/features/invoices/hooks/useImportInvoices";
+import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePopup";
 import { useRouter } from "next/navigation";
 
 const RETURN_CHILDREN_LIMIT = 100;
@@ -54,9 +54,24 @@ function getStatusFilterClass(
 export default function ImportInvoicesListPage() {
   const router = useRouter();
   const dict = useDict();
-  const columns = importInvoiceColumns(dict);
+
+  const [page, setPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(30);
+
+  const columns = useMemo(
+    () => importInvoiceColumns(dict, { page, rowsPerPage }),
+    [dict, page, rowsPerPage],
+  );
   const returnColumns = useMemo(
-    () => returnImportInvoiceListColumns(dict),
+    () =>
+      returnImportInvoiceListColumns(
+        dict,
+        {
+          page: 1,
+          rowsPerPage: RETURN_CHILDREN_LIMIT,
+        },
+        false,
+      ),
     [dict],
   );
 
@@ -69,9 +84,6 @@ export default function ImportInvoicesListPage() {
   const [returnChildrenLoading, setReturnChildrenLoading] = useState<
     Record<string, boolean>
   >({});
-
-  const [page, setPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [search, setSearch] = useState<string>("");
   const [searchRule, setSearchRule] = useState<"invoiceId" | "userId">(
     "invoiceId",
@@ -374,6 +386,7 @@ export default function ImportInvoicesListPage() {
         sortDirection={sortOrder}
         onSort={handleSort}
         maxHeight="fill"
+        expansionAfterColumnCount={1}
         expandedRowIds={expandedRowIds}
         onToggleExpandRow={handleToggleExpandRow}
         canExpandRow={(row) => row.returnCount > 0}

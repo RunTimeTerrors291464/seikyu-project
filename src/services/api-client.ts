@@ -26,6 +26,81 @@ type AxiosLikeError = {
   };
 };
 
+function buildFullUrl(config: {
+  baseURL?: string;
+  url?: string;
+}): string | undefined {
+  const requestUrl = config.url;
+  if (!requestUrl) {
+    return config.baseURL;
+  }
+
+  if (/^https?:\/\//i.test(requestUrl)) {
+    return requestUrl;
+  }
+
+  if (!config.baseURL) {
+    return requestUrl;
+  }
+
+  const normalizedBaseUrl = config.baseURL.replace(/\/+$/, "");
+  const normalizedRequestUrl = requestUrl.replace(/^\/+/, "");
+  return `${normalizedBaseUrl}/${normalizedRequestUrl}`;
+}
+
+/**
+ * Parses request payload for readable logs.
+ *
+ * @param payload - Raw Axios request payload.
+ * @returns Parsed JSON object when possible, otherwise original payload.
+ */
+function parseRequestPayload(payload: unknown): unknown {
+  if (typeof payload !== "string") {
+    return payload;
+  }
+
+  if (payload.trim() === "") {
+    return payload;
+  }
+
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return payload;
+  }
+}
+
+/**
+ * Masks sensitive headers before logging.
+ *
+ * @param headers - Axios request headers object.
+ * @returns Safe subset of headers for development logs.
+ */
+function getSafeHeaders(headers: unknown): Record<string, string> {
+  if (typeof headers !== "object" || headers === null) {
+    return {};
+  }
+
+  const headerEntries = Object.entries(headers as Record<string, unknown>);
+  const safeHeaders: Record<string, string> = {};
+
+  headerEntries.forEach(function mapHeader([key, value]): void {
+    if (value === undefined || value === null) {
+      return;
+    }
+
+    const normalizedKey = key.toLowerCase();
+    if (normalizedKey === "authorization") {
+      safeHeaders[key] = "***";
+      return;
+    }
+
+    safeHeaders[key] = String(value);
+  });
+
+  return safeHeaders;
+}
+
 function toAxiosLikeError(error: unknown): AxiosLikeError {
   if (typeof error === "object" && error !== null) {
     return error as AxiosLikeError;
@@ -56,11 +131,13 @@ apiClient.interceptors.request.use(
     }
 
     if (process.env.NODE_ENV === "development") {
-      console.log(
-        "API REQUEST →",
-        config.method?.toUpperCase(),
-        config.url
-      );
+      console.log("API REQUEST →", {
+        url: buildFullUrl(config),
+        method: config.method?.toUpperCase(),
+        queryParams: config.params,
+        requestPayload: parseRequestPayload(config.data),
+        headers: getSafeHeaders(config.headers),
+      });
     }
 
     return config;
@@ -76,8 +153,11 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     if (process.env.NODE_ENV === "development") {
       console.log("✅ API SUCCESS →", {
-        url: response.config.url,
+        url: buildFullUrl(response.config),
         method: response.config.method?.toUpperCase(),
+        queryParams: response.config.params,
+        requestPayload: parseRequestPayload(response.config.data),
+        headers: getSafeHeaders(response.config.headers),
         status: response.status,
         statusText: response.statusText,
         data: response.data,
@@ -94,8 +174,11 @@ apiClient.interceptors.response.use(
 
     if (process.env.NODE_ENV === "development") {
       console.log("❌ API ERROR →", {
-        url: originalRequest?.url,
+        url: buildFullUrl(originalRequest ?? {}),
         method: originalRequest?.method?.toUpperCase(),
+        queryParams: originalRequest?.params,
+        requestPayload: parseRequestPayload(originalRequest?.data),
+        headers: getSafeHeaders(originalRequest?.headers),
         status,
         data: error.response?.data,
         message: error.message,

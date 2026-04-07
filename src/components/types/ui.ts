@@ -63,6 +63,10 @@ export const INVOICE_DRAFT_ERRORS = {
     key: "importDraftMissingPriceError",
     accent: "danger" as Accent,
   },
+  sellingMissingSku: {
+    key: "sellingDraftMissingSkuError",
+    accent: "danger" as Accent,
+  },
 } as const satisfies Record<
   string,
   {

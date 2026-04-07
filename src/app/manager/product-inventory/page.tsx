@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
@@ -96,6 +96,15 @@ export default function ProductInventoryPage() {
   const isDirty = useIsDirty<typeof defaultFilters>()(
     defaultFilters,
     currentFilters
+  );
+
+  const columns = useMemo(
+    () =>
+      productColumns(dict, {
+        page: table.query.page ?? 1,
+        rowsPerPage: table.query.limit ?? 10,
+      }),
+    [dict, table.query.page, table.query.limit],
   );
 
   /* ============================= */
@@ -298,11 +307,10 @@ export default function ProductInventoryPage() {
 
       {/* TABLE */}
       <DataTable
-        columns={productColumns(dict)}
+        columns={columns}
         data={table.data}
         loading={table.loading}
         getRowId={(p) => p.id}
-        showIndex
         maxHeight="fill"
         sortField={table.query.sortBy}
         sortDirection={table.query.sortOrder}

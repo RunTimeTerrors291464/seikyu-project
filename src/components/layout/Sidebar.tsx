@@ -11,6 +11,7 @@ import {
   FileText,
   FolderOpen,
   LayoutDashboard,
+  PanelLeftClose,
   ReceiptText,
   Settings as SettingsIcon,
   Store,
@@ -36,7 +37,12 @@ type Group = {
   defaultOpen?: boolean;
 };
 
-export function Sidebar() {
+type SidebarProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const dict = useDict();
 
   const groups: Group[] = [
@@ -59,8 +65,8 @@ export function Sidebar() {
       collapsible: true,
       defaultOpen: false,
       items: [
-        { href: "/invoices", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
-        { href: "/invoices/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+        { href: "/cashier/selling", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
+        { href: "/cashier/selling/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
       ],
     },
     {
@@ -72,6 +78,7 @@ export function Sidebar() {
       items: [
         { href: "/manager/product-inventory", label: dict.productInventory, icon: <FolderOpen className="h-4 w-4" /> },
         { href: "/manager/invoices/import", label: dict.importInvoices, icon: <FileCheck2 className="h-4 w-4" /> },
+        { href: "/manager/invoices/selling", label: dict.sellingInvoicesManager, icon: <ReceiptText className="h-4 w-4" /> },
         { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
       ],
     },
@@ -198,8 +205,12 @@ export function Sidebar() {
     );
   }
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <aside className="sticky top-0 hidden shrink-0 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
+    <aside className="sticky top-0 hidden w-72 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
       <div className="flex h-screen min-w-0 flex-col gap-6 p-4">
 
         {/* Brand */}
@@ -213,6 +224,14 @@ export function Sidebar() {
             </div>
           </div>
           <span>{dict.inventorySystem}</span>
+          <button
+            aria-label="Close sidebar"
+            className="ml-auto inline-flex rounded-md p-1 text-muted transition-colors hover:bg-hover hover:text-text"
+            onClick={onClose}
+            type="button"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Navigation */}

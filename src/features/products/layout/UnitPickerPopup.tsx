@@ -114,7 +114,7 @@ export default function UnitPickerPopup({
 
   return (
     <Popup open={open} onClose={onClose}>
-      <div className="flex flex-col max-w-[50vw] max-h-[70vh]">
+      <div className="flex bg-bg flex-col max-w-[50vw] max-h-[70vh]">
 
         {/* HEADER */}
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -196,6 +196,7 @@ export default function UnitPickerPopup({
               draftMap,
               isDirty,
               units,
+              rowIndexPagination: { page, rowsPerPage },
 
               onSelect: (unit) => {
                 if (editingId) return;

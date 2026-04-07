@@ -4,15 +4,18 @@ import type { Dictionary } from "@/lib/lang/i18n";
 import {
   Braces,
   Clock,
-  Hash,
   MessageSquare,
   Package,
   Receipt,
+  ReceiptText,
   Sigma,
   User as UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 
+import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
+import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayIndex";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import ReturnImportInvoiceStatusPill from "../components/ReturnImportInvoiceStatusPill";
 import type { ReturnImportInvoiceWithoutProductsDto } from "../services/returnImportInvoice.service";
 
@@ -31,17 +34,27 @@ function formatTotalReturnPrice(value: number | string): string {
   if (!Number.isFinite(numeric)) {
     return "—";
   }
-  return numeric.toLocaleString();
+  return formatPriceNumber(numeric);
 }
 
 export function returnImportInvoiceListColumns(
   dict: Dictionary,
+  rowIndexPagination?: PaginatedRowIndexParams,
+  /** When false, the index column is kept for alignment but cells are left empty (nested child tables). */
+  numberRowIndex: boolean = true,
 ): Column<ReturnImportInvoiceWithoutProductsDto>[] {
-  return [
+  const indexColumn = rowIndexColumn<ReturnImportInvoiceWithoutProductsDto>({
+    pagination: rowIndexPagination,
+    numberRowIndex,
+  });
+
+  const bodyColumns: Column<ReturnImportInvoiceWithoutProductsDto>[] = [
     {
       id: "returnInvoiceNumber",
       header: dict.returnInvoiceNumber,
-      icon: <Hash className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      icon: (
+        <ReceiptText className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />
+      ),
       field: "returnInvoiceId",
       sortable: true,
       accessor: function renderReturnId(row) {
@@ -112,7 +125,7 @@ export function returnImportInvoiceListColumns(
       icon: <Receipt className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderTotal(row) {
         return (
-          <span className="tabular-nums text-text">
+          <span className="tabular-nums text-danger">
             {formatTotalReturnPrice(row.totalReturnPrice)}
           </span>
         );
@@ -159,4 +172,6 @@ export function returnImportInvoiceListColumns(
       tdClassName: "max-w-[320px]",
     },
   ];
+
+  return [indexColumn, ...bodyColumns];
 }

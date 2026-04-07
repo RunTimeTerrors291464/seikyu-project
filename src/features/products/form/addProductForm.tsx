@@ -19,6 +19,11 @@ import {
 
 
 import { Dictionary } from "@/lib/lang/i18n";
+import {
+  finalizeMoneyStringTwoDecimalPlaces,
+  normalizeMoneyStringInput,
+  parseMoneyLikeString,
+} from "@/lib/numeric/integerAndMoneyInputs";
 import UnitPickerPopup from "@features/products/layout/UnitPickerPopup";
 
 import useSkuValidation from "../hooks/useSkuValidation";
@@ -60,7 +65,7 @@ export default function AddNewProductForm({
   onSubmit,
   onDirtyChange,
 }: Props) {
-  const { setValue, watch, handleSubmit } =
+  const { setValue, watch, handleSubmit, getValues } =
     useForm<FormValues>({
       defaultValues: {
         sku: "",
@@ -154,10 +159,12 @@ export default function AddNewProductForm({
 
       case "importPrice":
       case "sellingPrice":
-        if (!value || isNaN(Number(value)))
+        if (!value.trim()) {
           return dict.invalidPrice;
-        if (Number(value) < 0)
+        }
+        if (parseMoneyLikeString(value) < 0) {
           return dict.invalidPrice;
+        }
         return "";
 
       case "reorderThreshold":
@@ -196,12 +203,10 @@ export default function AddNewProductForm({
 
   const warnings = {
     importPrice:
-      touched.importPrice &&
-      values.importPrice === "0",
+      touched.importPrice && parseMoneyLikeString(values.importPrice) === 0,
 
     sellingPrice:
-      touched.sellingPrice &&
-      values.sellingPrice === "0",
+      touched.sellingPrice && parseMoneyLikeString(values.sellingPrice) === 0,
 
     reorderThreshold:
       touched.reorderThreshold &&
@@ -241,8 +246,8 @@ export default function AddNewProductForm({
 
     onSubmit({
       ...values,
-      importPrice: Number(values.importPrice),
-      sellingPrice: Number(values.sellingPrice),
+      importPrice: parseMoneyLikeString(values.importPrice),
+      sellingPrice: parseMoneyLikeString(values.sellingPrice),
       reorderThreshold: Number(values.reorderThreshold),
     });
   };
@@ -347,18 +352,27 @@ export default function AddNewProductForm({
         }
       >
         <Input
-          type="number"
           value={values.importPrice}
           onChange={(v) => {
-            setValue("importPrice", v);
-            validateField("importPrice", v);
+            const normalized = normalizeMoneyStringInput(v, { allowEmpty: true });
+            setValue("importPrice", normalized);
+            validateField("importPrice", normalized);
           }}
-          onBlur={() =>
+          onBlur={() => {
             setTouched((t) => ({
               ...t,
               importPrice: true,
-            }))
-          }
+            }));
+            const current = getValues("importPrice");
+            const finalized = finalizeMoneyStringTwoDecimalPlaces(current, {
+              allowEmpty: true,
+            });
+            if (finalized !== current) {
+              setValue("importPrice", finalized);
+            }
+            validateField("importPrice", finalized);
+          }}
+          inputMode="decimal"
         />
       </Field>
 
@@ -374,18 +388,27 @@ export default function AddNewProductForm({
         }
       >
         <Input
-          type="number"
           value={values.sellingPrice}
           onChange={(v) => {
-            setValue("sellingPrice", v);
-            validateField("sellingPrice", v);
+            const normalized = normalizeMoneyStringInput(v, { allowEmpty: true });
+            setValue("sellingPrice", normalized);
+            validateField("sellingPrice", normalized);
           }}
-          onBlur={() =>
+          onBlur={() => {
             setTouched((t) => ({
               ...t,
               sellingPrice: true,
-            }))
-          }
+            }));
+            const current = getValues("sellingPrice");
+            const finalized = finalizeMoneyStringTwoDecimalPlaces(current, {
+              allowEmpty: true,
+            });
+            if (finalized !== current) {
+              setValue("sellingPrice", finalized);
+            }
+            validateField("sellingPrice", finalized);
+          }}
+          inputMode="decimal"
         />
       </Field>
 

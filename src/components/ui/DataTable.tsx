@@ -62,6 +62,11 @@ export type DataTableProps<T> = {
   renderExpandedRow?: (row: T, rowIndex: number) => React.ReactNode;
   /** When omitted, every row may expand. */
   canExpandRow?: (row: T, rowIndex: number) => boolean;
+  /**
+   * When set with row expansion, renders this many leading `columns` to the left of the chevron column
+   * (e.g. `1` places the row index before the expand control).
+   */
+  expansionAfterColumnCount?: number;
   /** When false, the table renders without a header row (e.g. nested detail rows under a parent table). */
   showHeader?: boolean;
   /** Prepends a narrow column with a vertical underline (e.g. child rows under an expanded parent). */
@@ -86,6 +91,7 @@ export default function DataTable<T>({
   onToggleExpandRow,
   renderExpandedRow,
   canExpandRow,
+  expansionAfterColumnCount,
   showHeader = true,
   leadingRail = false,
   embedded = false,
@@ -98,6 +104,16 @@ export default function DataTable<T>({
     Boolean(getRowId) &&
     typeof onToggleExpandRow === "function" &&
     typeof renderExpandedRow === "function";
+  const expansionSplit =
+    expansionEnabled &&
+    expansionAfterColumnCount !== undefined &&
+    expansionAfterColumnCount > 0;
+  const columnsBeforeExpansion = expansionSplit
+    ? columns.slice(0, expansionAfterColumnCount)
+    : [];
+  const columnsAfterExpansion = expansionSplit
+    ? columns.slice(expansionAfterColumnCount)
+    : columns;
   const railColumnCount = leadingRail ? 1 : 0;
   const columnCount =
     railColumnCount +
@@ -106,6 +122,129 @@ export default function DataTable<T>({
     (expansionEnabled ? 1 : 0);
 
   const boundedHeight = Boolean(maxHeight) && !isFill && !isExpand;
+
+  function renderSortableHeaderTh(
+    column: Column<T>,
+    headerIndex: number,
+  ): React.ReactElement {
+    const isSorted =
+      sortField && (column.field ?? column.id) === sortField;
+
+    return (
+      <th
+        key={column.id ?? column.header ?? headerIndex}
+        style={column.width ? { width: column.width } : undefined}
+        className={clsx(
+          "px-2 py-2 font-medium text-muted transition-colors",
+          column.sortable &&
+            "cursor-pointer select-none hover:bg-hover hover:text-text",
+          isSorted && "text-text",
+          column.thClassName,
+        )}
+        onClick={() => {
+          if (!column.sortable || !onSort) return;
+
+          const key = column.field ?? column.id;
+          if (key) onSort(key as keyof T | string);
+        }}
+      >
+        <span
+          className={clsx(
+            "flex w-full items-center gap-1.5",
+            column.align === "right" && "justify-end",
+            column.align === "center" && "justify-center",
+          )}
+        >
+          {column.icon && (
+            <span className="flex items-center text-muted">{column.icon}</span>
+          )}
+
+          <span>{column.header}</span>
+
+          {column.sortable && isSorted && (
+            sortDirection === "asc" ? (
+              <ArrowUp className="h-3 w-3 text-text" />
+            ) : (
+              <ArrowDown className="h-3 w-3 text-text" />
+            )
+          )}
+        </span>
+      </th>
+    );
+  }
+
+  function renderDataCell(
+    column: Column<T>,
+    columnIndex: number,
+    row: T,
+    rowIndex: number,
+  ): React.ReactElement {
+    const content = column.accessor
+      ? column.accessor(row, rowIndex)
+      : column.field
+        ? ((row as Record<string, unknown>)[
+            String(column.field)
+          ] as React.ReactNode)
+        : null;
+
+    return (
+      <td
+        key={(column.id ?? column.header ?? columnIndex) + "-" + columnIndex}
+        className={clsx(
+          "truncate whitespace-nowrap px-2 py-2 align-middle text-text",
+          column.align === "right" && "text-right",
+          column.align === "center" && "text-center",
+          column.tdClassName,
+        )}
+      >
+        {content}
+      </td>
+    );
+  }
+
+  function renderExpansionHeaderCell(): React.ReactElement {
+    return (
+      <th
+        className="w-7 min-w-[1.75rem] py-2 pl-0.5 pr-0 text-left text-muted"
+        aria-hidden
+      />
+    );
+  }
+
+  function renderExpansionBodyCell(
+    rid: string | number,
+    isExpanded: boolean,
+    rowCanExpand: boolean,
+  ): React.ReactElement {
+    return (
+      <td className="flex justify-center items-center w-7 min-w-[1.75rem] py-2">
+        {rowCanExpand ? (
+          <button
+            type="button"
+            className="inline-flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
+            aria-expanded={isExpanded}
+            aria-label={dict.expandRow}
+            onClick={function handleToggleExpand(): void {
+              onToggleExpandRow?.(rid);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+        ) : (
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center text-muted"
+            aria-hidden
+          >
+            —
+          </span>
+        )}
+      </td>
+    );
+  }
 
   return (
     <div
@@ -125,31 +264,53 @@ export default function DataTable<T>({
     >
       <table className="w-full table-fixed border-collapse text-sm">
         <colgroup>
-          {leadingRail && <col className="w-8" />}
-          {expansionEnabled && <col className="w-8" />}
+          {leadingRail && <col className="w-[28px]" />}
+          {expansionSplit &&
+            columnsBeforeExpansion.map(function renderColBefore(c, idx) {
+              return (
+                <col
+                  key={String(c.id ?? c.header ?? `before-${idx}`)}
+                  style={c.width ? { width: c.width } : undefined}
+                  className={c.thClassName}
+                />
+              );
+            })}
+          {expansionEnabled && <col className="w-7 min-w-[1.75rem]" />}
           {showIndex && <col className="w-12" />}
-          {columns.map(function renderColgroupColumn(c, idx) {
-            return (
-              <col
-                key={String(c.id ?? c.header ?? idx)}
-                style={c.width ? { width: c.width } : undefined}
-                className={c.thClassName}
-              />
-            );
-          })}
+          {expansionSplit
+            ? columnsAfterExpansion.map(function renderColAfter(c, idx) {
+                return (
+                  <col
+                    key={String(c.id ?? c.header ?? `after-${idx}`)}
+                    style={c.width ? { width: c.width } : undefined}
+                    className={c.thClassName}
+                  />
+                );
+              })
+            : columns.map(function renderColgroupColumn(c, idx) {
+                return (
+                  <col
+                    key={String(c.id ?? c.header ?? idx)}
+                    style={c.width ? { width: c.width } : undefined}
+                    className={c.thClassName}
+                  />
+                );
+              })}
         </colgroup>
 
         {showHeader && (
           <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b border-border">
-
               {leadingRail && (
-                <th className="w-8 py-2 pl-1 pr-0 text-left" aria-hidden />
+                <th className="w-[28px] py-2 pl-1 pr-0 text-left" aria-hidden />
               )}
 
-              {expansionEnabled && (
-                <th className="w-8 py-2 pl-1 pr-0 text-left text-muted" aria-hidden />
-              )}
+              {expansionSplit &&
+                columnsBeforeExpansion.map((c, idx) =>
+                  renderSortableHeaderTh(c, idx),
+                )}
+
+              {expansionEnabled && renderExpansionHeaderCell()}
 
               {showIndex && (
                 <th className="w-8 py-2 pl-3 pr-2 text-left text-muted">
@@ -157,53 +318,14 @@ export default function DataTable<T>({
                 </th>
               )}
 
-              {columns.map((c, idx) => {
-                const isSorted =
-                  sortField && (c.field ?? c.id) === sortField;
-
-                return (
-                  <th
-                    key={c.id ?? c.header ?? idx}
-                    style={c.width ? { width: c.width } : undefined}
-                    className={clsx(
-                      "px-2 py-2 font-medium text-muted transition-colors",
-                      c.sortable &&
-                      "cursor-pointer select-none hover:bg-hover hover:text-text",
-                      isSorted && "text-text",
-                      c.thClassName
-                    )}
-                    onClick={() => {
-                      if (!c.sortable || !onSort) return;
-
-                      const key = c.field ?? c.id;
-                      if (key) onSort(key as keyof T | string);
-                    }}
-                  >
-                    <span className={clsx(
-                      "flex items-center gap-1.5 w-full",
-                      c.align === "right" && "justify-end",
-                      c.align === "center" && "justify-center"
-                    )}>
-
-                      {c.icon && (
-                        <span className="flex items-center text-muted">
-                          {c.icon}
-                        </span>
-                      )}
-
-                      <span>{c.header}</span>
-
-                      {c.sortable && isSorted && (
-                        sortDirection === "asc"
-                          ? <ArrowUp className="h-3 w-3 text-text" />
-                          : <ArrowDown className="h-3 w-3 text-text" />
-                      )}
-
-                    </span>
-                  </th>
-                );
-              })}
-
+              {expansionSplit
+                ? columnsAfterExpansion.map((c, idx) =>
+                    renderSortableHeaderTh(
+                      c,
+                      columnsBeforeExpansion.length + idx,
+                    ),
+                  )
+                : columns.map((c, idx) => renderSortableHeaderTh(c, idx))}
             </tr>
           </thead>
         )}
@@ -215,7 +337,7 @@ export default function DataTable<T>({
             <tr>
               {leadingRail && (
                 <td
-                  className="w-8 border-l-2 border-primary/35 bg-muted/20 py-10 pl-1 pr-0 align-top"
+                  className="w-[28px] border-l-2 border-primary/35 bg-muted/20 align-top"
                   aria-hidden
                 />
               )}
@@ -230,7 +352,7 @@ export default function DataTable<T>({
             <tr>
               {leadingRail && (
                 <td
-                  className="w-8 border-l-2 border-primary/35 bg-muted/20 py-6 pl-1 pr-0 align-top"
+                  className="w-[28px] border-l-2 border-primary/35 bg-muted/20 align-top"
                   aria-hidden
                 />
               )}
@@ -266,39 +388,22 @@ export default function DataTable<T>({
                   >
                     {leadingRail && (
                       <td
-                        className="w-8 border-l-2 border-primary/35 bg-muted/20 py-2 pl-1 pr-0 align-middle"
+                        className="w-[28px] border-l-2 border-primary/35 bg-muted/20 align-middle"
                         aria-hidden
                       />
                     )}
 
-                    {expansionEnabled && getRowId && onToggleExpandRow && (
-                      <td className="w-8 py-2 pl-1 pr-0 align-middle">
-                        {rowCanExpand ? (
-                          <button
-                            type="button"
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-text"
-                            aria-expanded={isExpanded}
-                            aria-label={dict.expandRow}
-                            onClick={function handleToggleExpand(): void {
-                              onToggleExpandRow(rid);
-                            }}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </button>
-                        ) : (
-                          <span
-                            className="inline-flex h-6 w-6 items-center justify-center text-muted"
-                            aria-hidden
-                          >
-                            —
-                          </span>
-                        )}
-                      </td>
-                    )}
+                    {expansionSplit &&
+                      columnsBeforeExpansion.map((c, cIdx) =>
+                        renderDataCell(c, cIdx, row, rIdx),
+                      )}
+
+                    {expansionEnabled &&
+                      renderExpansionBodyCell(
+                        rid,
+                        isExpanded,
+                        rowCanExpand,
+                      )}
 
                     {showIndex && (
                       <td className="w-12 py-2 pl-3 pr-2 text-muted">
@@ -306,31 +411,18 @@ export default function DataTable<T>({
                       </td>
                     )}
 
-                    {columns.map((c, cIdx) => {
-                    const content = c.accessor
-                      ? c.accessor(row, rIdx)
-                      : c.field
-                        ? (
-                          (row as Record<string, unknown>)[
-                          String(c.field)
-                          ] as React.ReactNode
+                    {expansionSplit
+                      ? columnsAfterExpansion.map((c, cIdx) =>
+                          renderDataCell(
+                            c,
+                            columnsBeforeExpansion.length + cIdx,
+                            row,
+                            rIdx,
+                          ),
                         )
-                        : null;
-
-                    return (
-                      <td
-                        key={(c.id ?? c.header ?? cIdx) + "-" + cIdx}
-                        className={clsx(
-                          "px-2 py-2 align-middle text-text truncate whitespace-nowrap",
-                          c.align === "right" && "text-right",
-                          c.align === "center" && "text-center",
-                          c.tdClassName
+                      : columns.map((c, cIdx) =>
+                          renderDataCell(c, cIdx, row, rIdx),
                         )}
-                      >
-                        {content}
-                      </td>
-                    );
-                  })}
 
                   </tr>
 

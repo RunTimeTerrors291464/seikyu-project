@@ -7,6 +7,7 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useDict } from "@/lib/lang/DictProvider";
+import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useImportInvoiceProductsEditor } from "../hooks/useImportInvoiceProductsEditor";
@@ -157,7 +158,7 @@ export default function AddImportInvoicePopup({
 
   return (
     <Popup open={open} onClose={requestCancel}>
-      <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden">
+      <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h1 className="text-sm font-semibold text-text">{dict.importDraft}</h1>
           {draftError ? (
@@ -182,7 +183,7 @@ export default function AddImportInvoicePopup({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <KpiTile
               label={dict.totalImportPriceLabel}
-              value={totals.totalImportPrice.toLocaleString()}
+              value={formatPriceNumber(totals.totalImportPrice)}
               icon={<DollarSign className="h-4 w-4 text-muted" />}
               accent={totals.totalImportPrice === 0 ? "warning" : "primary"}
               helpText={dict.totalImportPriceKpiHelp}
@@ -221,7 +222,7 @@ export default function AddImportInvoicePopup({
               value={notes}
               onChange={setNotes}
               onBlur={() => setNoteTouched(true)}
-              placeholder={dict.descriptionPlaceholder}
+              placeholder={dict.invoiceDescriptionPlaceholder}
             />
           </Field>
         </div>

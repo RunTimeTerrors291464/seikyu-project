@@ -2,22 +2,25 @@
 
 import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
+import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
-import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
-import type { ImportInvoiceProductDto } from "@/features/invoices/services/importInvoice.service";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
+import type { ImportInvoiceProductDto } from "@/features/invoices/services/importInvoice.service";
 import { createReturnImportDraft } from "@/features/invoices/services/returnImportInvoice.service";
 import { returnImportDraftProductColumns } from "@/features/invoices/table/invoiceProductLineColumns";
-import { lineTotalFromQuantityAndMoneyStrings } from "@/lib/numeric/integerAndMoneyInputs";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
-    EditableReturnImportLine,
-    toEditableReturnImportLine,
+  EditableReturnImportLine,
+  toEditableReturnImportLine,
 } from "@/features/invoices/types/returnImportDraft";
 import { useDict } from "@/lib/lang/DictProvider";
+import {
+  formatPriceNumber,
+  lineTotalFromQuantityAndMoneyStrings,
+} from "@/lib/numeric/integerAndMoneyInputs";
 import { Boxes, DollarSign, Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReturnImportProductsCard from "./ReturnImportProductsCard";
@@ -274,7 +277,7 @@ export default function CreateReturnImportInvoicePopup({
 
   return (
     <Popup open={open} onClose={() => setConfirmAction("cancel")}>
-      <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden">
+      <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h1 className="text-sm font-semibold text-text">
             {dict.createReturnInvoiceTitle}
@@ -314,7 +317,7 @@ export default function CreateReturnImportInvoicePopup({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <KpiTile
               label={dict.totalReturnPriceLabel}
-              value={totals.totalReturnPrice.toLocaleString()}
+              value={formatPriceNumber(totals.totalReturnPrice)}
               icon={<DollarSign className="h-4 w-4 text-muted" />}
               accent={totals.totalReturnPrice === 0 ? "warning" : "primary"}
               helpText={dict.totalReturnPriceKpiHelp}
@@ -353,7 +356,7 @@ export default function CreateReturnImportInvoicePopup({
             <Textarea
               value={notes}
               onChange={setNotes}
-              placeholder={dict.descriptionPlaceholder}
+              placeholder={dict.invoiceDescriptionPlaceholder}
             />
           </Field>
         </div>

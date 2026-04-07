@@ -76,7 +76,7 @@ export default function AddProductPopup({
 
   return (
     <Popup open={open} onClose={onClose}>
-      <div className="flex flex-col w-[500px] max-w-[90vw] max-h-[90vh]">
+      <div className="flex flex-col w-[500px] max-w-[90vw] max-h-[90vh] bg-bg">
 
         {/* HEADER */}
         <div className="border-b border-border px-4 py-3 text-sm font-semibold">

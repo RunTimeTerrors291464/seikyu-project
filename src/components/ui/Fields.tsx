@@ -97,6 +97,7 @@ type InputProps = {
   onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   maxLength?: number;
+  className?: string;
 };
 
 export function Input({
@@ -111,6 +112,7 @@ export function Input({
   onPaste,
   inputMode,
   maxLength,
+  className,
 }: InputProps) {
   return (
     <input
@@ -124,7 +126,7 @@ export function Input({
       onPaste={onPaste}
       onChange={(e) => onChange(e.target.value)}
       className={clsx(
-        "h-9 w-full rounded-md border bg-card px-3 text-sm text-text",
+        "h-9 w-full min-w-0 rounded-md border bg-card px-3 text-sm text-text",
         "outline-none transition-colors duration-150",
         "placeholder:text-muted",
 
@@ -143,7 +145,8 @@ export function Input({
             : "focus:border-primary",
 
         /* disabled */
-        disabled && "opacity-60 cursor-not-allowed bg-hover"
+        disabled && "opacity-60 cursor-not-allowed bg-hover",
+        className,
       )}
     />
   );

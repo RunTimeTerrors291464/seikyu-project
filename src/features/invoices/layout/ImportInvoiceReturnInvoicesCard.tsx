@@ -8,7 +8,7 @@ import { getReturnImportInvoiceList } from "../services/returnImportInvoice.serv
 import type { ReturnImportInvoiceWithoutProductsDto } from "../services/returnImportInvoice.service";
 import { returnImportInvoiceListColumns } from "../table/returnImportInvoiceListColumns";
 
-const RELATED_RETURNS_LIMIT = 100;
+const RELATED_RETURNS_LIMIT = 100 as const;
 
 type ImportInvoiceReturnInvoicesCardProps = {
   /** Human-readable import invoice number (e.g. I26-0000001), not the internal UUID. */
@@ -19,7 +19,14 @@ export default function ImportInvoiceReturnInvoicesCard({
   importInvoiceNo,
 }: ImportInvoiceReturnInvoicesCardProps) {
   const dict = useDict();
-  const columns = useMemo(() => returnImportInvoiceListColumns(dict), [dict]);
+  const columns = useMemo(
+    () =>
+      returnImportInvoiceListColumns(dict, {
+        page: 1,
+        rowsPerPage: RELATED_RETURNS_LIMIT,
+      }),
+    [dict],
+  );
 
   const [rows, setRows] = useState<ReturnImportInvoiceWithoutProductsDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

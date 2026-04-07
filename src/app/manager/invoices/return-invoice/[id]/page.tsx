@@ -2,12 +2,13 @@
 
 import { ConfirmPopup, DeletePopup } from "@/components/layout/Popup";
 import {
-  formatDate,
   INVOICE_DRAFT_ERRORS,
+  formatDate,
 } from "@/components/types/ui";
-import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import { Field, Textarea } from "@/components/ui/Fields";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
+import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
 import ReturnImportInvoiceHeader from "@/features/invoices/layout/ReturnImportInvoiceHeader";
 import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
 import { getImportInvoiceById } from "@/features/invoices/services/importInvoice.service";
@@ -18,9 +19,7 @@ import {
   getReturnImportInvoiceById,
   type ReturnImportInvoiceResponseDto,
 } from "@/features/invoices/services/returnImportInvoice.service";
-import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
 import { returnImportInvoiceDetailProductColumns } from "@/features/invoices/table/invoiceProductLineColumns";
-import { lineTotalFromQuantityAndMoneyStrings } from "@/lib/numeric/integerAndMoneyInputs";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
   EditableReturnInvoiceDetailLine,
@@ -30,6 +29,10 @@ import {
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
+import {
+  formatPriceNumber,
+  lineTotalFromQuantityAndMoneyStrings,
+} from "@/lib/numeric/integerAndMoneyInputs";
 import { Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -478,9 +481,9 @@ export default function ReturnImportInvoiceDetailPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile
           label={dict.totalReturnPriceLabel}
-          value={totals.totalReturnPrice.toLocaleString()}
+          value={formatPriceNumber(totals.totalReturnPrice)}
           icon={<DollarSign className="h-4 w-4 text-muted" />}
-          accent="primary"
+          accent="danger"
           helpText={dict.totalReturnPriceKpiHelp}
           sub={dict.totalReturnPriceKpiSub}
         />
@@ -530,7 +533,7 @@ export default function ReturnImportInvoiceDetailPage() {
           value={notes}
           onChange={setNotes}
           disabled={!canEditDraft}
-          placeholder={dict.descriptionPlaceholder}
+          placeholder={dict.invoiceDescriptionPlaceholder}
         />
       </Field>
 

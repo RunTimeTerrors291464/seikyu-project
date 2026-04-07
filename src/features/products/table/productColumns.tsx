@@ -2,13 +2,26 @@ import type { Column } from "@/components/ui/DataTable";
 import ActivePill from "@/features/products/components/ActivePill";
 import StatusPill from "@/features/products/components/StockStatusPill";
 import { Dictionary } from "@/lib/lang/i18n";
+import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
+import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayIndex";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { Product } from "../types/product";
 
-export function productColumns(dict: Dictionary): Column<Product>[] {
+/**
+ * Columns for the product inventory table, including a paginated row index column.
+ *
+ * @param dict - UI strings.
+ * @param rowIndexPagination - Page and page size for global row labels; omit for non-paginated tables.
+ */
+export function productColumns(
+  dict: Dictionary,
+  rowIndexPagination?: PaginatedRowIndexParams,
+): Column<Product>[] {
 
   return [
+    rowIndexColumn<Product>({ pagination: rowIndexPagination }),
 
     {
       id: "sku",
@@ -54,7 +67,7 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       field: "importPrice",
       sortable: true,
       icon: <DollarSign className="h-3.5 w-3.5" />,
-      accessor: (p) => p.importPrice.toLocaleString()
+      accessor: (p) => formatPriceNumber(p.importPrice)
     },
 
     {
@@ -63,7 +76,7 @@ export function productColumns(dict: Dictionary): Column<Product>[] {
       field: "sellingPrice",
       sortable: true,
       icon: <DollarSign className="h-3.5 w-3.5" />,
-      accessor: (p) => p.sellingPrice.toLocaleString()
+      accessor: (p) => formatPriceNumber(p.sellingPrice)
     },
 
     {

@@ -1,6 +1,7 @@
 import Button from "@/components/ui/Buttons";
 import type { Column } from "@/components/ui/DataTable";
 import { Dictionary } from "@/lib/lang/i18n";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import { FileText, Settings, Star, Trash2 } from "lucide-react";
 
 type Actions = {
@@ -10,6 +11,8 @@ type Actions = {
 
 export function nameColumns(dict: Dictionary, { onRemove, onMakeDefault }: Actions): Column<string>[] {
   return [
+    rowIndexColumn<string>(),
+
     {
       id: "name",
       header: dict.name,

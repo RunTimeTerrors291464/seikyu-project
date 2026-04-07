@@ -9,8 +9,8 @@ import type { CreateProductPayload, Product } from "@/features/products/types/pr
 import { useDict } from "@/lib/lang/DictProvider";
 import { useState } from "react";
 import {
-  type EditableImportInvoiceProduct,
   productToEditableImportLine,
+  type EditableImportInvoiceProduct,
 } from "../types/importInvoiceDetail";
 
 type CreateAndAddProductPopupProps = {
@@ -96,7 +96,7 @@ export default function CreateAndAddProductPopup({
 
   return (
     <Popup open={open} onClose={requestCancel}>
-      <div className="flex w-[520px] max-w-[92vw] flex-col overflow-hidden">
+      <div className="flex w-[520px] max-w-[92vw] flex-col overflow-hidden bg-bg">
         <div className="border-b border-border px-4 py-3 text-sm font-semibold">
           {dict.createAndAddProduct}
         </div>

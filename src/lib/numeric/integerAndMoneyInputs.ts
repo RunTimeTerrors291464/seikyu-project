@@ -5,6 +5,64 @@
 export const MAX_INTEGER_INPUT = 2147483647;
 
 /**
+ * Locale-aware options for showing monetary amounts with exactly two fractional digits.
+ */
+export const PRICE_DISPLAY_FORMAT: Intl.NumberFormatOptions = {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+};
+
+/**
+ * Formats a numeric amount for read-only UI (tables, KPIs) with two decimal places.
+ *
+ * @param value - Finite amount (unit price, line total, invoice total, etc.).
+ * @returns Locale-formatted string with two fractional digits.
+ */
+export function formatPriceNumber(value: number): string {
+  return value.toLocaleString(undefined, PRICE_DISPLAY_FORMAT);
+}
+
+/**
+ * Formats a money-like string or number for read-only display with two decimal places.
+ *
+ * @param value - Amount from API or draft row (may include comma separators).
+ * @returns Locale-formatted string with two fractional digits.
+ */
+export function formatPriceMoneyLike(value: string | number): string {
+  const numeric =
+    typeof value === "number" ? value : parseMoneyLikeString(String(value));
+  return formatPriceNumber(numeric);
+}
+
+/**
+ * Normalizes a money input to exactly two fractional digits (dot decimal) after blur,
+ * for stable display in controlled fields. Clamps to {@link MAX_INTEGER_INPUT}.
+ *
+ * @param raw - Current input text.
+ * @param options.allowEmpty - When true, blank input stays `""`. When false, blank is treated as zero.
+ * @returns String with pattern `^\d+\.\d{2}$`, or `""` when allowed.
+ */
+export function finalizeMoneyStringTwoDecimalPlaces(
+  raw: string,
+  options: { allowEmpty: boolean },
+): string {
+  const trimmed = raw.trim();
+  if (options.allowEmpty && trimmed === "") {
+    return "";
+  }
+
+  const normalized = normalizeMoneyStringInput(trimmed === "" ? "" : trimmed, {
+    allowEmpty: false,
+  });
+  const withoutTrailingDot = normalized.endsWith(".")
+    ? normalized.slice(0, -1)
+    : normalized;
+  const parsed = parseMoneyLikeString(withoutTrailingDot);
+  const clamped = Math.min(Math.max(parsed, 0), MAX_INTEGER_INPUT);
+  return clamped.toFixed(2);
+}
+
+/**
  * Parses a numeric money string that may include thousands separators (commas), as returned by APIs or `toLocaleString`.
  *
  * @param raw - Raw string (or value coerced to string) for a unit price or quantity field.

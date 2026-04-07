@@ -9,10 +9,14 @@ import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
 import {
+  finalizeMoneyStringTwoDecimalPlaces,
+  formatPriceMoneyLike,
+  formatPriceNumber,
   lineTotalFromQuantityAndMoneyStrings,
   normalizeIntegerStringInput,
   normalizeMoneyStringInput,
 } from "@/lib/numeric/integerAndMoneyInputs";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import {
   Barcode,
   DollarSign,
@@ -92,9 +96,10 @@ function buildImportPriceReadOnlyColumn<T extends WithImportPriceReadOnly>(
     header: dict.importPrice,
     icon: <DollarSign className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
     accessor: function renderImportPrice(row) {
+      const raw = row.importPrice?.trim();
       return (
         <span className="tabular-nums text-text">
-          {row.importPrice || "—"}
+          {raw ? formatPriceMoneyLike(row.importPrice) : "—"}
         </span>
       );
     },
@@ -145,11 +150,11 @@ function buildImportLineTotalColumn(
       );
       return (
         <span className="tabular-nums text-text">
-          {total.toLocaleString()}
+          {formatPriceNumber(total)}
         </span>
       );
     },
-    thClassName: "w-[130px]",
+    thClassName: "w-[160px]",
   };
 }
 
@@ -210,6 +215,17 @@ function buildImportInvoiceEditableTailColumns(
               });
               onUpdateRow(row.localId, "importPrice", next);
             }}
+            onBlur={function handleBlur(): void {
+              if (!canEditDraft) {
+                return;
+              }
+              const next = finalizeMoneyStringTwoDecimalPlaces(row.importPrice, {
+                allowEmpty: true,
+              });
+              if (next !== row.importPrice) {
+                onUpdateRow(row.localId, "importPrice", next);
+              }
+            }}
             disabled={!canEditDraft}
             error={canEditDraft ? isEmpty : false}
             warning={canEditDraft ? !isEmpty && isZeroValue(row.importPrice) : false}
@@ -217,7 +233,7 @@ function buildImportInvoiceEditableTailColumns(
           />
         );
       },
-      thClassName: "w-[140px]",
+      thClassName: "w-[160px]",
     },
     buildImportLineTotalColumn(dict),
     {
@@ -351,7 +367,7 @@ function buildReturnLineTotalColumn<
       );
       return (
         <span className="tabular-nums text-text">
-          {total.toLocaleString()}
+          {formatPriceNumber(total)}
         </span>
       );
     },
@@ -422,7 +438,11 @@ export function importInvoiceProductColumns({
     ...buildImportInvoiceEditableTailColumns(dict, canEditDraft, onUpdateRow),
   ];
 
-  return canEditDraft ? [selectColumn, ...bodyColumns] : bodyColumns;
+  const indexColumn = rowIndexColumn<EditableImportInvoiceProduct>();
+
+  return canEditDraft
+    ? [selectColumn, indexColumn, ...bodyColumns]
+    : [indexColumn, ...bodyColumns];
 }
 
 // --- Public: return import draft (create popup) ---
@@ -451,6 +471,7 @@ export function returnImportDraftProductColumns({
   }
 
   return [
+    rowIndexColumn<EditableReturnImportLine>(),
     ...buildReturnImportReadOnlyStaticColumns<EditableReturnImportLine>(dict),
     buildReturnQuantityInputColumn<EditableReturnImportLine>({
       dict,
@@ -506,6 +527,7 @@ export function returnImportInvoiceDetailProductColumns({
   }
 
   return [
+    rowIndexColumn<EditableReturnInvoiceDetailLine>(),
     ...buildReturnImportReadOnlyStaticColumns<EditableReturnInvoiceDetailLine>(
       dict,
     ),

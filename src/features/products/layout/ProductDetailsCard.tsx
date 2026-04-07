@@ -19,12 +19,17 @@ import {
 } from "@/components/ui/Fields";
 import { Dictionary } from "@/lib/lang/i18n";
 import {
+  finalizeMoneyStringTwoDecimalPlaces,
   normalizeIntegerStringInput,
   normalizeMoneyStringInput,
   normalizedIntegerStringToNumber,
   normalizedMoneyStringToNumber,
 } from "@/lib/numeric/integerAndMoneyInputs";
 import { useCallback, useEffect, useState } from "react";
+import { useProductUnitActiveState } from "../hooks/useProductUnitActiveState";
+import useSkuValidation from "../hooks/useSkuValidation";
+import { Product } from "../types/product";
+import UnitPickerPopup from "./UnitPickerPopup";
 
 /**
  * Holds the last saved reorder threshold for stock accent/label only.
@@ -46,10 +51,6 @@ function useReorderThresholdBaseline(product: Product): number {
 
   return baseline;
 }
-import useSkuValidation from "../hooks/useSkuValidation";
-import { useProductUnitActiveState } from "../hooks/useProductUnitActiveState";
-import { Product } from "../types/product";
-import UnitPickerPopup from "./UnitPickerPopup";
 
 type Props = {
   product: Product;
@@ -77,6 +78,21 @@ export default function ProductDetailsCard({
   const stock = getStockStatus(product, dict, reorderThresholdBaseline);
   const [unitOpen, setUnitOpen] = useState(false);
   const [unitServerNonce, setUnitServerNonce] = useState(0);
+
+  const [importPriceText, setImportPriceText] = useState(() =>
+    moneyDraftFromProductNumber(product.importPrice),
+  );
+  const [sellingPriceText, setSellingPriceText] = useState(() =>
+    moneyDraftFromProductNumber(product.sellingPrice),
+  );
+
+  useEffect(() => {
+    setImportPriceText(moneyDraftFromProductNumber(product.importPrice));
+  }, [product.id, product.updatedAt]);
+
+  useEffect(() => {
+    setSellingPriceText(moneyDraftFromProductNumber(product.sellingPrice));
+  }, [product.id, product.updatedAt]);
 
   const isDisabled = disabled || !product.isActive;
 
@@ -209,19 +225,31 @@ export default function ProductDetailsCard({
         error={errors.importPrice}
       >
         <Input
-          type="number"
-          value={product.importPrice || 0}
+          value={importPriceText}
           disabled={isDisabled}
           onChange={(v) => {
             const normalized = normalizeMoneyStringInput(v, {
               allowEmpty: false,
             });
+            setImportPriceText(normalized);
             const num = normalizedMoneyStringToNumber(normalized);
             if (num === null) {
               return;
             }
             update("importPrice", num);
           }}
+          onBlur={() => {
+            const finalized = finalizeMoneyStringTwoDecimalPlaces(
+              importPriceText,
+              { allowEmpty: false },
+            );
+            setImportPriceText(finalized);
+            const num = normalizedMoneyStringToNumber(finalized);
+            if (num !== null) {
+              update("importPrice", num);
+            }
+          }}
+          inputMode="decimal"
         />
       </Field>
 
@@ -232,19 +260,31 @@ export default function ProductDetailsCard({
         error={errors.sellingPrice}
       >
         <Input
-          type="number"
-          value={product.sellingPrice || 0}
+          value={sellingPriceText}
           disabled={isDisabled}
           onChange={(v) => {
             const normalized = normalizeMoneyStringInput(v, {
               allowEmpty: false,
             });
+            setSellingPriceText(normalized);
             const num = normalizedMoneyStringToNumber(normalized);
             if (num === null) {
               return;
             }
             update("sellingPrice", num);
           }}
+          onBlur={() => {
+            const finalized = finalizeMoneyStringTwoDecimalPlaces(
+              sellingPriceText,
+              { allowEmpty: false },
+            );
+            setSellingPriceText(finalized);
+            const num = normalizedMoneyStringToNumber(finalized);
+            if (num !== null) {
+              update("sellingPrice", num);
+            }
+          }}
+          inputMode="decimal"
         />
       </Field>
 
@@ -281,7 +321,7 @@ export default function ProductDetailsCard({
           disabled={isDisabled}
           value={product.productDescription || ""}
           onChange={(v) => update("productDescription", v)}
-          placeholder={dict.descriptionPlaceholder}
+          placeholder={dict.productDescriptionPlaceholder}
         />
       </Field>
     </div>
@@ -289,6 +329,18 @@ export default function ProductDetailsCard({
 }
 
 /* ───────────────── Helpers ───────────────── */
+
+/**
+ * Builds a two-decimal draft string for product price fields from the stored number.
+ *
+ * @param value - Current `importPrice` / `sellingPrice` from product state.
+ * @returns Dot-decimal string with exactly two fractional digits.
+ */
+function moneyDraftFromProductNumber(value: number | undefined): string {
+  return finalizeMoneyStringTwoDecimalPlaces(String(value ?? 0), {
+    allowEmpty: false,
+  });
+}
 
 /**
  * Derives stock label and accent from inventory and a stable reorder threshold.

@@ -4,15 +4,18 @@ import type { Dictionary } from "@/lib/lang/i18n";
 import {
   Braces,
   Clock,
-  Hash,
   MessageSquare,
   Package,
   Receipt,
+  ReceiptText,
   Sigma,
   User as UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 
+import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
+import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayIndex";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import ImportInvoiceStatusPill from "../components/ImportInvoiceStatusPill";
 import type { ImportInvoiceRow } from "../hooks/useImportInvoices";
 
@@ -28,12 +31,16 @@ function formatInvoiceNumber(
 
 export function importInvoiceColumns(
   dict: Dictionary,
+  rowIndexPagination?: PaginatedRowIndexParams,
 ): Column<ImportInvoiceRow>[] {
   return [
+    rowIndexColumn<ImportInvoiceRow>({ pagination: rowIndexPagination }),
     {
       id: "invoiceNumber",
       header: dict.invoiceNumber,
-      icon: <Hash className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      icon: (
+        <ReceiptText className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />
+      ),
       field: "invoiceId",
       sortable: true,
       accessor: (row) => (
@@ -93,8 +100,8 @@ export function importInvoiceColumns(
       header: dict.totalPriceLabel,
       icon: <Receipt className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: (row) => (
-        <span className="tabular-nums text-text">
-          {row.totalImportPrice.toLocaleString()}
+        <span className="tabular-nums text-success">
+          {formatPriceNumber(row.totalImportPrice)}
         </span>
       ),
       thClassName: "w-[160px]",

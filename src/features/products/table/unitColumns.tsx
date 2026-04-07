@@ -5,6 +5,8 @@ import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import { StatusToggle } from "@/components/ui/StatusToggle";
 import { Dictionary } from "@/lib/lang/i18n";
+import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayIndex";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import clsx from "clsx";
 import {
   CirclePower,
@@ -23,6 +25,9 @@ type Actions = {
   draftMap: Record<string, ProductUnit>;
 
   updating?: boolean;
+
+  /** When set, the index column uses `(page - 1) * rowsPerPage + rowIndex + 1`. */
+  rowIndexPagination?: PaginatedRowIndexParams;
 
   onSelect: (unit: ProductUnit) => void;
   onEdit: (unit: ProductUnit) => void;
@@ -47,6 +52,7 @@ export function unitColumns(
     editingId,
     draftMap,
     updating,
+    rowIndexPagination,
     onSelect,
     onEdit,
     onDelete,
@@ -58,6 +64,8 @@ export function unitColumns(
   }: Actions
 ): Column<ProductUnit>[] {
   return [
+    rowIndexColumn<ProductUnit>({ pagination: rowIndexPagination }),
+
     /* ───────── NAME ───────── */
     {
       id: "name",

@@ -5,6 +5,7 @@ import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
+import { useImportInvoiceProductsEditor } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import CreateReturnImportInvoicePopup from "@/features/invoices/layout/CreateReturnImportInvoicePopup";
 import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader";
 import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
@@ -16,7 +17,6 @@ import {
   editImportInvoiceDraft,
   getImportInvoiceById,
 } from "@/features/invoices/services/importInvoice.service";
-import { useImportInvoiceProductsEditor } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import {
   EditableImportInvoiceProduct,
   importLineDtoToEditable,
@@ -25,6 +25,7 @@ import {
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
+import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -295,9 +296,9 @@ export default function ImportInvoiceDetailPage() {
       <div className="grid gap-4 xl:grid-cols-5">
         <KpiTile
           label={dict.totalImportPriceLabel}
-          value={totals.totalImportPrice.toLocaleString()}
+          value={formatPriceNumber(totals.totalImportPrice)}
           icon={<DollarSign className="h-4 w-4 text-muted" />}
-          accent="primary"
+          accent="success"
           helpText={dict.totalImportPriceKpiHelp}
           sub={dict.totalImportPriceKpiSub}
         />
@@ -349,7 +350,7 @@ export default function ImportInvoiceDetailPage() {
               value={notes}
               onChange={setNotes}
               disabled={!canEditDraft}
-              placeholder={dict.descriptionPlaceholder}
+              placeholder={dict.invoiceDescriptionPlaceholder}
               rows={1}
               className="min-h-0 flex-1 overflow-y-auto"
             />

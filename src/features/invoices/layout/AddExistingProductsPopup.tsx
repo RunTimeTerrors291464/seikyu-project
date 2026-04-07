@@ -3,18 +3,16 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import { ACCENT_STYLES, ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
-import type { Column } from "@/components/ui/DataTable";
 import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import TablePagination from "@/components/ui/TablePagination";
-import ActivePill from "@/features/products/components/ActivePill";
-import StatusPill from "@/features/products/components/StockStatusPill";
+import buildAddExistingProductsColumns from "@/features/invoices/table/addExistingProductsColumns";
 import { PRODUCT_STATUS_OPTIONS, PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
 import { useProductTable } from "@/features/products/hooks/useProductTable";
 import { ProductQuery, productService } from "@/features/products/services/product.service";
 import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
-import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Filter, Package, RotateCcw, Ruler, Trash2, Warehouse } from "lucide-react";
+import { Barcode, Filter, Package, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type AddExistingProductsPopupProps = {
@@ -22,6 +20,8 @@ type AddExistingProductsPopupProps = {
   onClose: () => void;
   excludedProductIds: Set<string>;
   onConfirmSelect: (selectedProducts: Product[]) => void;
+  /** When set, replaces the default dialog title (e.g. selling invoice uses "Add Products"). */
+  dialogTitle?: string;
 };
 
 export default function AddExistingProductsPopup({
@@ -29,6 +29,7 @@ export default function AddExistingProductsPopup({
   onClose,
   excludedProductIds,
   onConfirmSelect,
+  dialogTitle,
 }: AddExistingProductsPopupProps) {
   const dict = useDict();
   const [search, setSearch] = useState<string>("");
@@ -99,143 +100,28 @@ export default function AddExistingProductsPopup({
     [excludedProductIds, selectedProductIds, table.data],
   );
 
-  const columns: Column<Product>[] = [
-    {
-      id: "select",
-      header: "",
-      icon: (
-        <input
-          type="checkbox"
-          checked={allSelectableChecked}
-          onChange={function handleToggleAll(event): void {
-            if (!event.target.checked) {
-              setSelectedProductIds(new Set());
-              return;
-            }
-            setSelectedProductIds(
-              new Set(selectableRows.map(function mapIds(product): string {
-                return product.id;
-              })),
-            );
-          }}
-          className="h-4 w-4 rounded border-border"
-          disabled={selectableRows.length === 0}
-          aria-label={dict.select}
-        />
-      ),
-      accessor: function renderSelectColumn(product) {
-        const alreadyAdded = excludedProductIds.has(product.id);
-        const inactive = !product.isActive;
-        const isDisabled = alreadyAdded || inactive;
-        return (
-          <input
-            type="checkbox"
-            checked={selectedProductIds.has(product.id) && !isDisabled}
-            disabled={isDisabled}
-            onChange={function handleToggleOne(event): void {
-              setSelectedProductIds(function applyNextSelection(previous) {
-                if (event.target.checked && !isProductSelectable(product)) {
-                  return previous;
-                }
-
-                const next = new Set(previous);
-                if (event.target.checked) {
-                  next.add(product.id);
-                  return next;
-                }
-
-                next.delete(product.id);
-                return next;
-              });
-            }}
-            className="h-4 w-4 rounded border-border disabled:cursor-not-allowed"
-            aria-label={dict.select}
-          />
-        );
-      },
-      thClassName: "w-[46px]",
-      tdClassName: "w-[46px]",
+  const columns = useMemo(
+    function getColumns() {
+      return buildAddExistingProductsColumns({
+        dict,
+        allSelectableChecked,
+        selectableRows,
+        excludedProductIds,
+        selectedProductIds,
+        setSelectedProductIds,
+        isProductSelectable,
+      });
     },
-    {
-      id: "sku",
-      header: dict.sku,
-      field: "sku",
-      sortable: true,
-      icon: <Barcode className="h-3.5 w-3.5 text-muted" />,
-      accessor: function renderSku(product) {
-        const alreadyAdded = excludedProductIds.has(product.id);
-        return (
-          <span
-            title={alreadyAdded ? dict.alreadyAdded : ""}
-            className={alreadyAdded ? "font-semibold text-muted" : "font-semibold text-blue-600"}
-          >
-            {product.sku}
-          </span>
-        );
-      },
-    },
-    {
-      id: "productName",
-      header: dict.productName,
-      sortable: true,
-      icon: <Edit2 className="h-3.5 w-3.5 text-muted" />,
-      accessor: function renderProductName(product): string {
-        return product.productNames?.[0] ?? dict.unnamed;
-      },
-    },
-    {
-      id: "productUnitName",
-      header: dict.unit,
-      field: "productUnitName",
-      sortable: true,
-      icon: <Ruler className="h-3.5 w-3.5 text-muted" />,
-    },
-    {
-      id: "importPrice",
-      header: dict.importPrice,
-      field: "importPrice",
-      sortable: true,
-      icon: <DollarSign className="h-3.5 w-3.5 text-muted" />,
-      accessor: function renderImportPrice(product): string {
-        return product.importPrice.toLocaleString();
-      },
-    },
-    {
-      id: "sellingPrice",
-      header: dict.sellingPrice,
-      field: "sellingPrice",
-      sortable: true,
-      icon: <DollarSign className="h-3.5 w-3.5 text-muted" />,
-      accessor: function renderSellingPrice(product): string {
-        return product.sellingPrice.toLocaleString();
-      },
-    },
-    {
-      id: "stock",
-      header: dict.stock,
-      field: "inventoryStock",
-      icon: <Warehouse className="h-3.5 w-3.5 text-muted" />,
-    },
-    {
-      id: "stockStatus",
-      header: dict.stockStatus,
-      field: "stockStatus",
-      sortable: true,
-      icon: <CircleEllipsis className="h-3.5 w-3.5 text-muted" />,
-      accessor: function renderStockStatus(product) {
-        return <StatusPill status={product.stockStatus} />;
-      },
-    },
-    {
-      id: "active",
-      header: dict.status,
-      field: "isActive",
-      icon: <CirclePower className="h-3.5 w-3.5 text-muted" />,
-      accessor: function renderActive(product) {
-        return <ActivePill active={product.isActive} />;
-      },
-    },
-  ];
+    [
+      dict,
+      allSelectableChecked,
+      selectableRows,
+      excludedProductIds,
+      selectedProductIds,
+      setSelectedProductIds,
+      isProductSelectable,
+    ],
+  );
 
   function handleDeleteSelected(): void {
     setSelectedProductIds(new Set());
@@ -262,11 +148,13 @@ export default function AddExistingProductsPopup({
 
   return (
     <Popup open={open} onClose={onClose}>
-      <div className="flex h-[86vh] w-[90vw] max-w-[1100px] flex-col overflow-hidden">
+      <div className="flex h-[86vh] w-[90vw] max-w-[1100px] flex-col overflow-hidden bg-bg">
         <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-3 items-center gap-2">
             <div className="flex items-center justify-start">
-              <h2 className="text-sm font-semibold text-text">{dict.addExistingProduct}</h2>
+              <h2 className="text-sm font-semibold text-text">
+                {dialogTitle ?? dict.addExistingProduct}
+              </h2>
             </div>
             <div className="flex items-center justify-center">
               <RuleInput

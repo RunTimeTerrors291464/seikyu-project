@@ -138,7 +138,6 @@ export default function ProductNamesCard({
           <DataTable<string>
             data={safeNames}
             getRowId={(idx) => idx.toString()}
-            showIndex
             maxHeight="fill"
             columns={nameColumns(dict, { onRemove, onMakeDefault })}
           />
