@@ -41,7 +41,7 @@ export default function AddExistingProductsPopup({
 
   const initialTableQuery: ProductQuery = {
     page: 1,
-    limit: 10,
+    limit: 30,
     search: undefined,
     searchBy: undefined,
     sortBy: "sku",

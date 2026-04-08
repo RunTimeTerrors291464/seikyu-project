@@ -3,6 +3,9 @@
 import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import KpiTile from "@/components/ui/KpiTile";
+import InvoicePrintPreviewPopup, {
+  type InvoicePrintData,
+} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
 import {
@@ -23,6 +26,7 @@ export default function CashierSellingInvoiceDetailPage() {
   const [invoice, setInvoice] = useState<SellingInvoiceResponseDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [printPopupOpen, setPrintPopupOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,6 +88,28 @@ export default function CashierSellingInvoiceDetailPage() {
     0,
   );
   const totalDiscount = Math.max(0, totalBeforeDiscount - invoice.totalSellingPrice);
+  const printData: InvoicePrintData = {
+    invoiceCode: invoice.invoiceId ?? dict.noInvoiceNo,
+    status: invoice.status,
+    createdBy: invoice.confirmedByUsername,
+    createdAt: invoice.confirmedAt,
+    confirmedBy: invoice.confirmedByUsername,
+    confirmedAt: invoice.confirmedAt,
+    notes: invoice.notes,
+    totalProducts: invoice.totalProducts,
+    totalQuantity: invoice.totalQuantity,
+    totalAmount: invoice.totalSellingPrice,
+    lines: invoice.products.map(function toPrintLine(product) {
+      return {
+        sku: product.productSku,
+        name: product.productName,
+        unit: product.productUnit,
+        quantity: product.quantity,
+        lineTotal: product.totalSellingPrice,
+        notes: product.notes,
+      };
+    }),
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
@@ -91,6 +117,10 @@ export default function CashierSellingInvoiceDetailPage() {
         title={invoice.invoiceId ?? dict.sellingDraft}
         status={invoice.status}
         listHref="/cashier/selling"
+        canPrint={true}
+        onPrint={function handleOpenPrintPopup(): void {
+          setPrintPopupOpen(true);
+        }}
       />
 
       {errorMessage && (
@@ -172,6 +202,15 @@ export default function CashierSellingInvoiceDetailPage() {
           </Field>
         </div>
       </div>
+
+      <InvoicePrintPreviewPopup
+        open={printPopupOpen}
+        title={dict.salesInvoices}
+        data={printData}
+        onClose={function handleClosePrintPopup(): void {
+          setPrintPopupOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -11,6 +11,9 @@ import KpiTile from "@/components/ui/KpiTile";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
 import ReturnImportInvoiceHeader from "@/features/invoices/layout/ReturnImportInvoiceHeader";
 import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
+import InvoicePrintPreviewPopup, {
+  type InvoicePrintData,
+} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import { getImportInvoiceById } from "@/features/invoices/services/importInvoice.service";
 import {
   confirmReturnImportInvoice,
@@ -68,6 +71,7 @@ export default function ReturnImportInvoiceDetailPage() {
     useState<string>("[]");
   const [draftValidationAttempted, setDraftValidationAttempted] =
     useState<boolean>(false);
+  const [printPopupOpen, setPrintPopupOpen] = useState<boolean>(false);
 
   const { updateLine, handleBlurReturnQuantity } =
     useReturnImportLinesEditor<EditableReturnInvoiceDetailLine>(
@@ -430,6 +434,32 @@ export default function ReturnImportInvoiceDetailPage() {
     );
   }
 
+  const printData: InvoicePrintData = {
+    invoiceCode: invoice.returnInvoiceId ?? dict.noInvoiceNo,
+    status: invoice.status,
+    createdBy: invoice.draftByUsername,
+    createdAt: invoice.draftAt,
+    confirmedBy: invoice.confirmedByUsername,
+    confirmedAt: invoice.confirmedAt,
+    notes,
+    totalProducts: totals.totalProducts,
+    totalQuantity: totals.totalQuantity,
+    totalAmount: Number(totals.totalReturnPrice),
+    showLineNotes: true,
+    lines: lines.map(function toPrintLine(line) {
+      const quantity = toNumberOrZero(line.returnQuantity);
+      const unitPrice = toNumberOrZero(line.importPrice);
+      return {
+        sku: line.productSku,
+        name: line.productName,
+        unit: line.productUnit,
+        quantity,
+        lineTotal: quantity * unitPrice,
+        notes: line.notes,
+      };
+    }),
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col w-full gap-4 ">
       <ReturnImportInvoiceHeader
@@ -444,6 +474,10 @@ export default function ReturnImportInvoiceDetailPage() {
         onSave={handleOpenSaveConfirm}
         onConfirm={handleOpenConfirmDraftPopup}
         onDelete={() => setDeleteConfirmOpen(true)}
+        canPrint={invoice.status !== "draft"}
+        onPrint={function handleOpenPrintPopup(): void {
+          setPrintPopupOpen(true);
+        }}
         onBack={function handleBack(): void {
           requestNavigate(`/manager/invoices/import/${invoice.importInvoiceId}`);
         }}
@@ -602,6 +636,15 @@ export default function ReturnImportInvoiceDetailPage() {
         onConfirm={confirmDiscardNavigate}
         onClose={closeDiscardNavigate}
         accent="danger"
+      />
+
+      <InvoicePrintPreviewPopup
+        open={printPopupOpen}
+        title={dict.relatedReturnInvoices}
+        data={printData}
+        onClose={function handleClosePrintPopup(): void {
+          setPrintPopupOpen(false);
+        }}
       />
     </div>
   );

@@ -7,6 +7,9 @@ import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
 import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
+import InvoicePrintPreviewPopup, {
+  type InvoicePrintData,
+} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import ReturnSellingInvoiceHeader from "@/features/invoices/layout/ReturnSellingInvoiceHeader";
 import {
   confirmReturnSellingInvoice,
@@ -65,6 +68,7 @@ export default function ReturnSellingInvoiceDetailPage() {
     useState<string>("[]");
   const [draftValidationAttempted, setDraftValidationAttempted] =
     useState<boolean>(false);
+  const [printPopupOpen, setPrintPopupOpen] = useState<boolean>(false);
 
   const { updateLine, handleBlurReturnQuantity } =
     useReturnImportLinesEditor<EditableReturnSellingDetailLine>(
@@ -430,6 +434,32 @@ export default function ReturnSellingInvoiceDetailPage() {
     );
   }
 
+  const printData: InvoicePrintData = {
+    invoiceCode: invoice.returnInvoiceId ?? dict.noInvoiceNo,
+    status: invoice.status,
+    createdBy: invoice.draftByUsername,
+    createdAt: invoice.draftAt,
+    confirmedBy: invoice.confirmedByUsername,
+    confirmedAt: invoice.confirmedAt,
+    notes,
+    totalProducts: totals.totalProducts,
+    totalQuantity: totals.totalQuantity,
+    totalAmount: Number(totals.totalReturnPrice),
+    showLineNotes: true,
+    lines: lines.map(function toPrintLine(line) {
+      const quantity = toNumberOrZero(line.returnQuantity);
+      const unitPrice = toNumberOrZero(line.sellingPrice);
+      return {
+        sku: line.productSku,
+        name: line.productName,
+        unit: line.productUnit,
+        quantity,
+        lineTotal: quantity * unitPrice,
+        notes: line.notes,
+      };
+    }),
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col w-full gap-4 ">
       <ReturnSellingInvoiceHeader
@@ -444,6 +474,10 @@ export default function ReturnSellingInvoiceDetailPage() {
         onSave={handleOpenSaveConfirm}
         onConfirm={handleOpenConfirmDraftPopup}
         onDelete={() => setDeleteConfirmOpen(true)}
+        canPrint={invoice.status !== "draft"}
+        onPrint={function handleOpenPrintPopup(): void {
+          setPrintPopupOpen(true);
+        }}
         onBack={function handleBack(): void {
           requestNavigate(
             `/manager/invoices/selling/${invoice.sellingInvoiceId}`,
@@ -603,6 +637,15 @@ export default function ReturnSellingInvoiceDetailPage() {
         onConfirm={confirmDiscardNavigate}
         onClose={closeDiscardNavigate}
         accent="danger"
+      />
+
+      <InvoicePrintPreviewPopup
+        open={printPopupOpen}
+        title={dict.relatedReturnSellingInvoices}
+        data={printData}
+        onClose={function handleClosePrintPopup(): void {
+          setPrintPopupOpen(false);
+        }}
       />
     </div>
   );

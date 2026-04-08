@@ -242,5 +242,9 @@
   "importDraftMissingPriceError": "Vui lòng nhập giá nhập cho tất cả sản phẩm.",
   "sellingDraftMissingSkuError": "Vui lòng nhập SKU cho tất cả dòng.",
   "error": "Lỗi",
-  "invoiceDescriptionPlaceholder": "Nhập mô tả hóa đơn..."
+  "invoiceDescriptionPlaceholder": "Nhập mô tả hóa đơn...",
+  "print": "In",
+  "printPreview": "Xem trước khi in",
+  "by": "Bởi",
+  "date": "Ngày"
 }

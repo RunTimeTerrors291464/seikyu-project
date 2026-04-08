@@ -242,5 +242,9 @@
   "importDraftMissingPriceError": "Enter import price for all products.",
   "sellingDraftMissingSkuError": "Enter SKU for all lines.",
   "error": "Error",
-  "invoiceDescriptionPlaceholder": "Enter invoice description..."
+  "invoiceDescriptionPlaceholder": "Enter invoice description...",
+  "print": "Print",
+  "printPreview": "Print preview",
+  "by": "By",
+  "date": "Date"
 }

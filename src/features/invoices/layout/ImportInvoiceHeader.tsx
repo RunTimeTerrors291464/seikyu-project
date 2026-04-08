@@ -3,7 +3,7 @@
 import Button from "@/components/ui/Buttons";
 import type { ImportInvoiceStatus } from "@/features/invoices/services/importInvoice.service";
 import { useDict } from "@/lib/lang/DictProvider";
-import { ArrowLeft, RotateCcw, Save, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Printer, RotateCcw, Save, Send, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
 import ImportInvoiceStatusPill from "../components/ImportInvoiceStatusPill";
@@ -22,6 +22,8 @@ type ImportInvoiceHeaderProps = {
   onConfirm: () => void;
   onDelete: () => void;
   onReturn?: () => void;
+  canPrint?: boolean;
+  onPrint?: () => void;
   onBack?: () => void;
   middle?: ReactNode;
 };
@@ -40,6 +42,8 @@ export default function ImportInvoiceHeader({
   onConfirm,
   onDelete,
   onReturn,
+  canPrint = false,
+  onPrint,
   onBack,
   middle,
 }: ImportInvoiceHeaderProps) {
@@ -75,6 +79,15 @@ export default function ImportInvoiceHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        {canPrint && onPrint && (
+          <Button
+            icon={<Printer className="h-3.5 w-3.5" />}
+            accent="neutral"
+            onClick={onPrint}
+          >
+            {dict.print}
+          </Button>
+        )}
         {canReturn && onReturn && (
           <Button
             icon={<RotateCcw className="h-3.5 w-3.5" />}

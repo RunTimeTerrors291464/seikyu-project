@@ -4,6 +4,9 @@ import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import KpiTile from "@/components/ui/KpiTile";
 import CreateReturnSellingInvoicePopup from "@/features/invoices/layout/CreateReturnSellingInvoicePopup";
+import InvoicePrintPreviewPopup, {
+  type InvoicePrintData,
+} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
 import SellingInvoiceReturnInvoicesCard from "@/features/invoices/layout/SellingInvoiceReturnInvoicesCard";
@@ -27,6 +30,7 @@ export default function ManagerSellingInvoiceDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [returnPopupOpen, setReturnPopupOpen] = useState<boolean>(false);
+  const [printPopupOpen, setPrintPopupOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,6 +95,28 @@ export default function ManagerSellingInvoiceDetailPage() {
     0,
   );
   const totalDiscount = Math.max(0, totalBeforeDiscount - invoice.totalSellingPrice);
+  const printData: InvoicePrintData = {
+    invoiceCode: invoice.invoiceId ?? dict.noInvoiceNo,
+    status: invoice.status,
+    createdBy: invoice.confirmedByUsername,
+    createdAt: invoice.confirmedAt,
+    confirmedBy: invoice.confirmedByUsername,
+    confirmedAt: invoice.confirmedAt,
+    notes: invoice.notes,
+    totalProducts: invoice.totalProducts,
+    totalQuantity: invoice.totalQuantity,
+    totalAmount: invoice.totalSellingPrice,
+    lines: invoice.products.map(function toPrintLine(product) {
+      return {
+        sku: product.productSku,
+        name: product.productName,
+        unit: product.productUnit,
+        quantity: product.quantity,
+        lineTotal: product.totalSellingPrice,
+        notes: product.notes,
+      };
+    }),
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
@@ -101,6 +127,10 @@ export default function ManagerSellingInvoiceDetailPage() {
         canReturn={Boolean(canReturn)}
         onReturn={() => setReturnPopupOpen(true)}
         returnDisabled={false}
+        canPrint={true}
+        onPrint={function handleOpenPrintPopup(): void {
+          setPrintPopupOpen(true);
+        }}
       />
 
       {errorMessage && (
@@ -199,6 +229,15 @@ export default function ManagerSellingInvoiceDetailPage() {
         onCreated={(newReturnId) => {
           setReturnPopupOpen(false);
           router.push(`/manager/invoices/return-selling/${newReturnId}`);
+        }}
+      />
+
+      <InvoicePrintPreviewPopup
+        open={printPopupOpen}
+        title={dict.salesInvoices}
+        data={printData}
+        onClose={function handleClosePrintPopup(): void {
+          setPrintPopupOpen(false);
         }}
       />
     </div>

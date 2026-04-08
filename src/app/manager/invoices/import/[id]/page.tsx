@@ -8,6 +8,9 @@ import KpiTile from "@/components/ui/KpiTile";
 import { useImportInvoiceProductsEditor } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import CreateReturnImportInvoicePopup from "@/features/invoices/layout/CreateReturnImportInvoicePopup";
 import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader";
+import InvoicePrintPreviewPopup, {
+  type InvoicePrintData,
+} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
 import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
 import {
@@ -48,6 +51,7 @@ export default function ImportInvoiceDetailPage() {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState<boolean>(false);
   const [confirmDraftPopupOpen, setConfirmDraftPopupOpen] = useState<boolean>(false);
   const [returnPopupOpen, setReturnPopupOpen] = useState<boolean>(false);
+  const [printPopupOpen, setPrintPopupOpen] = useState<boolean>(false);
   const [initialNotes, setInitialNotes] = useState<string>("");
   const [initialProductsSignature, setInitialProductsSignature] = useState<string>("[]");
 
@@ -255,6 +259,31 @@ export default function ImportInvoiceDetailPage() {
     );
   }
 
+  const printData: InvoicePrintData = {
+    invoiceCode: invoice.invoiceId ?? dict.noInvoiceNo,
+    status: invoice.status,
+    createdBy: invoice.draftByUsername,
+    createdAt: invoice.draftAt,
+    confirmedBy: invoice.confirmedByUsername,
+    confirmedAt: invoice.confirmedAt,
+    notes,
+    totalProducts: totals.totalProducts,
+    totalQuantity: totals.totalQuantity,
+    totalAmount: totals.totalImportPrice,
+    lines: products.map(function toPrintLine(product) {
+      const quantity = toNumberOrZero(product.quantity);
+      const importPrice = toNumberOrZero(product.importPrice);
+      return {
+        sku: product.productSku,
+        name: product.productName,
+        unit: product.productUnit,
+        quantity,
+        lineTotal: quantity * importPrice,
+        notes: product.notes,
+      };
+    }),
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
       <ImportInvoiceHeader
@@ -271,6 +300,10 @@ export default function ImportInvoiceDetailPage() {
         onConfirm={handleOpenConfirmDraftPopup}
         onDelete={() => setDeleteConfirmOpen(true)}
         onReturn={() => setReturnPopupOpen(true)}
+        canPrint={invoice.status !== "draft"}
+        onPrint={function handleOpenPrintPopup(): void {
+          setPrintPopupOpen(true);
+        }}
         onBack={function handleBack(): void {
           requestNavigate("/manager/invoices/import");
         }}
@@ -410,6 +443,15 @@ export default function ImportInvoiceDetailPage() {
         onCreated={(newReturnId) => {
           setReturnPopupOpen(false);
           router.push(`/manager/invoices/return-invoice/${newReturnId}`);
+        }}
+      />
+
+      <InvoicePrintPreviewPopup
+        open={printPopupOpen}
+        title={dict.importInvoices}
+        data={printData}
+        onClose={function handleClosePrintPopup(): void {
+          setPrintPopupOpen(false);
         }}
       />
     </div>

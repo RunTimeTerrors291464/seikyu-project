@@ -2,7 +2,7 @@
 
 import Button from "@/components/ui/Buttons";
 import { useDict } from "@/lib/lang/DictProvider";
-import { ArrowLeft, Save, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Printer, Save, Send, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
 import ReturnImportInvoiceStatusPill from "../components/ReturnImportInvoiceStatusPill";
@@ -20,6 +20,8 @@ type ReturnSellingInvoiceHeaderProps = {
   onSave: () => void;
   onConfirm: () => void;
   onDelete: () => void;
+  canPrint?: boolean;
+  onPrint?: () => void;
   onBack?: () => void;
   centerSlot?: ReactNode;
 };
@@ -36,6 +38,8 @@ export default function ReturnSellingInvoiceHeader({
   onSave,
   onConfirm,
   onDelete,
+  canPrint = false,
+  onPrint,
   onBack,
   centerSlot,
 }: ReturnSellingInvoiceHeaderProps) {
@@ -71,6 +75,15 @@ export default function ReturnSellingInvoiceHeader({
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-2">
+        {canPrint && onPrint && (
+          <Button
+            icon={<Printer className="h-3.5 w-3.5" />}
+            accent="neutral"
+            onClick={onPrint}
+          >
+            {dict.print}
+          </Button>
+        )}
         {canEditDraft && (
           <Button
             icon={<Trash2 className="h-3.5 w-3.5" />}

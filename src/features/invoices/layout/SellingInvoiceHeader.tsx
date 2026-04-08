@@ -3,7 +3,7 @@
 import Button from "@/components/ui/Buttons";
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
 import { useDict } from "@/lib/lang/DictProvider";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, Printer, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
 import SellingInvoiceStatusPill from "../components/SellingInvoiceStatusPill";
@@ -15,6 +15,8 @@ type SellingInvoiceHeaderProps = {
   canReturn?: boolean;
   onReturn?: () => void;
   returnDisabled?: boolean;
+  canPrint?: boolean;
+  onPrint?: () => void;
   onBack?: () => void;
   middle?: ReactNode;
 };
@@ -26,6 +28,8 @@ export default function SellingInvoiceHeader({
   canReturn = false,
   onReturn,
   returnDisabled = false,
+  canPrint = false,
+  onPrint,
   onBack,
   middle,
 }: SellingInvoiceHeaderProps) {
@@ -59,6 +63,15 @@ export default function SellingInvoiceHeader({
       <div className="flex flex-1 items-center justify-center px-3">{middle}</div>
 
       <div className="flex items-center gap-2">
+        {canPrint && onPrint && (
+          <Button
+            icon={<Printer className="h-3.5 w-3.5" />}
+            accent="neutral"
+            onClick={onPrint}
+          >
+            {dict.print}
+          </Button>
+        )}
         {canReturn && onReturn && (
           <Button
             icon={<RotateCcw className="h-3.5 w-3.5" />}
