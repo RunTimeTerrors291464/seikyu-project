@@ -97,7 +97,6 @@ export default function ProductHeader({
 
           <Button
             onClick={() => {
-              console.log("clicked");
               setOpenConfirm(true);
             }}
             disabled={!canSave || saving}

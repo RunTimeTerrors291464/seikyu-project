@@ -50,6 +50,7 @@ export default function ProductInventoryDetailPage() {
 
     saveProduct,
     isDirty,
+    pendingActivationSave,
   } = useProductDetail(productId);
 
   const canEditDraft = Boolean(product?.isActive);
@@ -75,7 +76,7 @@ export default function ProductInventoryDetailPage() {
   const hasUnitSelected = Boolean(product.productUnitId?.trim());
 
   async function handleSave(): Promise<boolean> {
-    if (!hasUnitSelected) {
+    if (!pendingActivationSave && !hasUnitSelected) {
       toast.error(dict.unitRequired);
       return false;
     }
@@ -95,11 +96,12 @@ export default function ProductInventoryDetailPage() {
         onSave={handleSave}
         canSave={
           isDirty &&
-          hasValidSkuFormat &&
-          hasUnitSelected &&
-          !skuState.debouncing &&
-          !skuState.checking &&
-          !skuState.duplicate
+          (pendingActivationSave ||
+            (hasValidSkuFormat &&
+              hasUnitSelected &&
+              !skuState.debouncing &&
+              !skuState.checking &&
+              !skuState.duplicate))
         }
         onBack={function handleBack(): void {
           requestNavigate("/manager/product-inventory");
@@ -150,14 +152,14 @@ export default function ProductInventoryDetailPage() {
           product={product}
           update={update}
           dict={dict}
-          disabled={isInactive}
+          disabled={isInactive || pendingActivationSave}
           onSkuStateChange={setSkuState}
         />
 
         <div className="flex h-full flex-col gap-4 overflow-hidden">
           <ProductNamesCard
             names={product.productNames}
-            disabled={isInactive}
+            disabled={isInactive || pendingActivationSave}
             onAdd={addName}
             onRemove={removeName}
             onMakeDefault={makeDefault}

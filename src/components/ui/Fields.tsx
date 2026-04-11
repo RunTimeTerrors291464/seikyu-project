@@ -204,6 +204,8 @@ export function StatDisplay({
 
 /* ───────────────── Text Area ───────────────── */
 
+const MIN_TEXTAREA_ROWS = 3;
+
 type TextareaProps = {
   value: string;
   onChange: (v: string) => void;
@@ -212,6 +214,7 @@ type TextareaProps = {
   error?: boolean;
   onBlur?: () => void;
   warning?: boolean;
+  /** Visual height in rows; values below 3 are clamped to 3. */
   rows?: number;
   className?: string;
 };
@@ -224,9 +227,11 @@ export function Textarea({
   disabled = false,
   error = false,
   warning = false,
-  rows = 3,
+  rows = MIN_TEXTAREA_ROWS,
   className,
 }: TextareaProps) {
+  const resolvedRows = Math.max(MIN_TEXTAREA_ROWS, rows);
+
   return (
     <textarea
       value={value}
@@ -234,7 +239,7 @@ export function Textarea({
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
       disabled={disabled}
-      rows={rows}
+      rows={resolvedRows}
       className={clsx(
         "w-full rounded-md border bg-card px-3 py-2 text-sm text-text",
         "outline-none transition-colors duration-150",

@@ -5,7 +5,7 @@ import StatusPill from "@/features/products/components/StockStatusPill";
 import type { Product } from "@/features/products/types/product";
 import type { Dictionary } from "@/lib/lang/i18n";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
-import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler, Warehouse } from "lucide-react";
+import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Column } from "@/components/ui/DataTable";
 
@@ -152,12 +152,6 @@ export default function buildAddExistingProductsColumns(
       accessor: function renderSellingPrice(product): string {
         return formatPriceNumber(product.sellingPrice);
       },
-    },
-    {
-      id: "stock",
-      header: dict.stock,
-      field: "inventoryStock",
-      icon: <Warehouse className="h-3.5 w-3.5 text-muted" />,
     },
     {
       id: "stockStatus",

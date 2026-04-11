@@ -39,6 +39,23 @@ function getComparable(p: Product | null) {
   };
 }
 
+/**
+ * True when the user enabled the product locally but the last saved row is still inactive.
+ * Field edits should stay blocked until activation is persisted.
+ *
+ * @param product - Current draft product.
+ * @param original - Last saved product from the server.
+ * @returns Whether activation-only save is still pending.
+ */
+function isPendingActivationSave(
+  product: Product | null,
+  original: Product | null,
+): boolean {
+  return Boolean(
+    product && original && !original.isActive && product.isActive,
+  );
+}
+
 /* ============================= */
 /* HOOK */
 /* ============================= */
@@ -171,6 +188,10 @@ export function useProductDetail(id: string) {
       return;
     }
 
+    if (isPendingActivationSave(product, original)) {
+      return;
+    }
+
     setProduct((prev) => {
       if (!prev) return prev;
 
@@ -230,6 +251,10 @@ export function useProductDetail(id: string) {
     const trimmed = name.trim();
     if (!trimmed) return;
 
+    if (isPendingActivationSave(product, original)) {
+      return;
+    }
+
     setProduct((prev) => {
       if (!prev) return prev;
 
@@ -249,6 +274,10 @@ export function useProductDetail(id: string) {
   function removeName(index: number) {
     console.log("[useProductDetail] removeName", index);
 
+    if (isPendingActivationSave(product, original)) {
+      return;
+    }
+
     setProduct((prev) => {
       if (!prev) return prev;
 
@@ -263,6 +292,10 @@ export function useProductDetail(id: string) {
 
   function makeDefault(index: number) {
     console.log("[useProductDetail] makeDefault", index);
+
+    if (isPendingActivationSave(product, original)) {
+      return;
+    }
 
     setProduct((prev) => {
       if (!prev) return prev;
@@ -384,6 +417,8 @@ export function useProductDetail(id: string) {
 
   const isInactive = product ? !product.isActive : false;
 
+  const pendingActivationSave = isPendingActivationSave(product, original);
+
   /* ============================= */
   /* RETURN */
   /* ============================= */
@@ -409,6 +444,7 @@ export function useProductDetail(id: string) {
 
     // STATE
     isInactive,
+    pendingActivationSave,
 
     addName,
     removeName,

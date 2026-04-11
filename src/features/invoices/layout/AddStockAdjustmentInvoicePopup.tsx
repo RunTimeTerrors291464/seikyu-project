@@ -1,0 +1,275 @@
+"use client";
+
+import Popup from "@/components/layout/BlurPopupWrapper";
+import { ConfirmPopup } from "@/components/layout/Popup";
+import Button from "@/components/ui/Buttons";
+import { Field, Textarea } from "@/components/ui/Fields";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
+import KpiTile from "@/components/ui/KpiTile";
+import { useDict } from "@/lib/lang/DictProvider";
+import { AlertTriangle, Boxes, Package } from "lucide-react";
+import { useMemo, useState } from "react";
+import { STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS } from "../filters/stockAdjustmentInvoiceFilters";
+import { useStockAdjustmentInvoiceProductsEditor } from "../hooks/useStockAdjustmentInvoiceProductsEditor";
+import {
+  createStockAdjustmentInvoiceDraft,
+  type StockAdjustmentActionReason,
+} from "../services/stockAdjustmentInvoice.service";
+import {
+  EditableStockAdjustmentLine,
+  toNumberOrZero,
+} from "../types/stockAdjustmentDetail";
+import StockAdjustmentProductsCard from "./StockAdjustmentProductsCard";
+
+type AddStockAdjustmentInvoicePopupProps = {
+  open: boolean;
+  onClose: () => void;
+  onCreated?: (invoiceId: string) => void;
+};
+
+type ConfirmAction = "cancel" | "create" | null;
+
+function createInitialProducts(): EditableStockAdjustmentLine[] {
+  return [];
+}
+
+export default function AddStockAdjustmentInvoicePopup({
+  open,
+  onClose,
+  onCreated,
+}: AddStockAdjustmentInvoicePopupProps) {
+  const dict = useDict();
+  const [products, setProducts] = useState<EditableStockAdjustmentLine[]>(
+    createInitialProducts(),
+  );
+  const [actionReason, setActionReason] = useState<StockAdjustmentActionReason>(
+    "damagedGoods",
+  );
+  const [notes, setNotes] = useState<string>("");
+  const [noteTouched, setNoteTouched] = useState<boolean>(false);
+  const [createAttempted, setCreateAttempted] = useState<boolean>(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [creating, setCreating] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const nowText = useMemo(() => new Date().toISOString(), [open]);
+
+  const isDraftDirty = useMemo(
+    function computeDraftDirty(): boolean {
+      return products.length > 0 || notes.trim().length > 0;
+    },
+    [products, notes],
+  );
+
+  const {
+    updateRow,
+    totals,
+    hasInvalidLines,
+    draftError,
+  } = useStockAdjustmentInvoiceProductsEditor({
+    products,
+    onChangeProducts: setProducts,
+    validationActive: createAttempted,
+  });
+
+  function resetDraftState(): void {
+    setProducts(createInitialProducts());
+    setActionReason("damagedGoods");
+    setNotes("");
+    setNoteTouched(false);
+    setCreateAttempted(false);
+    setConfirmAction(null);
+    setCreating(false);
+    setErrorMessage("");
+  }
+
+  function handleClose(): void {
+    resetDraftState();
+    onClose();
+  }
+
+  function handleCancelConfirmed(): void {
+    handleClose();
+  }
+
+  function requestCancel(): void {
+    if (isDraftDirty) {
+      setConfirmAction("cancel");
+      return;
+    }
+
+    setConfirmAction(null);
+    handleClose();
+  }
+
+  async function handleCreateConfirmed(): Promise<void> {
+    if (products.length === 0 || hasInvalidLines || draftError) {
+      return;
+    }
+
+    setCreating(true);
+    setErrorMessage("");
+
+    try {
+      const created = await createStockAdjustmentInvoiceDraft({
+        products: products.map((product) => ({
+          productId: product.productId,
+          productSku: product.productSku,
+          productName: product.productName,
+          productUnit: product.productUnit,
+          action: product.action,
+          quantity: toNumberOrZero(product.quantity),
+          notes: product.notes.trim() ? product.notes.trim() : undefined,
+        })),
+        actionReason,
+        notes: notes.trim() ? notes.trim() : undefined,
+      });
+
+      handleClose();
+      onCreated?.(created.id);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : dict.somethingWentWrong,
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function handleOpenCreateConfirm(): void {
+    setCreateAttempted(true);
+
+    if (products.length === 0 || hasInvalidLines || draftError) {
+      setConfirmAction(null);
+      return;
+    }
+
+    setConfirmAction("create");
+  }
+
+  const noteWarning = (noteTouched || createAttempted) && !notes.trim();
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <Popup open={open} onClose={requestCancel}>
+      <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h1 className="text-sm font-semibold text-text">
+            {dict.stockAdjustmentDraft}
+          </h1>
+          {draftError ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label={dict.error}
+              value={dict[draftError.key]}
+              accent={draftError.accent}
+              format="text"
+            />
+          ) : null}
+          <HeaderMeta label={dict.createdDate} value={nowText} />
+        </div>
+
+        <div className="flex flex-1 flex-col gap-4 overflow-auto p-5">
+          {errorMessage && (
+            <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
+              {errorMessage}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <KpiTile
+              label={dict.totalProducts}
+              value={totals.totalProducts.toLocaleString()}
+              icon={<Package className="h-4 w-4 text-muted" />}
+              accent={totals.totalProducts === 0 ? "warning" : "neutral"}
+              helpText={dict.totalProductsKpiHelp}
+              sub={dict.totalProductsKpiSub}
+            />
+            <KpiTile
+              label={dict.totalQuantity}
+              value={totals.totalQuantity.toLocaleString()}
+              icon={<Boxes className="h-4 w-4 text-muted" />}
+              accent={totals.totalQuantity === 0 ? "warning" : "neutral"}
+              helpText={dict.totalQuantityKpiHelp}
+              sub={dict.totalQuantityKpiSub}
+            />
+          </div>
+
+          <StockAdjustmentProductsCard
+            products={products}
+            canEditDraft={true}
+            onChangeProducts={setProducts}
+            updateRow={updateRow}
+          />
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+            <Field label={dict.actionReasonLabel}>
+              <select
+                value={actionReason}
+                onChange={function handleReasonChange(event): void {
+                  setActionReason(event.target.value as StockAdjustmentActionReason);
+                }}
+                className="h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-text outline-none"
+              >
+                {STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS.filter(function skipAll(option) {
+                  return option.value !== "all";
+                }).map(function renderOption(option) {
+                  return (
+                    <option key={option.value} value={option.value}>
+                      {dict[option.dictKey as keyof typeof dict] ?? option.value}
+                    </option>
+                  );
+                })}
+              </select>
+            </Field>
+
+            <Field
+              label={dict.noteLabel}
+              warning={noteWarning ? dict.emptyDescription : undefined}
+            >
+              <Textarea
+                value={notes}
+                onChange={setNotes}
+                onBlur={() => setNoteTouched(true)}
+                placeholder={dict.invoiceDescriptionPlaceholder}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+          <Button accent="neutral" onClick={requestCancel}>
+            {dict.cancel}
+          </Button>
+          <Button accent="primary" onClick={handleOpenCreateConfirm}>
+            {dict.create}
+          </Button>
+        </div>
+      </div>
+
+      <ConfirmPopup
+        open={confirmAction === "cancel"}
+        title={dict.confirmDiscardStockAdjustmentDraftTitle}
+        description={dict.confirmDiscardStockAdjustmentDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        onConfirm={handleCancelConfirmed}
+        onClose={() => setConfirmAction(null)}
+        accent="danger"
+      />
+
+      <ConfirmPopup
+        open={confirmAction === "create"}
+        title={dict.confirmCreateStockAdjustmentDraftTitle}
+        description={dict.confirmCreateStockAdjustmentDraftDescription}
+        confirmText={dict.confirm}
+        cancelText={dict.cancel}
+        loading={creating}
+        onConfirm={handleCreateConfirmed}
+        onClose={() => setConfirmAction(null)}
+      />
+    </Popup>
+  );
+}
