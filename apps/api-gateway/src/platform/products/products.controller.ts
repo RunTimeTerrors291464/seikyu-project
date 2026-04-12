@@ -290,8 +290,8 @@ export class ProductsController {
     // Get history list of a product.
     // GET /api/v1/products/history/:id
     @Get('history/:id')
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: '[ADMIN] Get history list of a product' })
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get history list of a product' })
     @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A history list of the product has been retrieved successfully.', type: [ProductHistoryItemResponseDto] })
     @HttpCode(HttpStatus.OK)
@@ -310,8 +310,8 @@ export class ProductsController {
     // Get a specific history version of a product.
     // GET /api/v1/products/history/:id/:version
     @Get('history/:id/:version')
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: '[ADMIN] Get a specific history version of a product' })
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get a specific history version of a product' })
     @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiParam({ name: 'version', description: 'The version number', example: 1 })
     @ApiResponse({ status: 200, description: 'A specific history version of the product has been retrieved successfully.', type: GetProductHistoryByVersionResponseDto })
