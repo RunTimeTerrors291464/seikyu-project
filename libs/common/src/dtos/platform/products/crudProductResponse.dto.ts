@@ -163,7 +163,7 @@ export class ProductCashierResponseDto {
         description: 'Product unit name',
         example: 'kg',
     })
-    unitName: string;
+    productUnitName: string;
 
     @ApiProperty({
         description: 'Product description',
