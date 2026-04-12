@@ -22,6 +22,8 @@ type StockAdjustmentInvoiceHeaderProps = {
   onDelete: () => void;
   onBack?: () => void;
   middle?: ReactNode;
+  /** When false, hides draft delete/save/confirm (manager-only actions). */
+  allowManagerActions?: boolean;
 };
 
 export default function StockAdjustmentInvoiceHeader({
@@ -38,6 +40,7 @@ export default function StockAdjustmentInvoiceHeader({
   onDelete,
   onBack,
   middle,
+  allowManagerActions = true,
 }: StockAdjustmentInvoiceHeaderProps) {
   const dict = useDict();
 
@@ -71,7 +74,7 @@ export default function StockAdjustmentInvoiceHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        {canEditDraft && (
+        {allowManagerActions && canEditDraft ? (
           <Button
             icon={<Trash2 className="h-3.5 w-3.5" />}
             accent="danger"
@@ -80,9 +83,9 @@ export default function StockAdjustmentInvoiceHeader({
           >
             {dict.delete}
           </Button>
-        )}
+        ) : null}
 
-        {canEditDraft && (
+        {allowManagerActions && canEditDraft ? (
           <Button
             icon={<Save className="h-3.5 w-3.5" />}
             accent="neutral"
@@ -91,9 +94,9 @@ export default function StockAdjustmentInvoiceHeader({
           >
             {saving ? dict.saving : dict.save}
           </Button>
-        )}
+        ) : null}
 
-        {canEditDraft && (
+        {allowManagerActions && canEditDraft ? (
           <Button
             icon={<Send className="h-3.5 w-3.5" />}
             accent="primary"
@@ -102,7 +105,7 @@ export default function StockAdjustmentInvoiceHeader({
           >
             {confirming ? dict.loading : dict.confirm}
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

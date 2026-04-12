@@ -24,6 +24,8 @@ type Props = {
   canSave?: boolean;
   /** When set, intercepts back navigation (e.g. unsaved-changes confirmation). */
   onBack?: () => void;
+  /** When false, hides active toggle and save (e.g. cashier viewing product). */
+  allowManagementActions?: boolean;
 };
 
 export default function ProductHeader({
@@ -35,6 +37,7 @@ export default function ProductHeader({
   onSave,
   canSave,
   onBack,
+  allowManagementActions = true,
 }: Props) {
   const dict = useDict();
 
@@ -88,23 +91,27 @@ export default function ProductHeader({
           <HeaderMeta label={dict.createdAt} value={createdAt} />
           <HeaderMeta label={dict.updatedAt} value={updatedAt} />
 
-          <StatusToggle
-            active={active}
-            onClick={onToggleActive}
-            activeLabel={dict.active}
-            inactiveLabel={dict.inactive}
-          />
+          {allowManagementActions ? (
+            <>
+              <StatusToggle
+                active={active}
+                onClick={onToggleActive}
+                activeLabel={dict.active}
+                inactiveLabel={dict.inactive}
+              />
 
-          <Button
-            onClick={() => {
-              setOpenConfirm(true);
-            }}
-            disabled={!canSave || saving}
-            accent="primary"
-            icon={<Save className="h-3.5 w-3.5" />}
-          >
-            {saving ? dict.saving : dict.save}
-          </Button>
+              <Button
+                onClick={() => {
+                  setOpenConfirm(true);
+                }}
+                disabled={!canSave || saving}
+                accent="primary"
+                icon={<Save className="h-3.5 w-3.5" />}
+              >
+                {saving ? dict.saving : dict.save}
+              </Button>
+            </>
+          ) : null}
         </div>
       </div>
 

@@ -32,6 +32,7 @@ import AddNewProductPopup from "@/features/products/layout/AddNewProductPopup";
 import ProductTableHeader from "@/features/products/layout/ProductTableHeader";
 import { productColumns } from "@/features/products/table/productColumns";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
 /* ============================= */
@@ -40,6 +41,7 @@ import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
 export default function ProductInventoryPage() {
   const dict = useDict();
+  const canManage = useMayUseManagerWorkflowControls();
 
   /* ============================= */
   /* UI STATE (LOCAL ONLY) */
@@ -170,7 +172,13 @@ export default function ProductInventoryPage() {
         resetSearch={handleReset}
         isDirty={isDirty}
 
-        onAddProduct={() => setOpenAdd(true)}
+        onAddProduct={
+          canManage
+            ? () => {
+                setOpenAdd(true);
+              }
+            : undefined
+        }
       />
 
       {/* KPI */}
@@ -329,14 +337,16 @@ export default function ProductInventoryPage() {
       />
 
       {/* ADD PRODUCT POPUP */}
-      <AddNewProductPopup
-        open={openAdd}
-        onClose={() => setOpenAdd(false)}
-        dict={dict}
-        onCreated={() => {
-          table.refetch();
-        }}
-      />
+      {canManage ? (
+        <AddNewProductPopup
+          open={openAdd}
+          onClose={() => setOpenAdd(false)}
+          dict={dict}
+          onCreated={() => {
+            table.refetch();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

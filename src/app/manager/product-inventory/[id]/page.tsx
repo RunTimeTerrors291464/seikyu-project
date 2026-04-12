@@ -7,6 +7,7 @@ import ProductHeader from "@/features/products/layout/ProductHeader";
 import ProductHistoryCard from "@/features/products/layout/ProductHistoryCard";
 import ProductNamesCard from "@/features/products/layout/ProductNamesCard";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { CircleOff, PowerCircle } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -62,6 +63,7 @@ export default function ProductInventoryDetailPage() {
   } = useDraftNavigationGuard(canEditDraft, isDirty);
 
   const dict = useDict();
+  const canManage = useMayUseManagerWorkflowControls();
 
   if (loading || !product) return null;
 
@@ -94,6 +96,7 @@ export default function ProductInventoryDetailPage() {
         active={product.isActive}
         onToggleActive={requestToggleActive}
         onSave={handleSave}
+        allowManagementActions={canManage}
         canSave={
           isDirty &&
           (pendingActivationSave ||
@@ -152,14 +155,14 @@ export default function ProductInventoryDetailPage() {
           product={product}
           update={update}
           dict={dict}
-          disabled={isInactive || pendingActivationSave}
+          disabled={!canManage || isInactive || pendingActivationSave}
           onSkuStateChange={setSkuState}
         />
 
         <div className="flex h-full flex-col gap-4 overflow-hidden">
           <ProductNamesCard
             names={product.productNames}
-            disabled={isInactive || pendingActivationSave}
+            disabled={!canManage || isInactive || pendingActivationSave}
             onAdd={addName}
             onRemove={removeName}
             onMakeDefault={makeDefault}

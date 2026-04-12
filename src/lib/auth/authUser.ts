@@ -125,6 +125,19 @@ export function userHasAnyRole(
 }
 
 /**
+ * Whether the user may use manager-only controls (create/save/delete drafts, product status, returns).
+ * Admin-only accounts do not get this; assign the manager role in the API for users who need it.
+ *
+ * @param roles - Roles from the signed-in user.
+ * @returns True when the user has the manager role.
+ */
+export function userMayUseManagerWorkflowControls(
+  roles: UserRoleCode[],
+): boolean {
+  return roles.includes(USER_ROLE_MANAGER);
+}
+
+/**
  * First app route to open after login when the user is on an auth page.
  * Prefers admin, then manager, then cashier.
  *

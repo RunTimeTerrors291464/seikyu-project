@@ -4,7 +4,7 @@ import type { Lang } from "@/lib/lang/i18n";
 import clsx from "clsx";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 export type PreferenceChipSize = "default" | "compact";
 
@@ -77,6 +77,25 @@ const TOGGLE_ICON: Record<PreferenceChipSize, string> = {
 };
 
 /**
+ * Becomes true only after client hydration so server HTML matches the first client pass.
+ *
+ * @returns `false` during SSR and hydration, then `true` on the client.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    function subscribeToNothing() {
+      return function cleanup() {};
+    },
+    function getClientSnapshot() {
+      return true;
+    },
+    function getServerSnapshot() {
+      return false;
+    },
+  );
+}
+
+/**
  * Single control that flips between light and dark themes using sun / moon icons.
  * Uses `resolvedTheme` so “system” preference still shows the correct icon.
  *
@@ -91,6 +110,20 @@ export function ThemeLightDarkToggle({
   labelSwitchToDark,
 }: ThemeLightDarkToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
+  const hydrated = useHydrated();
+
+  if (!hydrated) {
+    return (
+      <div
+        aria-hidden
+        className={clsx(
+          "inline-flex shrink-0 items-center justify-center rounded-md border border-border bg-bg",
+          TOGGLE_BOX[size],
+        )}
+      />
+    );
+  }
+
   const isDark = resolvedTheme === "dark";
 
   return (

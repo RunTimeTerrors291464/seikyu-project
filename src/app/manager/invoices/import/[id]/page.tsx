@@ -26,6 +26,7 @@ import {
   toNumberOrZero,
 } from "@/features/invoices/types/importInvoiceDetail";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
@@ -38,6 +39,7 @@ export default function ImportInvoiceDetailPage() {
   const router = useRouter();
   const dict = useDict();
   const invoiceId = params.id;
+  const canManage = useMayUseManagerWorkflowControls();
 
   const [invoice, setInvoice] = useState<ImportInvoiceResponseDto | null>(null);
   const [products, setProducts] = useState<EditableImportInvoiceProduct[]>([]);
@@ -113,16 +115,21 @@ export default function ImportInvoiceDetailPage() {
   const canEditDraft = invoice?.status === "draft";
   const canReturn =
     invoice?.status === "confirmed" || invoice?.status === "partiallyReturned";
+  const effectiveCanEditDraft = Boolean(canEditDraft && canManage);
 
   const {
     updateRow,
     totals,
     hasEmptyQuantityOrImportPrice,
     draftError,
-  } = useImportInvoiceProductsEditor(products, setProducts, Boolean(canEditDraft));
+  } = useImportInvoiceProductsEditor(
+    products,
+    setProducts,
+    Boolean(effectiveCanEditDraft),
+  );
 
   async function handleSaveDraft(): Promise<void> {
-    if (!invoice || !canEditDraft) {
+    if (!invoice || !effectiveCanEditDraft) {
       return;
     }
 
@@ -164,7 +171,7 @@ export default function ImportInvoiceDetailPage() {
   }
 
   async function handleConfirm(): Promise<void> {
-    if (!invoice || !canEditDraft) {
+    if (!invoice || !effectiveCanEditDraft) {
       return;
     }
 
@@ -202,10 +209,10 @@ export default function ImportInvoiceDetailPage() {
     discardNavigateOpen,
     confirmDiscardNavigate,
     closeDiscardNavigate,
-  } = useDraftNavigationGuard(Boolean(canEditDraft), isDirty);
+  } = useDraftNavigationGuard(Boolean(effectiveCanEditDraft), isDirty);
 
   function handleOpenSaveConfirm(): void {
-    if (!isDirty || !canEditDraft || hasEmptyQuantityOrImportPrice) {
+    if (!isDirty || !effectiveCanEditDraft || hasEmptyQuantityOrImportPrice) {
       return;
     }
     setSaveConfirmOpen(true);
@@ -223,7 +230,7 @@ export default function ImportInvoiceDetailPage() {
   }
 
   async function handleDeleteDraft(): Promise<void> {
-    if (!invoice || !canEditDraft) {
+    if (!invoice || !effectiveCanEditDraft) {
       return;
     }
 
@@ -290,6 +297,7 @@ export default function ImportInvoiceDetailPage() {
         title={invoice.invoiceId ?? dict.draft}
         status={invoice.status}
         canEditDraft={canEditDraft}
+        allowManagerActions={canManage}
         canReturn={canReturn}
         saving={saving}
         confirming={confirming}
@@ -367,7 +375,7 @@ export default function ImportInvoiceDetailPage() {
 
       <ImportInvoiceProductsCard
         products={products}
-        canEditDraft={canEditDraft}
+        canEditDraft={effectiveCanEditDraft}
         onChangeProducts={setProducts}
         updateRow={updateRow}
       />
@@ -382,7 +390,7 @@ export default function ImportInvoiceDetailPage() {
             <Textarea
               value={notes}
               onChange={setNotes}
-              disabled={!canEditDraft}
+              disabled={!effectiveCanEditDraft}
               placeholder={dict.invoiceDescriptionPlaceholder}
               rows={1}
               className="min-h-0 flex-1 overflow-y-auto"

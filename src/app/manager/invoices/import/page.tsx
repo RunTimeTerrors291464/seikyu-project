@@ -18,6 +18,7 @@ import type { ReturnImportInvoiceWithoutProductsDto } from "@/features/invoices/
 import { getReturnImportInvoiceList } from "@/features/invoices/services/returnImportInvoice.service";
 import { importInvoiceColumns } from "@/features/invoices/table/importInvoiceColumns";
 import { returnImportInvoiceListColumns } from "@/features/invoices/table/returnImportInvoiceListColumns";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
@@ -54,6 +55,7 @@ function getStatusFilterClass(
 export default function ImportInvoicesListPage() {
   const router = useRouter();
   const dict = useDict();
+  const canManage = useMayUseManagerWorkflowControls();
 
   const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(30);
@@ -340,14 +342,16 @@ export default function ImportInvoicesListPage() {
             {dict.resetFilter}
           </Button>
 
-          <Button
-            icon={<Plus className="h-3.5 w-3.5" />}
-            accent="primary"
-            size="sm"
-            onClick={() => setAddInvoicePopupOpen(true)}
-          >
-            {dict.createNewImportDraft}
-          </Button>
+          {canManage ? (
+            <Button
+              icon={<Plus className="h-3.5 w-3.5" />}
+              accent="primary"
+              size="sm"
+              onClick={() => setAddInvoicePopupOpen(true)}
+            >
+              {dict.createNewImportDraft}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -448,14 +452,16 @@ export default function ImportInvoicesListPage() {
         dict={dict}
       />
 
-      <AddImportInvoicePopup
-        open={addInvoicePopupOpen}
-        onClose={() => setAddInvoicePopupOpen(false)}
-        onCreated={(invoiceId) => {
-          void refetch();
-          router.push(`/manager/invoices/import/${invoiceId}`);
-        }}
-      />
+      {canManage ? (
+        <AddImportInvoicePopup
+          open={addInvoicePopupOpen}
+          onClose={() => setAddInvoicePopupOpen(false)}
+          onCreated={(invoiceId) => {
+            void refetch();
+            router.push(`/manager/invoices/import/${invoiceId}`);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

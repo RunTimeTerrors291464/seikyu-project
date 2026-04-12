@@ -116,14 +116,15 @@ export default function ProductTableHeader({
           {dict.export}
         </Button>
 
-        {/* ADD PRODUCT */}
-        <Button
-          accent="primary"
-          icon={<Plus className="h-3.5 w-3.5" />}
-          onClick={onAddProduct}
-        >
-          {dict.addProduct}
-        </Button>
+        {onAddProduct != null ? (
+          <Button
+            accent="primary"
+            icon={<Plus className="h-3.5 w-3.5" />}
+            onClick={onAddProduct}
+          >
+            {dict.addProduct}
+          </Button>
+        ) : null}
 
       </div>
 

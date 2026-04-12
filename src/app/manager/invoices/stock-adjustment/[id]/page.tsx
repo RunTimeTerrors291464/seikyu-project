@@ -23,6 +23,7 @@ import {
   toNumberOrZero,
 } from "@/features/invoices/types/stockAdjustmentDetail";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, Package, User } from "lucide-react";
@@ -34,6 +35,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
   const router = useRouter();
   const dict = useDict();
   const invoiceId = params.id;
+  const canManage = useMayUseManagerWorkflowControls();
 
   const [invoice, setInvoice] = useState<StockAdjustmentInvoiceResponseDto | null>(null);
   const [products, setProducts] = useState<EditableStockAdjustmentLine[]>([]);
@@ -116,6 +118,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
   }, [invoiceId, dict.somethingWentWrong]);
 
   const canEditDraft = invoice?.status === "draft";
+  const effectiveCanEditDraft = Boolean(canEditDraft && canManage);
 
   const {
     updateRow,
@@ -125,11 +128,11 @@ export default function StockAdjustmentInvoiceDetailPage() {
   } = useStockAdjustmentInvoiceProductsEditor({
     products,
     onChangeProducts: setProducts,
-    validationActive: Boolean(canEditDraft),
+    validationActive: Boolean(effectiveCanEditDraft),
   });
 
   async function handleSaveDraft(): Promise<void> {
-    if (!invoice || !canEditDraft) {
+    if (!invoice || !effectiveCanEditDraft) {
       return;
     }
 
@@ -176,7 +179,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
   }
 
   async function handleConfirm(): Promise<void> {
-    if (!invoice || !canEditDraft) {
+    if (!invoice || !effectiveCanEditDraft) {
       return;
     }
 
@@ -226,17 +229,17 @@ export default function StockAdjustmentInvoiceDetailPage() {
     discardNavigateOpen,
     confirmDiscardNavigate,
     closeDiscardNavigate,
-  } = useDraftNavigationGuard(Boolean(canEditDraft), isDirty);
+  } = useDraftNavigationGuard(Boolean(effectiveCanEditDraft), isDirty);
 
   function handleOpenSaveConfirm(): void {
-    if (!isDirty || !canEditDraft || hasInvalidLines || draftError) {
+    if (!isDirty || !effectiveCanEditDraft || hasInvalidLines || draftError) {
       return;
     }
     setSaveConfirmOpen(true);
   }
 
   function handleOpenConfirmDraftPopup(): void {
-    if (!canEditDraft) {
+    if (!effectiveCanEditDraft) {
       return;
     }
 
@@ -247,7 +250,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
   }
 
   async function handleDeleteDraft(): Promise<void> {
-    if (!invoice || !canEditDraft) {
+    if (!invoice || !effectiveCanEditDraft) {
       return;
     }
 
@@ -289,6 +292,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
         title={invoice.invoiceId ?? dict.draft}
         status={invoice.status}
         canEditDraft={canEditDraft}
+        allowManagerActions={canManage}
         saving={saving}
         confirming={confirming}
         deleting={deleting}
@@ -354,7 +358,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
 
       <StockAdjustmentProductsCard
         products={products}
-        canEditDraft={canEditDraft}
+        canEditDraft={effectiveCanEditDraft}
         onChangeProducts={setProducts}
         updateRow={updateRow}
       />
@@ -367,7 +371,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
               onChange={function handleReasonChange(event): void {
                 setActionReason(event.target.value as StockAdjustmentActionReason);
               }}
-              disabled={!canEditDraft}
+              disabled={!effectiveCanEditDraft}
               className="h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-text outline-none disabled:cursor-not-allowed disabled:opacity-60"
             >
               {STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS.filter(function skipAll(option) {
@@ -388,7 +392,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
             <Textarea
               value={notes}
               onChange={setNotes}
-              disabled={!canEditDraft}
+              disabled={!effectiveCanEditDraft}
               placeholder={dict.invoiceDescriptionPlaceholder}
               rows={1}
               className="min-h-0 flex-1 overflow-y-auto"

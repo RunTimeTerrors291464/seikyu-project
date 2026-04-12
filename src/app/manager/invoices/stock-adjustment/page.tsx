@@ -15,6 +15,7 @@ import {
 import { useStockAdjustmentInvoices } from "@/features/invoices/hooks/useStockAdjustmentInvoices";
 import type { StockAdjustmentActionReason } from "@/features/invoices/services/stockAdjustmentInvoice.service";
 import { stockAdjustmentInvoiceColumns } from "@/features/invoices/table/stockAdjustmentInvoiceColumns";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { Filter, Hash, Package, Plus, RotateCcw, User as UserIcon } from "lucide-react";
@@ -46,6 +47,7 @@ function getStatusFilterClass(
 export default function StockAdjustmentInvoicesListPage() {
   const router = useRouter();
   const dict = useDict();
+  const canManage = useMayUseManagerWorkflowControls();
 
   const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(30);
@@ -192,14 +194,16 @@ export default function StockAdjustmentInvoicesListPage() {
             {dict.resetFilter}
           </Button>
 
-          <Button
-            icon={<Plus className="h-3.5 w-3.5" />}
-            accent="primary"
-            size="sm"
-            onClick={() => setAddInvoicePopupOpen(true)}
-          >
-            {dict.createNewStockAdjustmentDraft}
-          </Button>
+          {canManage ? (
+            <Button
+              icon={<Plus className="h-3.5 w-3.5" />}
+              accent="primary"
+              size="sm"
+              onClick={() => setAddInvoicePopupOpen(true)}
+            >
+              {dict.createNewStockAdjustmentDraft}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -282,14 +286,16 @@ export default function StockAdjustmentInvoicesListPage() {
         dict={dict}
       />
 
-      <AddStockAdjustmentInvoicePopup
-        open={addInvoicePopupOpen}
-        onClose={() => setAddInvoicePopupOpen(false)}
-        onCreated={(invoiceId) => {
-          void refetch();
-          router.push(`/manager/invoices/stock-adjustment/${invoiceId}`);
-        }}
-      />
+      {canManage ? (
+        <AddStockAdjustmentInvoicePopup
+          open={addInvoicePopupOpen}
+          onClose={() => setAddInvoicePopupOpen(false)}
+          onCreated={(invoiceId) => {
+            void refetch();
+            router.push(`/manager/invoices/stock-adjustment/${invoiceId}`);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

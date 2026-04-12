@@ -26,6 +26,8 @@ type ImportInvoiceHeaderProps = {
   onPrint?: () => void;
   onBack?: () => void;
   middle?: ReactNode;
+  /** When false, hides return and draft delete/save/confirm (manager-only actions). */
+  allowManagerActions?: boolean;
 };
 
 export default function ImportInvoiceHeader({
@@ -46,6 +48,7 @@ export default function ImportInvoiceHeader({
   onPrint,
   onBack,
   middle,
+  allowManagerActions = true,
 }: ImportInvoiceHeaderProps) {
   const dict = useDict();
 
@@ -88,7 +91,7 @@ export default function ImportInvoiceHeader({
             {dict.print}
           </Button>
         )}
-        {canReturn && onReturn && (
+        {allowManagerActions && canReturn && onReturn ? (
           <Button
             icon={<RotateCcw className="h-3.5 w-3.5" />}
             accent="danger"
@@ -97,9 +100,9 @@ export default function ImportInvoiceHeader({
           >
             {dict.returnAction}
           </Button>
-        )}
+        ) : null}
 
-        {canEditDraft && (
+        {allowManagerActions && canEditDraft ? (
           <Button
             icon={<Trash2 className="h-3.5 w-3.5" />}
             accent="danger"
@@ -108,9 +111,9 @@ export default function ImportInvoiceHeader({
           >
             {dict.delete}
           </Button>
-        )}
+        ) : null}
 
-        {canEditDraft && (
+        {allowManagerActions && canEditDraft ? (
           <Button
             icon={<Save className="h-3.5 w-3.5" />}
             accent="neutral"
@@ -119,9 +122,9 @@ export default function ImportInvoiceHeader({
           >
             {saving ? dict.saving : dict.save}
           </Button>
-        )}
+        ) : null}
 
-        {canEditDraft && (
+        {allowManagerActions && canEditDraft ? (
           <Button
             icon={<Send className="h-3.5 w-3.5" />}
             accent="primary"
@@ -130,7 +133,7 @@ export default function ImportInvoiceHeader({
           >
             {confirming ? dict.loading : dict.confirm}
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );
