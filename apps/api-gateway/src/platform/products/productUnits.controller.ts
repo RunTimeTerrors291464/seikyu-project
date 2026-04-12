@@ -215,8 +215,8 @@ export class ProductUnitsController {
     // Get history list of a product unit.
     // GET /api/v1/product-units/history/:id
     @Get('history/:id')
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: '[ADMIN] Get history list of a product unit' })
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get history list of a product unit' })
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A history list of the product unit has been retrieved successfully.', type: [ProductUnitHistoryItemResponseDto] })
     @HttpCode(HttpStatus.OK)
@@ -235,8 +235,8 @@ export class ProductUnitsController {
     // Get a specific history version of a product unit.
     // GET /api/v1/product-units/:id/history/:version
     @Get('history/:id/:version')
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: '[ADMIN] Get a specific history version of a product unit' })
+    @Roles(Role.ADMIN, Role.MANAGER)
+    @ApiOperation({ summary: '[ADMIN, MANAGER] Get a specific history version of a product unit' })
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiParam({ name: 'version', description: 'The version number', example: 1 })
     @ApiResponse({ status: 200, description: 'A specific history version of the product unit has been retrieved successfully.', type: GetProductUnitHistoryByVersionResponseDto })
