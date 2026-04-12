@@ -6,7 +6,9 @@ import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import TablePagination from "@/components/ui/TablePagination";
-import buildAddExistingProductsColumns from "@/features/invoices/table/addExistingProductsColumns";
+import buildAddExistingProductsColumns, {
+  type AddExistingProductsColumnPreset,
+} from "@/features/invoices/table/addExistingProductsColumns";
 import { PRODUCT_STATUS_OPTIONS, PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
 import { useProductTable } from "@/features/products/hooks/useProductTable";
 import { ProductQuery, productService } from "@/features/products/services/product.service";
@@ -22,6 +24,10 @@ type AddExistingProductsPopupProps = {
   onConfirmSelect: (selectedProducts: Product[]) => void;
   /** When set, replaces the default dialog title (e.g. selling invoice uses "Add Products"). */
   dialogTitle?: string;
+  /** Pixel width for the product name column (selling flow uses 160). */
+  productNameColumnWidthPx?: number;
+  /** Selling invoices omit import price and stock status in the picker. */
+  productPickerColumnPreset?: AddExistingProductsColumnPreset;
 };
 
 export default function AddExistingProductsPopup({
@@ -30,6 +36,8 @@ export default function AddExistingProductsPopup({
   excludedProductIds,
   onConfirmSelect,
   dialogTitle,
+  productNameColumnWidthPx,
+  productPickerColumnPreset,
 }: AddExistingProductsPopupProps) {
   const dict = useDict();
   const [search, setSearch] = useState<string>("");
@@ -110,6 +118,8 @@ export default function AddExistingProductsPopup({
         selectedProductIds,
         setSelectedProductIds,
         isProductSelectable,
+        productNameColumnWidthPx,
+        columnPreset: productPickerColumnPreset,
       });
     },
     [
@@ -120,6 +130,8 @@ export default function AddExistingProductsPopup({
       selectedProductIds,
       setSelectedProductIds,
       isProductSelectable,
+      productNameColumnWidthPx,
+      productPickerColumnPreset,
     ],
   );
 

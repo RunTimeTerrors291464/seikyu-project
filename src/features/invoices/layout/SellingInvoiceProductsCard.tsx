@@ -236,6 +236,8 @@ export default function SellingInvoiceProductsCard({
         excludedProductIds={excludedProductIds}
         onConfirmSelect={handleAddExistingProducts}
         dialogTitle={dict.addProducts}
+        productNameColumnWidthPx={160}
+        productPickerColumnPreset="selling"
       />
     </div>
   );

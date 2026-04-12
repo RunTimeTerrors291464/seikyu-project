@@ -113,7 +113,7 @@ export function effectiveRolesForSidebarNav(
  * @returns Whether any required role is present on the user.
  */
 export function userHasAnyRole(
-  userRoles: UserRoleCode[],
+  userRoles: readonly UserRoleCode[],
   required: readonly UserRoleCode[],
 ): boolean {
   if (required.length === 0) {
@@ -125,6 +125,23 @@ export function userHasAnyRole(
 }
 
 /**
+ * Whether the user may start a new selling invoice from the cashier sales list.
+ * Cashiers, managers, and admins (when they use cashier routes) may create.
+ *
+ * @param roles - Roles from the signed-in user.
+ * @returns True when the user has cashier, manager, or admin.
+ */
+export function userMayCreateSellingInvoice(
+  roles: readonly UserRoleCode[],
+): boolean {
+  return userHasAnyRole(roles, [
+    USER_ROLE_CASHIER,
+    USER_ROLE_MANAGER,
+    USER_ROLE_ADMIN,
+  ]);
+}
+
+/**
  * Whether the user may use manager-only controls (create/save/delete drafts, product status, returns).
  * Admin-only accounts do not get this; assign the manager role in the API for users who need it.
  *
@@ -132,7 +149,7 @@ export function userHasAnyRole(
  * @returns True when the user has the manager role.
  */
 export function userMayUseManagerWorkflowControls(
-  roles: UserRoleCode[],
+  roles: readonly UserRoleCode[],
 ): boolean {
   return roles.includes(USER_ROLE_MANAGER);
 }

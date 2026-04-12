@@ -17,7 +17,7 @@ import {
 } from "@/features/invoices/hooks/useSellingInvoices";
 import AddSellingInvoicePopup from "@/features/invoices/layout/AddSellingInvoicePopup";
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
-import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
+import { useMayCreateSellingInvoice } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { Filter, Hash, Package, Plus, RotateCcw, User as UserIcon } from "lucide-react";
@@ -43,7 +43,7 @@ function getStatusFilterClass(
 export default function CashierSellingInvoicesPage() {
   const router = useRouter();
   const dict = useDict();
-  const canManage = useMayUseManagerWorkflowControls();
+  const canCreateSelling = useMayCreateSellingInvoice();
 
   const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(30);
@@ -180,7 +180,7 @@ export default function CashierSellingInvoicesPage() {
             {dict.resetFilter}
           </Button>
 
-          {canManage ? (
+          {canCreateSelling ? (
             <Button
               icon={<Plus className="h-3.5 w-3.5" />}
               accent="primary"
@@ -241,7 +241,7 @@ export default function CashierSellingInvoicesPage() {
         dict={dict}
       />
 
-      {canManage ? (
+      {canCreateSelling ? (
         <AddSellingInvoicePopup
           open={addInvoicePopupOpen}
           onClose={() => setAddInvoicePopupOpen(false)}

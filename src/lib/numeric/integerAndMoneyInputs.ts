@@ -15,11 +15,13 @@ export const PRICE_DISPLAY_FORMAT: Intl.NumberFormatOptions = {
 /**
  * Formats a numeric amount for read-only UI (tables, KPIs) with two decimal places.
  *
- * @param value - Finite amount (unit price, line total, invoice total, etc.).
+ * @param value - Finite amount, or null/undefined (treated as 0) when the API omits a price.
  * @returns Locale-formatted string with two fractional digits.
  */
-export function formatPriceNumber(value: number): string {
-  return value.toLocaleString(undefined, PRICE_DISPLAY_FORMAT);
+export function formatPriceNumber(value: number | null | undefined): string {
+  const numeric =
+    value == null || !Number.isFinite(Number(value)) ? 0 : Number(value);
+  return numeric.toLocaleString(undefined, PRICE_DISPLAY_FORMAT);
 }
 
 /**

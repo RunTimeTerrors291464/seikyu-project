@@ -133,7 +133,11 @@ export default function DataTable<T>({
     return (
       <th
         key={column.id ?? column.header ?? headerIndex}
-        style={column.width ? { width: column.width } : undefined}
+        style={
+          column.width
+            ? { width: column.width, minWidth: column.width }
+            : undefined
+        }
         className={clsx(
           "px-2 py-2 font-medium text-muted transition-colors",
           column.sortable &&
@@ -190,6 +194,11 @@ export default function DataTable<T>({
     return (
       <td
         key={(column.id ?? column.header ?? columnIndex) + "-" + columnIndex}
+        style={
+          column.width
+            ? { width: column.width, minWidth: column.width }
+            : undefined
+        }
         className={clsx(
           "truncate whitespace-nowrap px-2 py-2 align-middle text-text",
           column.align === "right" && "text-right",

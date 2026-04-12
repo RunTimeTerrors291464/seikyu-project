@@ -1,5 +1,6 @@
 "use client";
 
+import type { Column } from "@/components/ui/DataTable";
 import ActivePill from "@/features/products/components/ActivePill";
 import StatusPill from "@/features/products/components/StockStatusPill";
 import type { Product } from "@/features/products/types/product";
@@ -7,7 +8,8 @@ import type { Dictionary } from "@/lib/lang/i18n";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import type { Column } from "@/components/ui/DataTable";
+
+export type AddExistingProductsColumnPreset = "full" | "selling";
 
 type BuildAddExistingProductsColumnsParams = {
   dict: Dictionary;
@@ -17,12 +19,19 @@ type BuildAddExistingProductsColumnsParams = {
   selectedProductIds: Set<string>;
   setSelectedProductIds: Dispatch<SetStateAction<Set<string>>>;
   isProductSelectable: (product: Product) => boolean;
+  /** When set, fixes product name column width (e.g. 160 for cashier selling add-products popup). */
+  productNameColumnWidthPx?: number;
+  /**
+   * `selling` drops import price and stock status so the picker matches selling-line editing.
+   * Import and stock-adjustment flows keep the default `full` preset.
+   */
+  columnPreset?: AddExistingProductsColumnPreset;
 };
 
 /**
  * Builds product-table columns for the add-existing-products popup.
  *
- * @param params - Dictionary, selection state, and selectability handlers.
+ * @param params - Dictionary, selection state, selectability handlers, and optional column preset.
  * @returns DataTable columns for product selection and product details.
  */
 export default function buildAddExistingProductsColumns(
@@ -36,9 +45,11 @@ export default function buildAddExistingProductsColumns(
     selectedProductIds,
     setSelectedProductIds,
     isProductSelectable,
+    productNameColumnWidthPx,
+    columnPreset = "full",
   } = params;
 
-  return [
+  const columns: Column<Product>[] = [
     {
       id: "select",
       header: "",
@@ -125,6 +136,9 @@ export default function buildAddExistingProductsColumns(
       accessor: function renderProductName(product): string {
         return product.productNames?.[0] ?? dict.unnamed;
       },
+      ...(productNameColumnWidthPx != null
+        ? { width: `${productNameColumnWidthPx}px` }
+        : {}),
     },
     {
       id: "productUnitName",
@@ -173,4 +187,12 @@ export default function buildAddExistingProductsColumns(
       },
     },
   ];
+
+  if (columnPreset === "selling") {
+    return columns.filter(function omitSellingUnused(column): boolean {
+      return column.id !== "importPrice" && column.id !== "stockStatus";
+    });
+  }
+
+  return columns;
 }
