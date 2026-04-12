@@ -29,6 +29,7 @@ import {
 import {
     ProductResponseDto,
     GetListOfProductResponseDto,
+    GetListOfProductCashierResponseDto,
     ProductCashierResponseDto,
     ProductResponseDtoWithHistory,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
@@ -190,14 +191,21 @@ export class ProductsController {
     // Get a list of products.
     // GET /api/v1/products
     @Get()
-    @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of products' })
-    @ApiResponse({ status: 200, description: 'A list of products has been retrieved successfully.', type: GetListOfProductResponseDto })
+    @Roles(Role.MANAGER, Role.ADMIN, Role.CASHIER)
+    @ApiOperation({
+        summary: '[MANAGER, ADMIN, CASHIER] Get a list of products',
+        description: 'MANAGER/ADMIN: full product fields and filters. CASHIER: returns cashier fields only; `isActive` is always treated as true and `stockStatus` as all (query overrides for those are ignored).',
+    })
+    @ApiResponse({ status: 200, description: 'MANAGER/ADMIN: full product list.', type: GetListOfProductResponseDto })
+    @ApiResponse({ status: 200, description: 'CASHIER: cashier product list.', type: GetListOfProductCashierResponseDto })
     @HttpCode(HttpStatus.OK)
-    async getListOfProducts(@Query() dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
+    async getListOfProducts(
+        @Query() dto: GetListOfProductRequestDto,
+        @CurrentUser() user: AccessTokenPayload,
+    ): Promise<GetListOfProductResponseDto | GetListOfProductCashierResponseDto> {
         try {
             const result = await firstValueFrom(
-                this.platformService.send({ cmd: 'products.getListOfProducts' }, dto)
+                this.platformService.send({ cmd: 'products.getListOfProducts' }, { dto, user })
             );
             return result;
         } catch (error: any) {
@@ -209,15 +217,22 @@ export class ProductsController {
     // Get a product by ID.
     // GET /api/v1/products/:id
     @Get(':id')
-    @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a product by ID' })
+    @Roles(Role.MANAGER, Role.ADMIN, Role.CASHIER)
+    @ApiOperation({ summary: '[MANAGER, ADMIN, CASHIER] Get a product by ID' })
     @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @ApiResponse({ status: 200, description: 'A product has been retrieved successfully.', type: ProductResponseDto })
+    @ApiResponse({ status: 200, description: 'MANAGER/ADMIN: full product.', type: ProductResponseDto })
+    @ApiResponse({ status: 200, description: 'CASHIER: cashier product.', type: ProductCashierResponseDto })
     @HttpCode(HttpStatus.OK)
-    async getProductById(@Param('id') id: string): Promise<ProductResponseDto> {
+    async getProductById(@Param('id') id: string, @CurrentUser() user: AccessTokenPayload): Promise<ProductResponseDto | ProductCashierResponseDto> {
         try {
-            const result: ProductResponseDto = await firstValueFrom(
-                this.platformService.send({ cmd: 'products.getProductById' }, { id })
+            if (user.roles.includes(Role.MANAGER) || user.roles.includes(Role.ADMIN)) {
+                const result: ProductResponseDto = await firstValueFrom(
+                    this.platformService.send({ cmd: 'products.getProductById' }, { id })
+                );
+                return result;
+            }
+            const result: ProductCashierResponseDto = await firstValueFrom(
+                this.platformService.send({ cmd: 'products.getProductCashierById' }, { id })
             );
             return result;
         } catch (error: any) {

@@ -27,6 +27,7 @@ import {
     ProductCashierResponseDto,
     ProductResponseDtoWithHistory,
     GetListOfProductResponseDto,
+    GetListOfProductCashierResponseDto,
 } from '@app/common/dtos/platform/products/crudProductResponse.dto';
 import {
     GetProductHistoryListRequestDto,
@@ -178,20 +179,44 @@ export class ProductsService {
         return this.productMapper.toProductCashierResponseDto(product);
     }
 
-    // Get a list of products with pagination and filters.
-    @HandleServiceError(ErrorCode.GET_PRODUCTS_SERVICE)
-    async getListOfProducts(dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
-        const { products, total } = await this.productsRepository.getListOfProducts(dto);
+    // Get a product cashier by id.
+    @HandleServiceError(ErrorCode.GET_PRODUCT_CASHIER_SERVICE)
+    async getProductCashierByIdResponseDto(id: string): Promise<ProductCashierResponseDto> {
+        const product = await this.getProductById(id);
+        if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'The product is not found.');
+        return this.productMapper.toProductCashierResponseDto(product);
+    }
 
-        const productDtos: ProductResponseDto[] = products.map((product) =>
-            this.productMapper.toProductResponseDto(product)
-        );
+    // Get a 
+
+    // Get a list of products with pagination and filters. Cashier: forces isActive true and stockStatus all.
+    @HandleServiceError(ErrorCode.GET_PRODUCTS_SERVICE)
+    async getListOfProducts(
+        dto: GetListOfProductRequestDto,
+        forCashier = false,
+    ): Promise<GetListOfProductResponseDto | GetListOfProductCashierResponseDto> {
+        const queryDto: GetListOfProductRequestDto = forCashier
+            ? { ...dto, isActive: 'true', stockStatus: 'all' }
+            : dto;
+
+        const { products, total } = await this.productsRepository.getListOfProducts(queryDto);
+        const page = queryDto.page || 1;
+        const limit = queryDto.limit || 10;
+
+        if (forCashier) {
+            return {
+                page,
+                limit,
+                total,
+                products: products.map((product) => this.productMapper.toProductCashierResponseDto(product)),
+            };
+        }
 
         return {
-            page: dto.page || 1,
-            limit: dto.limit || 10,
+            page,
+            limit,
             total,
-            products: productDtos,
+            products: products.map((product) => this.productMapper.toProductResponseDto(product)),
         };
     }
 

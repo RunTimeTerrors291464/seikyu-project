@@ -17,6 +17,7 @@ import {
 } from '@app/common/dtos/platform/products/crudProductRequest.dto';
 import {
     GetListOfProductResponseDto,
+    GetListOfProductCashierResponseDto,
     ProductResponseDto,
     ProductCashierResponseDto,
     ProductResponseDtoWithHistory,
@@ -35,6 +36,7 @@ import {
 } from '@app/common/dtos/platform/products/history/crudProductStock.dto';
 import { ProductOverviewResponseDto } from '@app/common/dtos/platform/products/productOverviewReponse.dto';
 import type { AccessTokenPayload } from '@app/common/dtos/api-gateway/auth/jwtPayload.interface';
+import { Role } from '@app/common/enums/role.enum';
 
 @Controller()
 export class ProductsController {
@@ -84,10 +86,18 @@ export class ProductsController {
         return this.productsService.getProductCashierBySkuResponseDto(data.sku);
     }
 
+    // Get a product cashier by id.
+    @MessagePattern({ cmd: 'products.getProductCashierById' })
+    async getProductCashierById(data: { id: string }): Promise<ProductCashierResponseDto> {
+        return this.productsService.getProductCashierByIdResponseDto(data.id);
+    }
+
     // Get a list of products.
     @MessagePattern({ cmd: 'products.getListOfProducts' })
-    async getListOfProducts(dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
-        return this.productsService.getListOfProducts(dto);
+    async getListOfProducts(@Payload() data: { dto: GetListOfProductRequestDto; user: AccessTokenPayload }): Promise<GetListOfProductResponseDto | GetListOfProductCashierResponseDto> {
+        const { dto, user } = data;
+        const forCashier = !user.roles.includes(Role.MANAGER) && !user.roles.includes(Role.ADMIN);
+        return this.productsService.getListOfProducts(dto, forCashier);
     }
 
     // Get a list of products by product unit id.
