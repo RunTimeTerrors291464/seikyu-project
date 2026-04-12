@@ -30,6 +30,10 @@ type SellingInvoiceProductsCardProps = {
   showAddProductsButton?: boolean;
   showDeleteSelectedButton?: boolean;
   accent?: Accent;
+  /**
+   * When false, quantity field omits validation styling until enabled (create selling popup before Create).
+   */
+  lineFieldValidationActive?: boolean;
 };
 
 export default function SellingInvoiceProductsCard({
@@ -41,6 +45,7 @@ export default function SellingInvoiceProductsCard({
   showAddProductsButton,
   showDeleteSelectedButton,
   accent = "neutral",
+  lineFieldValidationActive = true,
 }: SellingInvoiceProductsCardProps) {
   const dict = useDict();
   const allowSelection = showSelection ?? canEditDraft;
@@ -136,6 +141,7 @@ export default function SellingInvoiceProductsCard({
   const columns = sellingInvoiceCreateProductColumns({
     dict,
     readOnly: !canEditDraft,
+    showLineFieldErrors: lineFieldValidationActive,
     enableSelection: allowSelection,
     selectedIds,
     allSelected,

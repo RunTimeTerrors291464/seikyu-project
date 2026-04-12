@@ -163,18 +163,22 @@ function buildImportLineTotalColumn(
  *
  * @param dict - UI strings.
  * @param canEditDraft - When false, inputs are disabled and validation styling is off.
+ * @param showLineFieldErrors - When false, quantity/price omit error/warning styling (create popup until Create is pressed).
  * @param onUpdateRow - Persists a field on a row by `localId`.
  * @returns Four column definitions.
  */
 function buildImportInvoiceEditableTailColumns(
   dict: Dictionary,
   canEditDraft: boolean,
+  showLineFieldErrors: boolean,
   onUpdateRow: (
     rowLocalId: string,
     key: keyof EditableImportInvoiceProduct,
     value: string,
   ) => void,
 ): Column<EditableImportInvoiceProduct>[] {
+  const showQuantityPriceIssues = canEditDraft && showLineFieldErrors;
+
   return [
     {
       id: "quantity",
@@ -192,8 +196,12 @@ function buildImportInvoiceEditableTailColumns(
               onUpdateRow(row.localId, "quantity", next);
             }}
             disabled={!canEditDraft}
-            error={canEditDraft ? isEmpty : false}
-            warning={canEditDraft ? !isEmpty && isZeroValue(row.quantity) : false}
+            error={showQuantityPriceIssues ? isEmpty : false}
+            warning={
+              showQuantityPriceIssues
+                ? !isEmpty && isZeroValue(row.quantity)
+                : false
+            }
             inputMode="numeric"
           />
         );
@@ -227,8 +235,12 @@ function buildImportInvoiceEditableTailColumns(
               }
             }}
             disabled={!canEditDraft}
-            error={canEditDraft ? isEmpty : false}
-            warning={canEditDraft ? !isEmpty && isZeroValue(row.importPrice) : false}
+            error={showQuantityPriceIssues ? isEmpty : false}
+            warning={
+              showQuantityPriceIssues
+                ? !isEmpty && isZeroValue(row.importPrice)
+                : false
+            }
             inputMode="numeric"
           />
         );
@@ -380,6 +392,11 @@ function buildReturnLineTotalColumn<
 type ImportInvoiceProductColumnsParams = {
   dict: Dictionary;
   canEditDraft: boolean;
+  /**
+   * When false, quantity and import price inputs stay neutral until the parent sets it true (e.g. after Create).
+   * Defaults to true so draft detail pages keep immediate validation.
+   */
+  showLineFieldErrors?: boolean;
   selectedIds: Set<string>;
   allSelected: boolean;
   hasRows: boolean;
@@ -395,6 +412,7 @@ type ImportInvoiceProductColumnsParams = {
 export function importInvoiceProductColumns({
   dict,
   canEditDraft,
+  showLineFieldErrors = true,
   selectedIds,
   allSelected,
   hasRows,
@@ -435,7 +453,12 @@ export function importInvoiceProductColumns({
 
   const bodyColumns: Column<EditableImportInvoiceProduct>[] = [
     ...buildProductIdentityColumns<EditableImportInvoiceProduct>(dict),
-    ...buildImportInvoiceEditableTailColumns(dict, canEditDraft, onUpdateRow),
+    ...buildImportInvoiceEditableTailColumns(
+      dict,
+      canEditDraft,
+      showLineFieldErrors,
+      onUpdateRow,
+    ),
   ];
 
   const indexColumn = rowIndexColumn<EditableImportInvoiceProduct>();

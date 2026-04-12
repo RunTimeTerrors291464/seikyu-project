@@ -13,7 +13,7 @@ import {
   normalizeMoneyStringInput,
 } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSellingInvoiceCreateEditor } from "../hooks/useSellingInvoiceCreateEditor";
 import { createSellingInvoice } from "../services/sellingInvoice.service";
 import { toNumberOrZero } from "../types/importInvoiceDetail";
@@ -65,12 +65,12 @@ export default function AddSellingInvoicePopup({
   );
   const [invoiceDiscount, setInvoiceDiscount] = useState<string>("0");
   const [notes, setNotes] = useState<string>("");
-  const [noteTouched, setNoteTouched] = useState<boolean>(false);
   const [createAttempted, setCreateAttempted] = useState<boolean>(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const nowText = useMemo(() => new Date().toISOString(), []);
+  const previousProductCountRef = useRef<number>(0);
 
   const isDraftDirty = useMemo(
     function computeDraftDirty(): boolean {
@@ -90,11 +90,28 @@ export default function AddSellingInvoicePopup({
     draftError,
   } = useSellingInvoiceCreateEditor(products, setProducts, createAttempted);
 
+  const noProductsMessage = dict.sellingCreateNoProductsError;
+
+  useEffect(
+    function onProductLineCountChange(): void {
+      const previousCount = previousProductCountRef.current;
+      previousProductCountRef.current = products.length;
+
+      if (previousCount === 0 && products.length > 0) {
+        setCreateAttempted(false);
+        setErrorMessage(function clearNoProductsValidation(previous): string {
+          return previous === noProductsMessage ? "" : previous;
+        });
+      }
+    },
+    [products.length, noProductsMessage],
+  );
+
   function resetDraftState(): void {
+    previousProductCountRef.current = 0;
     setProducts(createInitialProducts());
     setInvoiceDiscount("0");
     setNotes("");
-    setNoteTouched(false);
     setCreateAttempted(false);
     setConfirmAction(null);
     setCreating(false);
@@ -157,6 +174,8 @@ export default function AddSellingInvoicePopup({
     setCreateAttempted(true);
 
     if (products.length === 0) {
+      setErrorMessage(noProductsMessage);
+      setConfirmAction(null);
       return;
     }
 
@@ -165,11 +184,15 @@ export default function AddSellingInvoicePopup({
       return;
     }
 
+    setErrorMessage("");
     setConfirmAction("create");
   }
 
-  const noteWarning = (noteTouched || createAttempted) && !notes.trim();
+  const noteWarning = createAttempted && !notes.trim();
   const invoiceDiscountValue = clampPercentDiscount(toNumberOrZero(invoiceDiscount));
+
+  const productsCardDangerAccent =
+    createAttempted && products.length === 0;
 
   const sellingPreview = useMemo(
     function computeSellingPreview(): { totalAfterDiscount: number; totalDiscount: number } {
@@ -206,27 +229,35 @@ export default function AddSellingInvoicePopup({
   return (
     <Popup open={open} onClose={requestCancel}>
       <div className="flex h-[90vh] w-[90vw] max-w-[1500px] bg-bg flex-col overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h1 className="text-sm font-semibold text-text">{dict.sellingDraft}</h1>
-          {draftError ? (
-            <HeaderMeta
-              icon={<AlertTriangle className="h-4 w-4" />}
-              label={dict.error}
-              value={dict[draftError.key]}
-              accent={draftError.accent}
-              format="text"
-            />
-          ) : null}
-          <HeaderMeta label={dict.createdDate} value={nowText} />
+        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <h1 className="shrink-0 text-sm font-semibold text-text">
+            {dict.sellingDraft}
+          </h1>
+          <div className="flex min-w-0 flex-1 justify-center px-2">
+            {draftError != null ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={dict[draftError.key]}
+                accent={draftError.accent}
+                format="text"
+              />
+            ) : errorMessage ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={errorMessage}
+                accent="danger"
+                format="text"
+              />
+            ) : null}
+          </div>
+          <div className="shrink-0">
+            <HeaderMeta label={dict.createdDate} value={nowText} />
+          </div>
         </div>
 
         <div className="flex flex-1 gap-4 flex-col overflow-auto p-5">
-          {errorMessage && (
-            <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
-              {errorMessage}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <KpiTile
               label={dict.totalSellingPriceLabel}
@@ -267,6 +298,8 @@ export default function AddSellingInvoicePopup({
             canEditDraft={true}
             onChangeProducts={setProducts}
             updateRow={updateRow}
+            accent={productsCardDangerAccent ? "danger" : "neutral"}
+            lineFieldValidationActive={createAttempted}
           />
 
           <div className="flex items-start gap-5">
@@ -302,7 +335,6 @@ export default function AddSellingInvoicePopup({
                 <Textarea
                   value={notes}
                   onChange={setNotes}
-                  onBlur={() => setNoteTouched(true)}
                   placeholder={dict.invoiceDescriptionPlaceholder}
                 />
               </Field>

@@ -2,8 +2,7 @@
 
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
-import { useDict } from "@/lib/lang/DictProvider";
-import { getLang } from "@/lib/lang/i18n";
+import { useDict, useUiLang } from "@/lib/lang/DictProvider";
 import {
   applyLanguage,
   PreferenceChip,
@@ -32,7 +31,7 @@ export default function AppSettingsPopup({
   const dict = useDict();
   const router = useRouter();
 
-  const activeLang = getLang();
+  const activeLang = useUiLang();
 
   return (
     <Popup open={open} onClose={onClose} backdropBlur={false}>

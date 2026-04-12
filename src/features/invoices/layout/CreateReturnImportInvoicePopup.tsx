@@ -21,7 +21,7 @@ import {
   formatPriceNumber,
   lineTotalFromQuantityAndMoneyStrings,
 } from "@/lib/numeric/integerAndMoneyInputs";
-import { Boxes, DollarSign, Package } from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReturnImportProductsCard from "./ReturnImportProductsCard";
 
@@ -57,6 +57,8 @@ export default function CreateReturnImportInvoicePopup({
   const sourceProductsRef = useRef<ImportInvoiceProductDto[]>(sourceProducts);
   sourceProductsRef.current = sourceProducts;
 
+  const previousHadPositiveReturnLineRef = useRef<boolean>(false);
+
   const { updateLine, handleBlurReturnQuantity } =
     useReturnImportLinesEditor<EditableReturnImportLine>(
       setLines,
@@ -88,6 +90,72 @@ export default function CreateReturnImportInvoicePopup({
       totalReturnPrice,
     };
   }, [lines]);
+
+  const hasPositiveReturnLine = useMemo(
+    () => lines.some((line) => toNumberOrZero(line.returnQuantity) > 0),
+    [lines],
+  );
+
+  const hasMissingNotesForPositiveLines = useMemo(
+    () =>
+      lines.some(
+        (line) =>
+          toNumberOrZero(line.returnQuantity) > 0 &&
+          line.notes.trim() === "",
+      ),
+    [lines],
+  );
+
+  const returnNeedsLineMessage =
+    dict[INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.key];
+  const returnNeedsNoteMessage =
+    dict[INVOICE_DRAFT_ERRORS.returnMissingNote.key];
+
+  useEffect(
+    function clearReturnValidationMessageWhenFixed(): void {
+      if (!open) {
+        return;
+      }
+
+      setErrorMessage(function clearIfValidationResolved(previous): string {
+        if (previous === returnNeedsLineMessage && hasPositiveReturnLine) {
+          return "";
+        }
+
+        if (
+          previous === returnNeedsNoteMessage &&
+          !hasMissingNotesForPositiveLines
+        ) {
+          return "";
+        }
+
+        return previous;
+      });
+    },
+    [
+      open,
+      hasPositiveReturnLine,
+      hasMissingNotesForPositiveLines,
+      returnNeedsLineMessage,
+      returnNeedsNoteMessage,
+    ],
+  );
+
+  useEffect(
+    function resetCreateAttemptWhenFirstReturnQuantityAdded(): void {
+      if (!open) {
+        return;
+      }
+
+      const previousPositive = previousHadPositiveReturnLineRef.current;
+      previousHadPositiveReturnLineRef.current = hasPositiveReturnLine;
+
+      if (!previousPositive && hasPositiveReturnLine) {
+        setCreateAttempted(false);
+      }
+    },
+    [open, hasPositiveReturnLine],
+  );
 
   function resetState(): void {
     setNotes("");
@@ -136,14 +204,16 @@ export default function CreateReturnImportInvoicePopup({
       }));
 
     if (productsPayload.length === 0) {
+      setErrorMessage(returnNeedsLineMessage);
       return;
     }
 
-    const hasMissingNotesForPositiveLines = productsPayload.some(
+    const payloadMissingNotes = productsPayload.some(
       (line) => !line.notes || line.notes.trim() === "",
     );
 
-    if (hasMissingNotesForPositiveLines) {
+    if (payloadMissingNotes) {
+      setErrorMessage(returnNeedsNoteMessage);
       return;
     }
 
@@ -170,21 +240,15 @@ export default function CreateReturnImportInvoicePopup({
 
   function handleOpenCreateConfirm(): void {
     setCreateAttempted(true);
+    setErrorMessage("");
 
-    const hasPositiveLine = lines.some(
-      (line) => toNumberOrZero(line.returnQuantity) > 0,
-    );
-
-    if (!hasPositiveLine) {
+    if (!hasPositiveReturnLine) {
+      setErrorMessage(returnNeedsLineMessage);
       return;
     }
 
-    const hasMissingNotesForPositiveLines = lines.some(
-      (line) =>
-        toNumberOrZero(line.returnQuantity) > 0 && line.notes.trim() === "",
-    );
-
     if (hasMissingNotesForPositiveLines) {
+      setErrorMessage(returnNeedsNoteMessage);
       return;
     }
 
@@ -231,7 +295,6 @@ export default function CreateReturnImportInvoicePopup({
 
   function handleReturnAllConfirmed(): void {
     handleReturnAll();
-    setCreateAttempted(true);
     setReturnAllConfirmOpen(false);
   }
 
@@ -239,21 +302,6 @@ export default function CreateReturnImportInvoicePopup({
     handleClearAll();
     setClearAllConfirmOpen(false);
   }
-
-  const hasPositiveReturnLine = useMemo(
-    () => lines.some((line) => toNumberOrZero(line.returnQuantity) > 0),
-    [lines],
-  );
-
-  const hasMissingNotesForPositiveLines = useMemo(
-    () =>
-      lines.some(
-        (line) =>
-          toNumberOrZero(line.returnQuantity) > 0 &&
-          line.notes.trim() === "",
-      ),
-    [lines],
-  );
 
   const columns = returnImportDraftProductColumns({
     dict,
@@ -271,6 +319,16 @@ export default function CreateReturnImportInvoicePopup({
     },
   });
 
+  const returnHeaderErrorAccent =
+    errorMessage === returnNeedsLineMessage
+      ? INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.accent
+      : errorMessage === returnNeedsNoteMessage
+        ? INVOICE_DRAFT_ERRORS.returnMissingNote.accent
+        : "danger";
+
+  const returnProductsCardDangerAccent =
+    createAttempted && !hasPositiveReturnLine;
+
   if (!open) {
     return null;
   }
@@ -278,42 +336,27 @@ export default function CreateReturnImportInvoicePopup({
   return (
     <Popup open={open} onClose={() => setConfirmAction("cancel")}>
       <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h1 className="text-sm font-semibold text-text">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <h1 className="shrink-0 text-sm font-semibold text-text">
             {dict.createReturnInvoiceTitle}
           </h1>
-          <div className="flex flex-1 items-center justify-center px-3">
-            {createAttempted && !hasPositiveReturnLine && (
+          <div className="flex min-w-0 flex-1 justify-center px-2">
+            {errorMessage ? (
               <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
                 label={dict.error}
-                value={dict[INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.key]}
-                accent={INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.accent}
+                value={errorMessage}
+                accent={returnHeaderErrorAccent}
                 format="text"
               />
-            )}
-            {createAttempted &&
-              hasPositiveReturnLine &&
-              hasMissingNotesForPositiveLines && (
-                <HeaderMeta
-                  label={dict.error}
-                  value={dict[INVOICE_DRAFT_ERRORS.returnMissingNote.key]}
-                  accent={INVOICE_DRAFT_ERRORS.returnMissingNote.accent}
-                  format="text"
-                />
-              )}
+            ) : null}
           </div>
-          <div className="flex justify-end">
+          <div className="shrink-0">
             <HeaderMeta label={dict.createdDate} value={nowText} />
           </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-auto p-5">
-          {errorMessage && (
-            <div className="rounded-md border border-danger bg-danger-soft px-3 text-sm text-danger">
-              {errorMessage}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <KpiTile
               label={dict.totalReturnPriceLabel}
@@ -350,6 +393,7 @@ export default function CreateReturnImportInvoicePopup({
             onReturnAll={handleOpenReturnAllConfirm}
             resetKey={`${open}-${importInvoiceId}`}
             className="flex grow"
+            accent={returnProductsCardDangerAccent ? "danger" : "neutral"}
           />
 
           <Field label={dict.noteLabel}>

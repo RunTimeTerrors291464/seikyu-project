@@ -14,6 +14,10 @@ export function getDictionary(lang: Lang): Dictionary {
   return dictionaries[lang];
 }
 
+/**
+ * Reads `lang` from `document.cookie` (client only). During SSR this returns `"en"`, which does not
+ * match the real cookie—use `useUiLang()` from `DictProvider` in rendered UI instead.
+ */
 export function getLang(): Lang {
   if (typeof document === "undefined") return "en";
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT_STYLES, type Accent } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import DataTable, { type Column } from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
@@ -30,6 +31,8 @@ type ReturnImportProductsCardProps<T extends ReturnImportProductsCardLine> = {
    * Useful when the parent modal opens/closes.
    */
   resetKey?: string | number;
+  /** When `danger`, the card uses the danger border/background treatment (e.g. line validation). */
+  accent?: Accent;
 };
 
 /**
@@ -42,6 +45,7 @@ type ReturnImportProductsCardProps<T extends ReturnImportProductsCardLine> = {
  * @param onClearAll - Clears return quantities (draft only).
  * @param onReturnAll - Sets return quantities to maximum (draft only).
  * @param resetKey - Resets internal search state when it changes.
+ * @param accent - Optional visual accent; `danger` highlights validation issues on the card frame.
  * @returns JSX element with search + table.
  */
 export default function ReturnImportProductsCard<
@@ -55,6 +59,7 @@ export default function ReturnImportProductsCard<
   onReturnAll,
   className,
   resetKey,
+  accent = "neutral",
 }: ReturnImportProductsCardProps<T>) {
   const dict = useDict();
 
@@ -82,7 +87,10 @@ export default function ReturnImportProductsCard<
   return (
     <div
       className={clsx(
-        "flex min-h-0 flex-col gap-3 rounded-lg border border-border bg-card p-3",
+        "flex min-h-0 flex-col gap-3 rounded-lg p-3",
+        accent !== "neutral"
+          ? `${ACCENT_STYLES[accent]} text-text`
+          : "border border-border bg-card",
         className,
       )}
     >

@@ -2,13 +2,14 @@
 
 import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
+import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, Package } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS } from "../filters/stockAdjustmentInvoiceFilters";
 import { useStockAdjustmentInvoiceProductsEditor } from "../hooks/useStockAdjustmentInvoiceProductsEditor";
 import {
@@ -46,12 +47,12 @@ export default function AddStockAdjustmentInvoicePopup({
     "damagedGoods",
   );
   const [notes, setNotes] = useState<string>("");
-  const [noteTouched, setNoteTouched] = useState<boolean>(false);
   const [createAttempted, setCreateAttempted] = useState<boolean>(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const nowText = useMemo(() => new Date().toISOString(), [open]);
+  const previousProductCountRef = useRef<number>(0);
 
   const isDraftDirty = useMemo(
     function computeDraftDirty(): boolean {
@@ -71,11 +72,28 @@ export default function AddStockAdjustmentInvoicePopup({
     validationActive: createAttempted,
   });
 
+  const noProductsMessage = dict[INVOICE_DRAFT_ERRORS.draftNoProducts.key];
+
+  useEffect(
+    function onProductLineCountChange(): void {
+      const previousCount = previousProductCountRef.current;
+      previousProductCountRef.current = products.length;
+
+      if (previousCount === 0 && products.length > 0) {
+        setCreateAttempted(false);
+        setErrorMessage(function clearNoProductsValidation(previous): string {
+          return previous === noProductsMessage ? "" : previous;
+        });
+      }
+    },
+    [products.length, noProductsMessage],
+  );
+
   function resetDraftState(): void {
+    previousProductCountRef.current = 0;
     setProducts(createInitialProducts());
     setActionReason("damagedGoods");
     setNotes("");
-    setNoteTouched(false);
     setCreateAttempted(false);
     setConfirmAction(null);
     setCreating(false);
@@ -138,15 +156,25 @@ export default function AddStockAdjustmentInvoicePopup({
   function handleOpenCreateConfirm(): void {
     setCreateAttempted(true);
 
-    if (products.length === 0 || hasInvalidLines || draftError) {
+    if (products.length === 0) {
+      setErrorMessage(noProductsMessage);
       setConfirmAction(null);
       return;
     }
 
+    if (hasInvalidLines || draftError) {
+      setConfirmAction(null);
+      return;
+    }
+
+    setErrorMessage("");
     setConfirmAction("create");
   }
 
-  const noteWarning = (noteTouched || createAttempted) && !notes.trim();
+  const noteWarning = createAttempted && !notes.trim();
+
+  const productsCardDangerAccent =
+    createAttempted && products.length === 0;
 
   if (!open) {
     return null;
@@ -155,29 +183,35 @@ export default function AddStockAdjustmentInvoicePopup({
   return (
     <Popup open={open} onClose={requestCancel}>
       <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h1 className="text-sm font-semibold text-text">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <h1 className="shrink-0 text-sm font-semibold text-text">
             {dict.stockAdjustmentDraft}
           </h1>
-          {draftError ? (
-            <HeaderMeta
-              icon={<AlertTriangle className="h-4 w-4" />}
-              label={dict.error}
-              value={dict[draftError.key]}
-              accent={draftError.accent}
-              format="text"
-            />
-          ) : null}
-          <HeaderMeta label={dict.createdDate} value={nowText} />
+          <div className="flex min-w-0 flex-1 justify-center px-2">
+            {draftError != null ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={dict[draftError.key]}
+                accent={draftError.accent}
+                format="text"
+              />
+            ) : errorMessage ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={errorMessage}
+                accent="danger"
+                format="text"
+              />
+            ) : null}
+          </div>
+          <div className="shrink-0">
+            <HeaderMeta label={dict.createdDate} value={nowText} />
+          </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-auto p-5">
-          {errorMessage && (
-            <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
-              {errorMessage}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <KpiTile
               label={dict.totalProducts}
@@ -202,6 +236,7 @@ export default function AddStockAdjustmentInvoicePopup({
             canEditDraft={true}
             onChangeProducts={setProducts}
             updateRow={updateRow}
+            accent={productsCardDangerAccent ? "danger" : "neutral"}
           />
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
@@ -232,7 +267,6 @@ export default function AddStockAdjustmentInvoicePopup({
               <Textarea
                 value={notes}
                 onChange={setNotes}
-                onBlur={() => setNoteTouched(true)}
                 placeholder={dict.invoiceDescriptionPlaceholder}
               />
             </Field>

@@ -34,7 +34,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DictProvider dict={dict}>
+          <DictProvider dict={dict} lang={lang}>
             <AuthProvider>
               <LayoutWrapper>{children}</LayoutWrapper>
             </AuthProvider>

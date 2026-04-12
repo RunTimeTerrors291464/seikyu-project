@@ -1,8 +1,7 @@
 "use client";
 
 import { PreferenceChip, applyLanguage } from "@/lib/preferences/appPreferenceUi";
-import { useDict } from "@/lib/lang/DictProvider";
-import { getLang } from "@/lib/lang/i18n";
+import { useDict, useUiLang } from "@/lib/lang/DictProvider";
 import { useRouter } from "next/navigation";
 
 /**
@@ -13,7 +12,7 @@ import { useRouter } from "next/navigation";
 export default function LanguageToggle() {
   const dict = useDict();
   const router = useRouter();
-  const activeLang = getLang();
+  const activeLang = useUiLang();
 
   return (
     <div

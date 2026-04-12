@@ -31,6 +31,11 @@ type ImportInvoiceProductsCardProps = {
     value: string,
   ) => void;
   accent?: Accent;
+  /**
+   * Gates quantity/import-price error styling. Use `false` until the user submits (e.g. create draft popup).
+   * Defaults to true for manager draft detail editing.
+   */
+  lineFieldValidationActive?: boolean;
 };
 
 export default function ImportInvoiceProductsCard({
@@ -39,6 +44,7 @@ export default function ImportInvoiceProductsCard({
   onChangeProducts,
   updateRow: updateRowProp,
   accent = "neutral",
+  lineFieldValidationActive = true,
 }: ImportInvoiceProductsCardProps) {
   const dict = useDict();
 
@@ -135,6 +141,7 @@ export default function ImportInvoiceProductsCard({
   const columns = importInvoiceProductColumns({
     dict,
     canEditDraft,
+    showLineFieldErrors: lineFieldValidationActive,
     selectedIds,
     allSelected,
     hasRows: filteredProducts.length > 0,

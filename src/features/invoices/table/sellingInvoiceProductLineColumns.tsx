@@ -30,6 +30,14 @@ import type { EditableReturnSellingDetailLine } from "../types/returnSellingDeta
 import type { EditableReturnSellingLine } from "../types/returnSellingDraft";
 import type { EditableSellingInvoiceCreateLine } from "../types/sellingInvoiceCreate";
 
+function isZeroValue(value: string): boolean {
+  return Number(value) === 0;
+}
+
+function isEmptyValue(value: string): boolean {
+  return value.trim().length === 0;
+}
+
 function buildProductIdentityColumnsReadOnly<
   T extends { productSku: string; productName: string; productUnit: string },
 >(dict: Dictionary): Column<T>[] {
@@ -69,6 +77,10 @@ function buildProductIdentityColumnsReadOnly<
 type SellingInvoiceCreateColumnsParams = {
   dict: Dictionary;
   readOnly: boolean;
+  /**
+   * When false, quantity omits error/warning styling until the parent enables it (e.g. after Create).
+   */
+  showLineFieldErrors?: boolean;
   enableSelection: boolean;
   selectedIds: Set<string>;
   allSelected: boolean;
@@ -90,6 +102,7 @@ function clampPercentDiscount(value: number): number {
 export function sellingInvoiceCreateProductColumns({
   dict,
   readOnly,
+  showLineFieldErrors = true,
   enableSelection,
   selectedIds,
   allSelected,
@@ -98,6 +111,7 @@ export function sellingInvoiceCreateProductColumns({
   onToggleSelectOne,
   onUpdateRow,
 }: SellingInvoiceCreateColumnsParams): Column<EditableSellingInvoiceCreateLine>[] {
+  const showQuantityIssues = !readOnly && showLineFieldErrors;
   const selectColumn: Column<EditableSellingInvoiceCreateLine> = {
     id: "select",
     header: "",
@@ -145,6 +159,7 @@ export function sellingInvoiceCreateProductColumns({
             </span>
           );
         }
+        const isEmpty = isEmptyValue(row.quantity);
         return (
           <div
             onMouseDown={function stopRowCapture(event): void {
@@ -159,6 +174,12 @@ export function sellingInvoiceCreateProductColumns({
                 });
                 onUpdateRow(row.localId, "quantity", next);
               }}
+              error={showQuantityIssues ? isEmpty : false}
+              warning={
+                showQuantityIssues
+                  ? !isEmpty && isZeroValue(row.quantity)
+                  : false
+              }
               inputMode="numeric"
             />
           </div>
