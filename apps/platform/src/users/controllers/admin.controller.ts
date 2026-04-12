@@ -40,8 +40,8 @@ export class AdminController {
 
     // Activate a user.
     @MessagePattern({ cmd: 'admin.activateUser' })
-    async activateUser(id: string): Promise<UserResponseDto> {
-        return this.adminService.activateUser(id);
+    async activateUser(data: { id: string; actionUserId: string }): Promise<UserResponseDto> {
+        return this.adminService.activateUser(data.id);
     }
 
     // Admin reset password for a user.
