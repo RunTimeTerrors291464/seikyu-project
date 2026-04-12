@@ -191,7 +191,7 @@ export class ProductsController {
     // GET /api/v1/products
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a list of products' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of products' })
     @ApiResponse({ status: 200, description: 'A list of products has been retrieved successfully.', type: GetListOfProductResponseDto })
     @HttpCode(HttpStatus.OK)
     async getListOfProducts(@Query() dto: GetListOfProductRequestDto): Promise<GetListOfProductResponseDto> {
@@ -210,7 +210,7 @@ export class ProductsController {
     // GET /api/v1/products/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a product by ID' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a product by ID' })
     @ApiParam({ name: 'id', description: 'The ID of the product', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A product has been retrieved successfully.', type: ProductResponseDto })
     @HttpCode(HttpStatus.OK)

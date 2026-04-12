@@ -116,7 +116,7 @@ export class ProductUnitsController {
     // GET /api/v1/product-units/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a product unit by id' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a product unit by id' })
     @ApiParam({ name: 'id', description: 'The unique identifier of the product unit', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({ status: 200, description: 'A product unit has been retrieved successfully.', type: ProductUnitResponseDto })
     @HttpCode(HttpStatus.OK)
@@ -136,7 +136,7 @@ export class ProductUnitsController {
     // GET /api/v1/product-units
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER] Get a list of product units' })
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of product units' })
     @ApiResponse({ status: 200, description: 'A list of product units has been retrieved successfully.', type: GetListOfProductUnitResponseDto })
     @HttpCode(HttpStatus.OK)
     async getListOfProductUnits(@Query() dto: GetListOfProductUnitRequestDto): Promise<GetListOfProductUnitResponseDto> {
