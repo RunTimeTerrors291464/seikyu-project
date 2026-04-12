@@ -7,9 +7,17 @@ type PopupProps = {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
+  /** When false, backdrop is dimmed only (no `backdrop-blur`). Defaults to true. */
+  backdropBlur?: boolean;
 };
 
-export default function Popup({ open, onClose, children }: PopupProps) {
+export default function Popup({
+  open,
+  onClose,
+  children,
+  backdropBlur,
+}: PopupProps) {
+  const useBackdropBlur = backdropBlur !== false;
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -27,7 +35,10 @@ export default function Popup({ open, onClose, children }: PopupProps) {
 
       {/* BACKDROP */}
       <div
-        className="absolute inset-0 bg-bg/50 backdrop-blur-sm"
+        className={clsx(
+          "absolute inset-0 bg-bg/50",
+          useBackdropBlur && "backdrop-blur-sm",
+        )}
         onClick={onClose}
       />
 

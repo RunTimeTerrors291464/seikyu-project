@@ -1,19 +1,14 @@
+import { normalizeAuthUser, type AuthUser } from "@/lib/auth/authUser";
 import { create } from "zustand";
 
-// User type returned from backend
-// Adjust fields if your API returns more properties
-interface User {
-  id: string;
-  username: string;
-  role: string;
-}
+export type { AuthUser };
 
 interface AuthState {
-  user: User | null;       // current logged-in user
-  token: string | null;    // JWT access token
-  hydrated: boolean;       // has state been restored from storage
+  user: AuthUser | null;
+  token: string | null;
+  hydrated: boolean;
 
-  login: (token: string, user: User) => void;
+  login: (token: string, user: unknown) => void;
   logout: () => void;
 
   // Restores token when app loads (prevents logout on refresh)
@@ -29,9 +24,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   hydrated: false,
 
   // Called after successful login API request
-  login: (token, user) => {
+  login: (token, rawUser) => {
 
     console.log("AUTH STORE → storing token");
+
+    const user = normalizeAuthUser(rawUser);
+    if (!user) {
+      console.error("AUTH STORE → login payload missing id, username, or roles");
+      return;
+    }
 
     // Next.js runs on server and client
     // localStorage only exists in browser
@@ -110,11 +111,19 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     console.log("AUTH STORE → token loaded from storage");
 
-    // Restore token to Zustand
+    let restoredUser: AuthUser | null = null;
+    if (user) {
+      try {
+        restoredUser = normalizeAuthUser(JSON.parse(user));
+      } catch {
+        restoredUser = null;
+      }
+    }
+
     set((previous) => ({
       ...previous,
       token,
-      user: user ? JSON.parse(user) : null,
+      user: restoredUser,
       hydrated: true,
     }));
   },

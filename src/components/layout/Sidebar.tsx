@@ -1,21 +1,35 @@
 "use client";
 
+import AppSettingsPopup from "@/components/layout/AppSettingsPopup";
+import { ConfirmPopup } from "@/components/layout/Popup";
+import {
+  USER_ROLE_ADMIN,
+  USER_ROLE_CASHIER,
+  USER_ROLE_MANAGER,
+  type UserRoleCode,
+} from "@/features/admin/services/adminUsers.service";
+import {
+  effectiveRolesForSidebarNav,
+  userHasAnyRole,
+} from "@/lib/auth/authUser";
 import { useDict } from "@/lib/lang/DictProvider";
+import { useAuthStore } from "@/stores/auth.store";
 import clsx from "clsx";
 import {
   Bell,
   Boxes,
   ChevronDown,
   ClipboardList,
-  ExternalLink,
   FileCheck2,
   FileText,
   FolderOpen,
   LayoutDashboard,
+  LogOut,
   PanelLeftClose,
   ReceiptText,
   Settings as SettingsIcon,
   Store,
+  UserCog,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -36,6 +50,10 @@ type Group = {
   items?: Item[];
   collapsible?: boolean;
   defaultOpen?: boolean;
+  /** When set, the group is shown only if the user has at least one of these roles. */
+  requiredRoles?: readonly UserRoleCode[];
+  /** For leaf rows (no `items`), runs when the row is activated (e.g. open settings). */
+  onActivate?: () => void;
 };
 
 type SidebarProps = {
@@ -45,18 +63,23 @@ type SidebarProps = {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const dict = useDict();
+  const authUser = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const groups: Group[] = [
+  const allGroups: Group[] = [
     {
       id: "admin",
       label: dict.admin,
       icon: <Users className="h-4 w-4" />,
       collapsible: true,
       defaultOpen: true,
+      requiredRoles: [USER_ROLE_ADMIN],
       items: [
-        { href: "/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
+        { href: "/admin/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
         { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
-        { href: "/accounts", label: dict.manageAccounts, icon: <Users className="h-4 w-4" />, disabled: true },
+        { href: "/admin/users", label: dict.usersNav, icon: <UserCog className="h-4 w-4" /> },
       ],
     },
     {
@@ -65,6 +88,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: <Store className="h-4 w-4" />,
       collapsible: true,
       defaultOpen: false,
+      requiredRoles: [USER_ROLE_CASHIER],
       items: [
         { href: "/cashier/selling", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
         { href: "/cashier/selling/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
@@ -76,6 +100,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: <ClipboardList className="h-4 w-4" />,
       collapsible: true,
       defaultOpen: false,
+      requiredRoles: [USER_ROLE_MANAGER],
       items: [
         { href: "/manager/product-inventory", label: dict.productInventory, icon: <FolderOpen className="h-4 w-4" /> },
         { href: "/manager/invoices/import", label: dict.importInvoices, icon: <FileCheck2 className="h-4 w-4" /> },
@@ -85,8 +110,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ],
     },
     { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },
-    { id: "settings", label: dict.settings, icon: <SettingsIcon className="h-4 w-4" /> },
+    {
+      id: "settings",
+      label: dict.settings,
+      icon: <SettingsIcon className="h-4 w-4" />,
+      onActivate: () => {
+        setSettingsOpen(true);
+      },
+    },
   ];
+
+  const roleCodes = effectiveRolesForSidebarNav(authUser?.roles ?? []);
+
+  const groups = allGroups.filter((group) => {
+    if (!group.requiredRoles?.length) {
+      return true;
+    }
+
+    return userHasAnyRole(roleCodes, group.requiredRoles);
+  });
 
   function usePersistedOpen(id: string, initial: boolean) {
     const [open, setOpen] = useState(initial);
@@ -132,8 +174,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div>
         {/* GROUP HEADER */}
         <button
+          type="button"
           className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium text-text transition-colors hover:bg-hover"
           onClick={() => {
+            if (group.onActivate) {
+              group.onActivate();
+              return;
+            }
+
             if (!hasChildren) return;
 
             // prevent closing if current route is inside
@@ -141,7 +189,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
             if (hasChildren) setOpen((v) => !v);
           }}
-          aria-expanded={open}
+          aria-expanded={hasChildren ? open : undefined}
         >
           <span className="inline-flex items-center gap-2">
             <span className="text-muted">{group.icon}</span>
@@ -212,8 +260,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }
 
   return (
-    <aside className="sticky top-0 hidden w-72 self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
-      <div className="flex h-screen min-w-0 flex-col gap-6 p-4">
+    <aside className="sticky top-0 hidden self-start overflow-hidden border-r border-border bg-card text-text md:flex print:hidden">
+      <div className="flex w-72 h-screen min-w-0 flex-col gap-6 p-4">
 
         {/* Brand */}
         <div className="flex items-center gap-2 px-2 pt-2 text-sm font-semibold">
@@ -243,28 +291,51 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        {/* User Card */}
+        {/* Signed-in user + log out */}
         <div className="rounded-md border border-border bg-bg p-3 text-sm">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-muted" />
-
-            <div className="min-w-0">
-              <div className="truncate text-text">John</div>
-              <div className="truncate text-xs text-muted">
-                john.doe@gmail.com
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 truncate font-medium text-text">
+              {authUser?.username ?? "—"}
             </div>
-
             <button
-              aria-label={dict.openProfile}
-              className="ml-auto rounded-md p-1 text-muted transition-colors hover:bg-hover hover:text-text"
+              type="button"
+              aria-label={dict.logout}
+              className="shrink-0 rounded-md p-1.5 text-muted transition-colors hover:bg-hover hover:text-text"
+              onClick={() => {
+                setLogoutConfirmOpen(true);
+              }}
             >
-              <ExternalLink className="h-4 w-4" />
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
 
       </div>
+
+      <AppSettingsPopup
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false);
+        }}
+      />
+
+      <ConfirmPopup
+        open={logoutConfirmOpen}
+        backdropBlur={false}
+        onClose={() => {
+          setLogoutConfirmOpen(false);
+        }}
+        title={dict.confirmLogoutTitle}
+        description={dict.confirmLogoutDescription}
+        confirmText={dict.logout}
+        cancelText={dict.cancel}
+        accent="danger"
+        icon={<LogOut className="h-3.5 w-3.5 text-danger" />}
+        onConfirm={() => {
+          setLogoutConfirmOpen(false);
+          logout();
+        }}
+      />
     </aside>
   );
 }

@@ -20,6 +20,8 @@ type Props = {
 
   icon?: ReactNode;
   accent?: "neutral" | "danger";
+  /** Passed to the underlying modal wrapper; set false for a non-blurred dimmed backdrop. */
+  backdropBlur?: boolean;
 };
 
 export function ConfirmPopup({
@@ -33,9 +35,10 @@ export function ConfirmPopup({
   onClose,
   icon,
   accent = "neutral",
+  backdropBlur,
 }: Props) {
   return (
-    <Popup open={open} onClose={onClose}>
+    <Popup open={open} onClose={onClose} backdropBlur={backdropBlur}>
       <div className="overflow-hidden rounded-lg">
 
         {/* HEADER */}
@@ -92,6 +95,7 @@ type DeletePopupProps = {
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
   icon?: ReactNode;
+  backdropBlur?: boolean;
 };
 
 export function DeletePopup({
@@ -104,6 +108,7 @@ export function DeletePopup({
   onConfirm,
   onClose,
   icon,
+  backdropBlur,
 }: DeletePopupProps) {
   return (
     <ConfirmPopup
@@ -117,6 +122,7 @@ export function DeletePopup({
       onClose={onClose}
       icon={icon}
       accent="danger"
+      backdropBlur={backdropBlur}
     />
   );
 }

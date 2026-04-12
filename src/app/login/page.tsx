@@ -2,7 +2,7 @@
 
 import LoginForm from "@/components/forms/login-form";
 import LanguageToggle from "@/components/LanguageToggle";
-import ThemeToggle from "@/components/theme-toggle";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useDict } from "@/lib/lang/DictProvider";
 import { LogIn } from "lucide-react";
 
@@ -13,7 +13,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
 
       {/* top right controls */}
-      <div className="absolute right-4 top-4 flex items-center gap-2">
+      <div className="absolute right-4 top-4 flex max-w-[min(100%-2rem,24rem)] flex-col items-stretch gap-2 sm:max-w-none sm:flex-row sm:items-start sm:justify-end">
         <ThemeToggle />
         <LanguageToggle />
       </div>

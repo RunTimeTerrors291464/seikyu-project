@@ -302,7 +302,7 @@ export default function InvoicePrintPreviewPopup({
           <h2 className="text-sm font-semibold text-text">{dict.printPreview}</h2>
           <div className="flex items-center gap-2">
             <Button icon={<Download className="h-3.5 w-3.5" />} accent="neutral" onClick={handleSavePdf}>
-              Save PDF
+              {dict.saveAsPdf}
             </Button>
             <Button icon={<Printer className="h-3.5 w-3.5" />} accent="primary" onClick={handlePrint}>
               {dict.print}

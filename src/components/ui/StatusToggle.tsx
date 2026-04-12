@@ -21,13 +21,13 @@ export function StatusToggle({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-medium shadow-sm bg-primary-soft
-        transition-all duration-150 cursor-pointer
-        active:translate-y-[1px]
+      className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-medium
+        cursor-pointer select-none transition-all duration-150
+        active:translate-y-px
 
         ${active
-          ? "bg-success-soft text-success border-success hover:bg-success-hover"
-          : "bg-card text-muted border-border hover:bg-hover hover:text-text active:bg-active"
+          ? "border-success bg-success-soft text-success opacity-100 hover:opacity-90"
+          : "border-border bg-card text-muted opacity-70 hover:opacity-100 hover:bg-hover hover:text-text"
         }
       `}
     >

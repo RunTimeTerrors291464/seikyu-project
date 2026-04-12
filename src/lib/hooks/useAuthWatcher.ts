@@ -1,5 +1,6 @@
 "use client";
 
+import { defaultHomePathForRoles } from "@/lib/auth/authUser";
 import { useAuthStore } from "@/stores/auth.store";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -7,6 +8,7 @@ import { useEffect } from "react";
 export const useAuthWatcher = () => {
   const token = useAuthStore((s) => s.token);
   const hydrated = useAuthStore((s) => s.hydrated);
+  const authUser = useAuthStore((s) => s.user);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -30,14 +32,18 @@ export const useAuthWatcher = () => {
       return;
     }
 
-    // already logged in → block auth pages
+    // already logged in → leave auth pages for role-appropriate home
     if (token && isAuthPage) {
-      console.log("Already logged in → redirect to dashboard");
-      router.replace("/dashboard");
+      const home =
+        authUser?.roles?.length != null && authUser.roles.length > 0
+          ? defaultHomePathForRoles(authUser.roles)
+          : "/admin/dashboard";
+      console.log("Already logged in → redirect to app home");
+      router.replace(home);
       return;
     }
 
     // DO NOTHING about expiry
     // axios interceptor handles it
-  }, [pathname, token, hydrated, router]);
+  }, [pathname, token, hydrated, router, authUser]);
 };

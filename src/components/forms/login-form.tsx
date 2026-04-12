@@ -1,5 +1,6 @@
 "use client";
 
+import { defaultHomePathForRoles } from "@/lib/auth/authUser";
 import { login } from "@/services/auth.service";
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -68,22 +69,22 @@ export default function LoginForm() {
 
       const data = await login(values);
 
-      // store refresh token
       localStorage.setItem("refresh_token", data.refreshToken);
 
-      // store user
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // update Zustand
       loginStore(data.accessToken, data.user);
 
-      // redirect
-      // Next.js middleware runs on the subsequent request; wait a tick so the cookie
-      // is reliably persisted before navigating to a protected route.
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, 0);
-      });
-      router.push("/dashboard");
+      const signedInUser = useAuthStore.getState().user;
+      if (!signedInUser) {
+        setAuthError(dict.somethingWentWrong ?? "Something went wrong");
+        return;
+      }
+
+      const home =
+        signedInUser.roles.length > 0
+          ? defaultHomePathForRoles(signedInUser.roles)
+          : "/admin/dashboard";
+
+      router.push(home);
 
     } catch (error: unknown) {
       const apiError = toApiErrorLike(error);
