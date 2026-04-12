@@ -85,9 +85,14 @@ export class UsersRepository {
                 }
             }
 
-            // Apply roles filter.
             if (roles && roles.length > 0) {
-                qb.andWhere('userRole.role IN (:...roles)', { roles });
+                qb.andWhere(
+                    `EXISTS (
+                        SELECT 1 FROM user_roles ur_filter
+                        WHERE ur_filter.user_id = user.id AND ur_filter.role IN (:...roles)
+                    )`,
+                    { roles },
+                );
             }
 
             // Apply active status filter.
@@ -99,10 +104,8 @@ export class UsersRepository {
             return qb;
         };
 
-        // Create query builder for counting total.
-        let countQueryBuilder = this.userRepository
-            .createQueryBuilder('user')
-            .leftJoinAndSelect('user.userRoles', 'userRole');
+        // Create query builder for counting total (no join to user_roles — filters use user columns or EXISTS).
+        let countQueryBuilder = this.userRepository.createQueryBuilder('user');
 
         countQueryBuilder = applyFilters(countQueryBuilder);
 
