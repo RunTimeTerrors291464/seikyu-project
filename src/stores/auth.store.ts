@@ -1,4 +1,5 @@
 import { normalizeAuthUser, type AuthUser } from "@/lib/auth/authUser";
+import { logout as logoutRequest } from "@/services/auth.service";
 import { create } from "zustand";
 
 export type { AuthUser };
@@ -9,7 +10,7 @@ interface AuthState {
   hydrated: boolean;
 
   login: (token: string, user: unknown) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 
   // Restores token when app loads (prevents logout on refresh)
   loadUserFromStorage: () => void;
@@ -61,11 +62,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   // Clears authentication
-  logout: () => {
+  logout: async function logout(): Promise<void> {
 
     console.log("AUTH STORE → clearing auth");
 
     if (typeof window !== "undefined") {
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      if (refreshToken) {
+        try {
+          await logoutRequest(refreshToken);
+        } catch (error: unknown) {
+          console.warn("AUTH STORE → API logout failed, clearing local auth anyway", error);
+        }
+      }
 
       // Remove token used by API client
       localStorage.removeItem("access_token");
