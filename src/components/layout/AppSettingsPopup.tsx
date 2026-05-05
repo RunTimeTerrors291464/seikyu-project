@@ -76,6 +76,14 @@ export default function AppSettingsPopup({
               >
                 {dict.langVietnamese}
               </PreferenceChip>
+              <PreferenceChip
+                selected={activeLang === "hu"}
+                onClick={() => {
+                  applyLanguage("hu", router.refresh);
+                }}
+              >
+                {dict.langHungarian}
+              </PreferenceChip>
             </div>
           </div>
         </div>

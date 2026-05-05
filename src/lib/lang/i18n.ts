@@ -1,12 +1,14 @@
 import en from "@/dictionaries/en.json";
+import hu from "@/dictionaries/hu.json";
 import vi from "@/dictionaries/vi.json";
 
 export type Dictionary = typeof en;
 
-export type Lang = "en" | "vi";
+export type Lang = "en" | "vi" | "hu";
 
 const dictionaries: Record<Lang, Dictionary> = {
   en,
+  hu,
   vi
 };
 
@@ -27,5 +29,7 @@ export function getLang(): Lang {
 
   const lang = cookie?.split("=")[1];
 
-  return lang === "vi" ? "vi" : "en";
+  if (lang === "vi") return "vi";
+  if (lang === "hu") return "hu";
+  return "en";
 }
