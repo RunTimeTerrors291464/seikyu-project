@@ -6,6 +6,7 @@ import { PostgresModule } from '@libs/services/postgres.module';
 // Import modules.
 import { AuthModule } from '../auth/auth.module';
 import { ProductUnitsModule } from '../productUnits/productUnits.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 
 // Import mappers.
 import { ProductMapper } from '@libs/common/mappers/product.mapper';
@@ -37,6 +38,7 @@ import { ProductsController } from './controllers/products.controller';
         ]),
         AuthModule,
         ProductUnitsModule,
+        DashboardModule,
     ],
     controllers: [
         ProductsController,

@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 
+// Import the schedule module.
+import { ScheduleModule } from '@nestjs/schedule';
+
 // Import the database module.
 import { PostgresModule } from '@libs/services/postgres.module';
 
@@ -19,6 +22,8 @@ import { InvoicesModule } from './invoices/invoices.module';
 
     // Import third party modules.
     PostgresModule.forRoot(),
+
+    ScheduleModule.forRoot(),
 
     RedisModule.forRoot({ appPrefix: 'seikyu' }),
 

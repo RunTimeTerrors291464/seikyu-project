@@ -8,6 +8,9 @@ import { ProductNamesEntity } from './productNames.entity';
 import { ProductUnitsEntity } from '@src/productUnits/entities/productUnits.entity';
 import { ProductStockHistoryEntity } from './productStockHistory.entity';
 import { ProductsHistoryEntity } from './productsHistory.entity';
+import { ProductRankingDailyEntity } from '@src/dashboard/entities/productRankingDaily.entity';
+import { ProductRankingMonthlyEntity } from '@src/dashboard/entities/productRankingMonthly.entity';
+import { ProductRankingYearlyEntity } from '@src/dashboard/entities/productRankingYearly.entity';
 
 @Entity('products')
 export class ProductsEntity {
@@ -61,5 +64,14 @@ export class ProductsEntity {
 
     @OneToMany(() => ProductsHistoryEntity, (productsHistory) => productsHistory.product, { onDelete: 'CASCADE' })
     productsHistory: ProductsHistoryEntity[];
+
+    @OneToMany(() => ProductRankingDailyEntity, (ranking) => ranking.product, { onDelete: 'CASCADE' })
+    dailyRankings: ProductRankingDailyEntity[];
+
+    @OneToMany(() => ProductRankingMonthlyEntity, (ranking) => ranking.product, { onDelete: 'CASCADE' })
+    monthlyRankings: ProductRankingMonthlyEntity[];
+
+    @OneToMany(() => ProductRankingYearlyEntity, (ranking) => ranking.product, { onDelete: 'CASCADE' })
+    yearlyRankings: ProductRankingYearlyEntity[];
 
 }

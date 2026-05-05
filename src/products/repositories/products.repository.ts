@@ -9,6 +9,9 @@ import { ProductsHistoryEntity } from '../entities/productsHistory.entity';
 import { ProductStockHistoryEntity } from '../entities/productStockHistory.entity';
 import { ProductOverviewEntity } from '../entities/productOverview.entity';
 
+// Import repositories.
+import { ProductRankingRepository } from '@src/dashboard/repositories/productRanking.repository';
+
 // Import DTOs.
 import {
     CreateProductRequestDto,
@@ -37,6 +40,8 @@ export class ProductsRepository {
         @InjectRepository(ProductStockHistoryEntity) private readonly productStockHistoryRepository: Repository<ProductStockHistoryEntity>,
         @InjectRepository(ProductOverviewEntity) private readonly productOverviewRepository: Repository<ProductOverviewEntity>,
         private readonly productMapper: ProductMapper,
+        
+        private readonly productRankingRepository: ProductRankingRepository,
     ) { }
 
     // --- Private variables ---
@@ -329,13 +334,13 @@ export class ProductsRepository {
 
         // --- Update the productRankingDaily entity ---
         const totalPrice: number = Number(lockedProduct.sellingPrice) * quantity;
-        // await this.productRankingRepository.storeProductRankingDaily(
-        //     manager,
-        //     lockedProduct.id,
-        //     invoiceType,
-        //     quantity,
-        //     totalPrice
-        // );
+        await this.productRankingRepository.storeProductRankingDaily(
+            manager,
+            lockedProduct.id,
+            invoiceType,
+            quantity,
+            totalPrice
+        );
 
         return productWithRelations;
     }
