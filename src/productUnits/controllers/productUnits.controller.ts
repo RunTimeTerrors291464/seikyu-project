@@ -37,8 +37,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Product Units] These APIs are for product units management.')
 @Controller({
-    path: 'api/v1/product-units',
-    version: '1',
+    path: 'api/v2/product-units',
+    version: '2',
 })
     @UseGuards(JwtAuthGuard, RolesGuard, RateLimitGuard)
 @ApiBearerAuth()
@@ -46,7 +46,7 @@ export class ProductUnitsController {
     constructor(private readonly productUnitsService: ProductUnitsService) { }
 
     // Create a new product unit.
-    // POST /api/v1/product-units
+    // POST /api/v2/product-units
     @Post()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Create a new product unit' })
@@ -58,7 +58,7 @@ export class ProductUnitsController {
     }
 
     // Edit a product unit.
-    // PATCH /api/v1/product-units
+    // PATCH /api/v2/product-units
     @Patch()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a product unit' })
@@ -69,7 +69,7 @@ export class ProductUnitsController {
         return await this.productUnitsService.editProductUnit(dto, user);
     }
 
-    // PATCH /api/v1/product-units/activation/:id/:action
+    // PATCH /api/v2/product-units/activation/:id/:action
     @Patch('activation/:id/:action')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Activate or deactivate a product unit' })
@@ -86,7 +86,7 @@ export class ProductUnitsController {
     }
 
     // Get a list of product units.
-    // GET /api/v1/product-units
+    // GET /api/v2/product-units
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER] Get a list of product units' })
@@ -97,7 +97,7 @@ export class ProductUnitsController {
     }
 
     // Get a product unit by id.
-    // GET /api/v1/product-units/:id
+    // GET /api/v2/product-units/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER] Get a product unit by id' })
@@ -110,7 +110,7 @@ export class ProductUnitsController {
 
     // --- History APIs (ADMIN) ---
     // Get a specific history version of a product unit.
-    // GET /api/v1/product-units/history/:id/:version
+    // GET /api/v2/product-units/history/:id/:version
     @Get('history/:id/:version')
     @Roles(Role.ADMIN)
     @ApiOperation({ summary: '[ADMIN] Get a specific history version of a product unit' })
@@ -126,7 +126,7 @@ export class ProductUnitsController {
     }
 
     // Get history list of a product unit.
-    // GET /api/v1/product-units/history/:id
+    // GET /api/v2/product-units/history/:id
     @Get('history/:id')
     @Roles(Role.ADMIN)
     @ApiOperation({ summary: '[ADMIN] Get history list of a product unit' })

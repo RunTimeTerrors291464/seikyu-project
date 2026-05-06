@@ -18,8 +18,8 @@ import { UserResponseDto } from '@libs/common/dtos/users/crudUsersResponse.dto';
 
 @ApiTags('[Users] First Admin Account: This API is for creating the first admin account.')
 @Controller({
-    path: 'api/v1/admin',
-    version: '1',
+    path: 'api/v2/admin',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard)
 export class FirstAdminAccountController {
@@ -27,7 +27,7 @@ export class FirstAdminAccountController {
         private readonly usersService: UsersService,
     ) { }
 
-    // POST /api/v1/admin/first-admin-account
+    // POST /api/v2/admin/first-admin-account
     @Post('first-admin-account')
     @Public()
     @ApiOperation({ summary: '[PUBLIC] Create the first admin account' })

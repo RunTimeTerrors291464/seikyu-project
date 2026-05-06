@@ -34,8 +34,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Users] Admin Operations: These APIs are for users management.')
 @Controller({
-    path: 'api/v1/admin',
-    version: '1',
+    path: 'api/v2/admin',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @Roles(Role.ADMIN)
@@ -45,7 +45,7 @@ export class AdminController {
         private readonly usersService: UsersService,
     ) { }
 
-    // POST /api/v1/admin/users
+    // POST /api/v2/admin/users
     @Post('users')
     @ApiOperation({ summary: '[ADMIN] Create a new user' })
     @ApiBody({ type: CreateNewUserRequestDto })
@@ -55,7 +55,7 @@ export class AdminController {
         return await this.usersService.createNewUser(dto);
     }
 
-    // PATCH /api/v1/admin/users
+    // PATCH /api/v2/admin/users
     @Patch('users')
     @ApiOperation({ summary: '[ADMIN] Edit user information' })
     @ApiBody({ type: EditUserRequestDto })
@@ -65,7 +65,7 @@ export class AdminController {
         return await this.usersService.editUserInformation(dto);
     }
 
-    // GET /api/v1/admin/users
+    // GET /api/v2/admin/users
     @Get('users')
     @ApiOperation({ summary: '[ADMIN] Get a list of users' })
     @ApiResponse({ status: 200, description: 'The list of users has been found successfully.', type: GetListOfUsersResponseDto })
@@ -74,7 +74,7 @@ export class AdminController {
         return await this.usersService.getListOfUsers(dto);
     }
 
-    // GET /api/v1/admin/users/:id
+    // GET /api/v2/admin/users/:id
     @Get('users/:id')
     @ApiOperation({ summary: '[ADMIN] Get a user by id' })
     @ApiParam({ name: 'id', type: String, description: 'ID of the user', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
@@ -84,7 +84,7 @@ export class AdminController {
         return await this.usersService.getUserInformationById(id, false) as UserResponseDto;
     }
 
-    // PATCH /api/v1/admin/users/activation/:id/:action
+    // PATCH /api/v2/admin/users/activation/:id/:action
     @Patch('users/activation/:id/:action')
     @ApiOperation({ summary: '[ADMIN] Activate or deactivate a user' })
     @ApiParam({ name: 'id', type: String, description: 'ID of the user', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
@@ -97,7 +97,7 @@ export class AdminController {
     }
 
 
-    // POST /api/v1/admin/users/reset-password
+    // POST /api/v2/admin/users/reset-password
     @Post('users/reset-password')
     @ApiOperation({ summary: '[ADMIN] Admin reset password for a user' })
     @ApiBody({ type: ForgotPasswordRequestDto })

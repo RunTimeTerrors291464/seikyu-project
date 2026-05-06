@@ -31,8 +31,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Selling Invoices] These APIs are for selling invoices management.')
 @Controller({
-    path: 'api/v1/invoices/selling',
-    version: '1',
+    path: 'api/v2/invoices/selling',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
@@ -40,7 +40,7 @@ export class SellingInvoiceController {
     constructor(private readonly sellingInvoiceService: SellingInvoiceService) { }
 
     // Create a new selling invoice.
-    // POST /api/v1/invoices/selling
+    // POST /api/v2/invoices/selling
     @Post()
     @Roles(Role.CASHIER)
     @ApiOperation({ summary: '[CASHIER] Create a new selling invoice' })
@@ -55,7 +55,7 @@ export class SellingInvoiceController {
     }
 
     // Get a list of selling invoices.
-    // GET /api/v1/invoices/selling
+    // GET /api/v2/invoices/selling
     @Get()
     @Roles(Role.MANAGER, Role.CASHIER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, CASHIER, ADMIN] Get a list of selling invoices' })
@@ -66,7 +66,7 @@ export class SellingInvoiceController {
     }
 
     // Get a selling invoice by ID.
-    // GET /api/v1/invoices/selling/:id
+    // GET /api/v2/invoices/selling/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.CASHIER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, CASHIER, ADMIN] Get a selling invoice by ID' })

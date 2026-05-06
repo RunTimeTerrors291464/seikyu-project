@@ -28,8 +28,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Users] Users Operations: These APIs allow users to manage their own account.')
 @Controller({
-    path: 'api/v1/users',
-    version: '1',
+    path: 'api/v2/users',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
@@ -38,7 +38,7 @@ export class UsersController {
         private readonly usersService: UsersService,
     ) { }
 
-    // GET /api/v1/users
+    // GET /api/v2/users
     @Get()
     @ApiOperation({ summary: '[USER] Get user information' })
     @ApiResponse({ status: 200, description: 'The user information has been found successfully.', type: UserResponseDto })
@@ -47,7 +47,7 @@ export class UsersController {
         return await this.usersService.getUserInformationById(user.id, false) as UserResponseDto;
     }
 
-    // PATCH /api/v1/users/change-password
+    // PATCH /api/v2/users/change-password
     @Patch('change-password')
     @ApiOperation({ summary: '[USER] Change user password' })
     @ApiBody({ type: UserChangePasswordRequestDto })
@@ -57,7 +57,7 @@ export class UsersController {
         return await this.usersService.userChangePassword(user.id, dto);
     }
 
-    // GET /api/v1/users/search
+    // GET /api/v2/users/search
     @Get('search')
     @Roles(Role.ADMIN, Role.MANAGER)
     @ApiOperation({ summary: '[ADMIN, MANAGER] Search users by username' })

@@ -33,8 +33,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Import Invoices] These APIs are for import invoices management.')
 @Controller({
-    path: 'api/v1/import-invoices',
-    version: '1',
+    path: 'api/v2/import-invoices',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
@@ -42,7 +42,7 @@ export class ImportInvoiceController {
     constructor(private readonly importInvoiceService: ImportInvoiceService) { }
 
     // Create a draft import invoice.
-    // POST /api/v1/import-invoices
+    // POST /api/v2/import-invoices
     @Post()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Create a draft import invoice' })
@@ -57,7 +57,7 @@ export class ImportInvoiceController {
     }
 
     // Edit a draft import invoice.
-    // PATCH /api/v1/import-invoices
+    // PATCH /api/v2/import-invoices
     @Patch()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a draft import invoice' })
@@ -72,7 +72,7 @@ export class ImportInvoiceController {
     }
 
     // Delete draft import invoices.
-    // DELETE /api/v1/import-invoices
+    // DELETE /api/v2/import-invoices
     @Delete()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Delete draft import invoices' })
@@ -87,7 +87,7 @@ export class ImportInvoiceController {
     }
 
     // Confirm a draft import invoice.
-    // POST /api/v1/import-invoices/:id/confirm
+    // POST /api/v2/import-invoices/:id/confirm
     @Post(':id/confirm')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Confirm a draft import invoice' })
@@ -102,7 +102,7 @@ export class ImportInvoiceController {
     }
 
     // Get a list of import invoices.
-    // GET /api/v1/import-invoices
+    // GET /api/v2/import-invoices
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of import invoices' })
@@ -113,7 +113,7 @@ export class ImportInvoiceController {
     }
 
     // Get an import invoice by ID.
-    // GET /api/v1/import-invoices/:id
+    // GET /api/v2/import-invoices/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get an import invoice by ID' })

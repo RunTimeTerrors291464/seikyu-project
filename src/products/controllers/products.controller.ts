@@ -47,8 +47,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Products] These APIs are for products management.')
 @Controller({
-    path: 'api/v1/products',
-    version: '1',
+    path: 'api/v2/products',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
@@ -56,7 +56,7 @@ export class ProductsController {
     constructor(private readonly productsService: ProductsService) { }
 
     // Create a new product.
-    // POST /api/v1/products
+    // POST /api/v2/products
     @Post()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Create a new product' })
@@ -68,7 +68,7 @@ export class ProductsController {
     }
 
     // Edit a product.
-    // PATCH /api/v1/products
+    // PATCH /api/v2/products
     @Patch()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a product' })
@@ -80,7 +80,7 @@ export class ProductsController {
     }
 
     // Get the product overview.
-    // GET /api/v1/products/overview
+    // GET /api/v2/products/overview
     @Get('overview')
     @Roles(Role.ADMIN, Role.MANAGER)
     @ApiOperation({ summary: '[ADMIN, MANAGER] Get the product overview' })
@@ -91,7 +91,7 @@ export class ProductsController {
     }
 
     // Get bulk product inventory stock by product id.
-    // GET /api/v1/products/inventory-stock
+    // GET /api/v2/products/inventory-stock
     @Get('inventory-stock')
     @Roles(Role.ADMIN, Role.MANAGER)
     @ApiOperation({ summary: '[ADMIN, MANAGER] Get bulk product inventory stock by product id' })
@@ -106,7 +106,7 @@ export class ProductsController {
     }
 
     // Get a product by ID.
-    // GET /api/v1/products/:id
+    // GET /api/v2/products/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a product by ID' })
@@ -118,7 +118,7 @@ export class ProductsController {
     }
 
     // Get a product by SKU.
-    // GET /api/v1/products/sku/:sku
+    // GET /api/v2/products/sku/:sku
     @Get('sku/:sku')
     @Roles(Role.MANAGER, Role.CASHIER)
     @ApiOperation({ summary: '[MANAGER, CASHIER] Get a product by SKU' })
@@ -134,7 +134,7 @@ export class ProductsController {
     }
 
     // Get a list of products by product unit id.
-    // GET /api/v1/products/by-unit/:productUnitId
+    // GET /api/v2/products/by-unit/:productUnitId
     @Get('by-unit/:productUnitId')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of products by product unit ID' })
@@ -152,7 +152,7 @@ export class ProductsController {
     }
 
     // Get a list of products.
-    // GET /api/v1/products
+    // GET /api/v2/products
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of products' })
@@ -164,7 +164,7 @@ export class ProductsController {
 
     // --- History APIs (ADMIN) ---
     // Get a specific history version of a product.
-    // GET /api/v1/products/history/:id/:version
+    // GET /api/v2/products/history/:id/:version
     @Get('history/:id/:version')
     @Roles(Role.ADMIN)
     @ApiOperation({ summary: '[ADMIN] Get a specific history version of a product' })
@@ -180,7 +180,7 @@ export class ProductsController {
     }
 
     // Get history list of a product.
-    // GET /api/v1/products/history/:id
+    // GET /api/v2/products/history/:id
     @Get('history/:id')
     @Roles(Role.ADMIN)
     @ApiOperation({ summary: '[ADMIN] Get history list of a product' })
@@ -198,7 +198,7 @@ export class ProductsController {
     }
 
     // --- Product stock history ---
-    // GET /api/v1/products/stock-history/:id
+    // GET /api/v2/products/stock-history/:id
     @Get('stock-history/:id')
     @Roles(Role.ADMIN, Role.MANAGER)
     @ApiOperation({ summary: '[ADMIN, MANAGER] Get stock history list of a product' })
@@ -216,7 +216,7 @@ export class ProductsController {
     }
 
     // Activate or deactivate a product.
-    // PATCH /api/v1/products/activation/:id/:action
+    // PATCH /api/v2/products/activation/:id/:action
     @Patch('activation/:id/:action')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Activate or deactivate a product' })

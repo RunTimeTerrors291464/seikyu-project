@@ -19,8 +19,8 @@ import { AccessTokenResponseDto, AuthResponseDto } from '@libs/common/dtos/auth/
 
 @ApiTags('[Auth] Authentication APIs: These APIs are for user authentication.')
 @Controller({
-    path: 'api/v1/auth',
-    version: '1'
+    path: 'api/v2/auth',
+    version: '2'
 })
 @UseGuards(JwtAuthGuard)
 export class AuthController {
@@ -30,7 +30,7 @@ export class AuthController {
     ) { }
 
     // Login a user.
-    // POST /api/v1/auth/login
+    // POST /api/v2/auth/login
     @Post('login')
     @Public()
     @ApiOperation({ summary: '[PUBLIC] Login a user' })
@@ -42,7 +42,7 @@ export class AuthController {
     }
 
     // Logout a user.
-    // POST /api/v1/auth/logout
+    // POST /api/v2/auth/logout
     @Post('logout')
     @ApiBearerAuth()
     @ApiOperation({ summary: '[USER] Logout a user' })
@@ -54,7 +54,7 @@ export class AuthController {
     }
 
     // Refresh access token using refresh token.
-    // POST /api/v1/auth/refresh-token
+    // POST /api/v2/auth/refresh-token
     @Post('refresh-token')
     @Public()
     @ApiOperation({ summary: '[PUBLIC] Refresh access token using refresh token' })

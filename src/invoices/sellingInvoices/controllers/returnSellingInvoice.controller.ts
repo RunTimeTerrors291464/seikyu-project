@@ -33,8 +33,8 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Return Selling Invoices] These APIs are for return selling invoices management.')
 @Controller({
-    path: 'api/v1/return-selling-invoices',
-    version: '1',
+    path: 'api/v2/return-selling-invoices',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
@@ -42,7 +42,7 @@ export class ReturnSellingInvoiceController {
     constructor(private readonly returnSellingInvoiceService: ReturnSellingInvoiceService) { }
 
     // Create a draft return selling invoice.
-    // POST /api/v1/return-selling-invoices
+    // POST /api/v2/return-selling-invoices
     @Post()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Create a draft return selling invoice' })
@@ -57,7 +57,7 @@ export class ReturnSellingInvoiceController {
     }
 
     // Edit a draft return selling invoice.
-    // PATCH /api/v1/return-selling-invoices
+    // PATCH /api/v2/return-selling-invoices
     @Patch()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a draft return selling invoice' })
@@ -72,7 +72,7 @@ export class ReturnSellingInvoiceController {
     }
 
     // Delete draft return selling invoices.
-    // DELETE /api/v1/return-selling-invoices
+    // DELETE /api/v2/return-selling-invoices
     @Delete()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Delete draft return selling invoices' })
@@ -88,7 +88,7 @@ export class ReturnSellingInvoiceController {
     }
 
     // Confirm a draft return selling invoice.
-    // POST /api/v1/return-selling-invoices/:id/confirm
+    // POST /api/v2/return-selling-invoices/:id/confirm
     @Post(':id/confirm')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Confirm a draft return selling invoice' })
@@ -103,7 +103,7 @@ export class ReturnSellingInvoiceController {
     }
 
     // Get a list of return selling invoices.
-    // GET /api/v1/return-selling-invoices
+    // GET /api/v2/return-selling-invoices
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of return selling invoices' })
@@ -114,7 +114,7 @@ export class ReturnSellingInvoiceController {
     }
 
     // Get a return selling invoice by ID.
-    // GET /api/v1/return-selling-invoices/:id
+    // GET /api/v2/return-selling-invoices/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a return selling invoice by ID' })

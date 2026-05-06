@@ -17,8 +17,8 @@ import { GetPriceTrendResponseDto } from '@libs/common/dtos/dashboard/crudPriceT
 
 @ApiTags('[Dashboard] Product ranking and price trend.')
 @Controller({
-    path: 'api/v1/dashboard',
-    version: '1',
+    path: 'api/v2/dashboard',
+    version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
 @ApiBearerAuth()
