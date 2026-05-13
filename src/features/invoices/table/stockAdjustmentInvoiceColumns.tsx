@@ -1,3 +1,8 @@
+/**
+ * Invoice-list columns for stock-adjustment invoices (one row per adjustment invoice).
+ * Used by the stock-adjustment list page at `/manager/invoices/stock-adjustment`.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";

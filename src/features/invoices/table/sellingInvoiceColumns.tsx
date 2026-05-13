@@ -1,3 +1,8 @@
+/**
+ * Invoice-list columns for selling invoices (one row per invoice, with link to detail).
+ * Used by selling invoice list pages at `/manager/invoices/selling` and `/cashier/selling`.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";

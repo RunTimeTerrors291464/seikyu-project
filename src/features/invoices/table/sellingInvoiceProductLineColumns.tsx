@@ -1,7 +1,9 @@
 "use client";
 
 /**
- * Product-line columns for selling and return-selling invoice tables.
+ * Product-line table columns for selling and return-selling invoice detail/edit flows.
+ * Used by `SellingInvoiceProductsCard`, `CreateReturnSellingInvoicePopup`, and
+ * the return-selling detail page at `/manager/invoices/return-selling/[id]`.
  */
 
 import type { Column } from "@/components/ui/DataTable";

@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Column builder for the shared "Add existing products" picker table.
+ * Used by `AddExistingProductsPopup` in invoice flows (import, stock-adjustment, and cashier selling),
+ * with `full` or `selling` presets depending on context.
+ */
+
 import type { Column } from "@/components/ui/DataTable";
 import ActivePill from "@/features/products/components/ActivePill";
 import StatusPill from "@/features/products/components/StockStatusPill";

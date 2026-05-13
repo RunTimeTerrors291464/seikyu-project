@@ -1,3 +1,9 @@
+/**
+ * Invoice-list columns for return-import invoices (one row per return invoice).
+ * Used by `/manager/invoices/import` and `ImportInvoiceReturnInvoicesCard`
+ * to render linked return-import invoice tables.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";

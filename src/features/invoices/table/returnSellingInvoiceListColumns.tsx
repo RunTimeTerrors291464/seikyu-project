@@ -1,3 +1,9 @@
+/**
+ * Invoice-list columns for return-selling invoices (one row per return invoice).
+ * Used by `/manager/invoices/selling` and `SellingInvoiceReturnInvoicesCard`
+ * to render linked return-selling invoice tables.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";

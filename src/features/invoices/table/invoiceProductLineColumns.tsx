@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Product-line columns for import and return-import invoice tables (SKU through notes).
- * Invoice **list** columns (one row per invoice) live in `importInvoiceColumns.tsx`.
+ * Product-line table columns for import and return-import invoice detail/edit flows.
+ * Used by `ImportInvoiceProductsCard`, `CreateReturnImportInvoicePopup`, and
+ * the return-import detail page at `/manager/invoices/return-invoice/[id]`.
  */
 
 import type { Column } from "@/components/ui/DataTable";

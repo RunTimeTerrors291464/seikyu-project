@@ -1,3 +1,8 @@
+/**
+ * Invoice-list columns for import invoices (one row per import invoice).
+ * Used by the import invoice list page at `/manager/invoices/import`.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";

@@ -144,8 +144,6 @@ type InvoicePdfLabels = {
   quantityLabel: string;
   totalPriceLabel: string;
   noteLabel: string;
-  totalProducts: string;
-  totalQuantity: string;
   noNote: string;
 };
 
@@ -182,8 +180,8 @@ function InvoicePdfDocument({
             <Text style={[styles.cellHeader, styles.colIndex]}>#</Text>
             <Text style={[styles.cellHeader, styles.colSku]}>{labels.sku}</Text>
             <Text style={[styles.cellHeader, styles.colName]}>{labels.productName}</Text>
+            <Text style={[styles.cellHeader, styles.colQty]}>{labels.quantityLabel}</Text>
             <Text style={[styles.cellHeader, styles.colUnit]}>{labels.unit}</Text>
-            <Text style={[styles.cellHeader, styles.colQty, styles.alignRight]}>{labels.quantityLabel}</Text>
             <Text
               style={[
                 styles.cellHeader,
@@ -205,8 +203,8 @@ function InvoicePdfDocument({
                 <Text style={[styles.cell, styles.colIndex]}>{index + 1}</Text>
                 <Text style={[styles.cell, styles.colSku]}>{line.sku}</Text>
                 <Text style={[styles.cell, styles.colName]}>{line.name}</Text>
+                <Text style={[styles.cell, styles.colQty]}>{line.quantity.toLocaleString()}</Text>
                 <Text style={[styles.cell, styles.colUnit]}>{line.unit}</Text>
-                <Text style={[styles.cell, styles.colQty, styles.alignRight]}>{line.quantity.toLocaleString()}</Text>
                 <Text
                   style={[
                     styles.cell,
@@ -228,14 +226,7 @@ function InvoicePdfDocument({
         </View>
 
         <View style={styles.totals}>
-          <Text>{labels.totalProducts}: {data.totalProducts.toLocaleString()}</Text>
-          <Text>{labels.totalQuantity}: {data.totalQuantity.toLocaleString()}</Text>
           <Text style={styles.totalStrong}>{labels.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}</Text>
-        </View>
-
-        <View style={styles.notes}>
-          <Text style={styles.noteLabel}>{labels.noteLabel}:</Text>
-          <Text>{data.notes?.trim() ? data.notes : labels.noNote}</Text>
         </View>
       </Page>
     </Document>
@@ -262,8 +253,6 @@ export default function InvoicePrintPreviewPopup({
       quantityLabel: dict.quantityLabel,
       totalPriceLabel: dict.totalPriceLabel,
       noteLabel: dict.noteLabel,
-      totalProducts: dict.totalProducts,
-      totalQuantity: dict.totalQuantity,
       noNote: "No note",
     };
   }
@@ -333,8 +322,8 @@ export default function InvoicePrintPreviewPopup({
                   <th className="border border-border px-2 py-1 text-left">#</th>
                   <th className="border border-border px-2 py-1 text-left">{dict.sku}</th>
                   <th className="border border-border px-2 py-1 text-left">{dict.productName}</th>
+                  <th className="border border-border px-2 py-1 text-left">{dict.quantityLabel}</th>
                   <th className="border border-border px-2 py-1 text-left">{dict.unit}</th>
-                  <th className="border border-border px-2 py-1 text-right">{dict.quantityLabel}</th>
                   <th className="border border-border px-2 py-1 text-right">{dict.totalPriceLabel}</th>
                   {data.showLineNotes && (
                     <th className="border border-border px-2 py-1 text-left">{dict.noteLabel}</th>
@@ -348,8 +337,8 @@ export default function InvoicePrintPreviewPopup({
                       <td className="border border-border px-2 py-1">{index + 1}</td>
                       <td className="border border-border px-2 py-1">{line.sku}</td>
                       <td className="border border-border px-2 py-1">{line.name}</td>
+                      <td className="border border-border px-2 py-1">{line.quantity.toLocaleString()}</td>
                       <td className="border border-border px-2 py-1">{line.unit}</td>
-                      <td className="border border-border px-2 py-1 text-right">{line.quantity.toLocaleString()}</td>
                       <td className="border border-border px-2 py-1 text-right">{formatPriceNumber(line.lineTotal)}</td>
                       {data.showLineNotes && (
                         <td className="border border-border px-2 py-1 break-all">
@@ -363,16 +352,9 @@ export default function InvoicePrintPreviewPopup({
             </table>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-              <p>{dict.totalProducts}: {data.totalProducts.toLocaleString()}</p>
-              <p>{dict.totalQuantity}: {data.totalQuantity.toLocaleString()}</p>
               <p className="col-span-2 font-semibold">
                 {dict.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}
               </p>
-            </div>
-
-            <div className="mt-4 text-sm">
-              <p className="font-semibold">{dict.noteLabel}:</p>
-              <p>{data.notes?.trim() ? data.notes : "No note"}</p>
             </div>
           </div>
         </div>

@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Product-line table columns for stock-adjustment invoice details and draft editing.
+ * Used by `StockAdjustmentProductsCard` for row selection, quantity/action edits, and notes.
+ */
+
 import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
