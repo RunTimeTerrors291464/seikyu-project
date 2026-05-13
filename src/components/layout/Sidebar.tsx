@@ -16,21 +16,19 @@ import { useDict } from "@/lib/lang/DictProvider";
 import { useAuthStore } from "@/stores/auth.store";
 import clsx from "clsx";
 import {
-  Bell,
   Boxes,
   ChevronDown,
   ClipboardList,
   FileCheck2,
   FileText,
   FolderOpen,
-  LayoutDashboard,
   LogOut,
   PanelLeftClose,
   ReceiptText,
   Settings as SettingsIcon,
   Store,
   UserCog,
-  Users,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -77,7 +75,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       defaultOpen: true,
       requiredRoles: [USER_ROLE_ADMIN],
       items: [
-        { href: "/admin/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
+        // { href: "/admin/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
         { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
         { href: "/admin/users", label: dict.usersNav, icon: <UserCog className="h-4 w-4" /> },
       ],
@@ -109,7 +107,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
       ],
     },
-    { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },
+    // { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },
     {
       id: "settings",
       label: dict.settings,
