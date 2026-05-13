@@ -31,6 +31,9 @@ import { StockStatus } from '@libs/common/enums/stockStatus.enum';
 import { StockActionType } from '@libs/common/enums/stockActionType.enum';
 import { InvoiceType } from '@libs/common/enums/invoiceType.enum';
 
+// Import search helpers.
+import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
 @Injectable()
 export class ProductsRepository {
     constructor(
@@ -477,13 +480,15 @@ export class ProductsRepository {
         // --- 2. SEARCH ---
         if (search && searchBy) {
             if (searchBy === 'sku') {
-                qb.andWhere('products.sku ILIKE :search', { search: `%${search}%` });
+                qb.andWhere(`products.sku ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             } else if (searchBy === 'productName') {
                 qb.andWhere(`EXISTS (
                     SELECT 1 FROM product_names pn
                     WHERE pn.product_id = products.id
-                    AND pn.name ILIKE :search
-                )`, { search: `%${search}%` });
+                    AND pn.name ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}
+                )`, { search: buildWildcardIlikePattern(search) });
             }
         }
 

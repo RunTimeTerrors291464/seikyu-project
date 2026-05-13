@@ -22,6 +22,9 @@ import {
 } from '@libs/common/dtos/invoices/sellingInvoices/crudSellingInvoicesRequest.dto';
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
+// Import search helpers.
+import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
 // Interface for resolved products from service.
 export interface ResolvedSellingProductData {
     productId: string;
@@ -133,6 +136,7 @@ export class SellingInvoiceRepository {
             notes: dto.notes ?? null,
             status: SellingInvoiceStatus.CONFIRMED,
             returnCount: 0,
+            taxFocus: dto.taxFocus,
             confirmedBy: user.id,
             confirmedAt: new Date(),
         });
@@ -187,7 +191,7 @@ export class SellingInvoiceRepository {
 
     // Get a list of selling invoices.
     async getListOfSellingInvoices(dto: GetListOfSellingInvoiceRequestDto): Promise<{ data: SellingInvoiceEntity[]; total: number }> {
-        const { page = 1, limit = 25, search, searchBy, sortBy, sortOrder = 'asc', fromDate, toDate, status } = dto;
+        const { page = 1, limit = 25, search, searchBy, sortBy, sortOrder = 'asc', fromDate, toDate, status, taxFocus } = dto;
 
         const offset = (page - 1) * limit;
         const sortDirection = sortOrder.toUpperCase() as 'ASC' | 'DESC';
@@ -199,10 +203,16 @@ export class SellingInvoiceRepository {
             qb.andWhere('invoice.status = :status', { status });
         }
 
+        if (taxFocus !== undefined) {
+            qb.andWhere('invoice.taxFocus = :taxFocus', { taxFocus: taxFocus === 'true' });
+        }
+
         // --- 2. SEARCH (requires both search + searchBy per DTO validation) ---
         if (search && searchBy) {
             if (searchBy === 'invoiceId') {
-                qb.andWhere('invoice.invoiceId ILIKE :search', { search: `${search}%` });
+                qb.andWhere(`invoice.invoiceId ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             } else if (searchBy === 'userId') {
                 qb.andWhere('invoice.confirmedBy = :search', { search });
             } else if (searchBy === 'productId') {

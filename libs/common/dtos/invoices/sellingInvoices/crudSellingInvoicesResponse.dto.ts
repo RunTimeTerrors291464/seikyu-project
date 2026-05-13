@@ -138,6 +138,12 @@ export class SellingInvoiceResponseDto {
     })
     returnCount: number;
 
+    @ApiProperty({
+        description: 'Whether this invoice is tax-focused',
+        example: false,
+    })
+    taxFocus: boolean;
+
     @ApiPropertyOptional({
         description: 'UUID of the user who confirmed the selling invoice',
         example: '550e8400-e29b-41d4-a716-446655440000',
@@ -224,6 +230,12 @@ export class SellingInvoiceWithoutProductsDto {
         example: 0,
     })
     returnCount: number;
+
+    @ApiProperty({
+        description: 'Whether this invoice is tax-focused',
+        example: false,
+    })
+    taxFocus: boolean;
 
     @ApiPropertyOptional({
         description: 'UUID of the user who confirmed the selling invoice',

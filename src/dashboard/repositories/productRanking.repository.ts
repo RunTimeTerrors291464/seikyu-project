@@ -20,6 +20,9 @@ import { GetListOfProductRankingResponseDto, ProductRankingItemResponseDto } fro
 // Import mappers.
 import { ProductRankingMapper } from '@libs/common/mappers/dashboard/productRanking.mapper';
 
+// Import search helpers.
+import { buildWildcardIlikePattern, textMatchesWildcardSearch, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
 @Injectable()
 export class ProductRankingRepository {
     constructor(
@@ -336,7 +339,7 @@ export class ProductRankingRepository {
             allProducts = cachedResponse.data;
 
             if (search) {
-                allProducts = allProducts.filter((product) => product.product?.name.toLowerCase().includes(search.toLowerCase()));
+                allProducts = allProducts.filter((product) => textMatchesWildcardSearch(product.product?.name, search));
             }
 
             if (sortOrder === 'asc') allProducts = allProducts.reverse();
@@ -349,7 +352,9 @@ export class ProductRankingRepository {
                 .leftJoinAndSelect('product.productNames', 'productName');
 
             if (search) {
-                queryBuilder.andWhere('productName.name ILIKE :search', { search: `%${search}%` });
+                queryBuilder.andWhere(`productName.name ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             }
 
             if (invoiceType) {
@@ -398,7 +403,7 @@ export class ProductRankingRepository {
             allProducts = cachedResponse.data;
 
             if (search) {
-                allProducts = allProducts.filter((product) => product.product?.name.toLowerCase().includes(search.toLowerCase()));
+                allProducts = allProducts.filter((product) => textMatchesWildcardSearch(product.product?.name, search));
             }
 
             if (sortOrder === 'asc') allProducts = allProducts.reverse();
@@ -412,7 +417,9 @@ export class ProductRankingRepository {
                 .andWhere('ranking.month = :month AND ranking.year = :year', { month, year });
 
             if (search) {
-                queryBuilder.andWhere('productName.name ILIKE :search', { search: `%${search}%` });
+                queryBuilder.andWhere(`productName.name ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             }
 
             if (invoiceType) {
@@ -466,7 +473,7 @@ export class ProductRankingRepository {
             allProducts = cachedResponse.data;
 
             if (search) {
-                allProducts = allProducts.filter((product) => product.product?.name.toLowerCase().includes(search.toLowerCase()));
+                allProducts = allProducts.filter((product) => textMatchesWildcardSearch(product.product?.name, search));
             }
 
             if (sortOrder === 'asc') allProducts = allProducts.reverse();
@@ -480,7 +487,9 @@ export class ProductRankingRepository {
                 .andWhere('ranking.year = :year', { year });
 
             if (search) {
-                queryBuilder.andWhere('productName.name ILIKE :search', { search: `%${search}%` });
+                queryBuilder.andWhere(`productName.name ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             }
 
             if (invoiceType) {
@@ -546,8 +555,8 @@ export class ProductRankingRepository {
 
         if (search) {
             queryBuilder.andWhere(
-                `EXISTS (SELECT 1 FROM product_names pn WHERE pn.product_id = product.id AND pn.name ILIKE :search)`,
-                { search: `%${search}%` },
+                `EXISTS (SELECT 1 FROM product_names pn WHERE pn.product_id = product.id AND pn.name ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL})`,
+                { search: buildWildcardIlikePattern(search) },
             );
         }
 

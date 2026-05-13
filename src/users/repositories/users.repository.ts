@@ -15,6 +15,15 @@ import {
     GetListOfUsersRequestDto,
 } from '@libs/common/dtos/users/crudUsersRequest.dto';
 
+import { buildWildcardIlikePattern, userFullNameSearchSupportsFts, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
+/** Unaccented "display name" for ILIKE; aligned with {@code update_search_vector_name} trigger input. */
+const USERS_DISPLAY_NAME_UNACCENT_SQL = `unaccent(
+    COALESCE(users.first_name, '') || ' ' ||
+    COALESCE(users.middle_name, '') || ' ' ||
+    COALESCE(users.last_name, '')
+)`;
+
 
 @Injectable()
 export class UsersRepository {
@@ -117,10 +126,18 @@ export class UsersRepository {
         // --- 2. SEARCH ---
         if (search) {
             if (searchBy === 'fullName') {
-                qb.andWhere(`users.search_vector_name @@ plainto_tsquery('simple', unaccent(:search))`, { search });
-            }
-            else if (searchBy === 'username') {
-                qb.andWhere('users.username ILIKE :search', { search: `%${search}%` });
+                if (userFullNameSearchSupportsFts(search)) {
+                    qb.andWhere(`users.search_vector_name @@ plainto_tsquery('simple', unaccent(:search))`, { search });
+                } else {
+                    qb.andWhere(
+                        `${USERS_DISPLAY_NAME_UNACCENT_SQL} ILIKE :searchPat${WILDCARD_ILIKE_ESCAPE_SQL}`,
+                        { searchPat: buildWildcardIlikePattern(search) },
+                    );
+                }
+            } else if (searchBy === 'username') {
+                qb.andWhere(`users.username ILIKE :searchPat${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    searchPat: buildWildcardIlikePattern(search),
+                });
             }
         }
 

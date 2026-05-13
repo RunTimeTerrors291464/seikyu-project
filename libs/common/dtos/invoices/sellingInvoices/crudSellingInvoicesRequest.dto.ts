@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -120,6 +120,14 @@ export class CreateSellingInvoiceRequestDto {
     @IsOptional()
     @IsString()
     notes?: string;
+
+    @ApiProperty({
+        description: 'Whether this invoice is tax-focused (must be true or false)',
+        example: false,
+    })
+    @IsNotEmpty()
+    @IsBoolean()
+    taxFocus: boolean;
 }
 
 export class EditSellingInvoiceRequestDto {
@@ -229,6 +237,15 @@ export class GetListOfSellingInvoiceRequestDto {
     @IsOptional()
     @IsEnum(SellingInvoiceStatus)
     status?: SellingInvoiceStatus;
+
+    @ApiPropertyOptional({
+        description: 'Filter by tax focus: true = only invoices with tax focus, false = only without; omit for all',
+        example: 'true',
+        enum: ['true', 'false'],
+    })
+    @IsIn(['true', 'false'])
+    @IsOptional()
+    taxFocus?: 'true' | 'false';
 
     @ApiProperty({
         description:

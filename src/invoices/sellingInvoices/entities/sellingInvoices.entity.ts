@@ -38,6 +38,9 @@ export class SellingInvoiceEntity {
     @Column({ name: 'return_count', type: 'integer', default: 0 })
     returnCount: number;
 
+    @Column({ name: 'tax_focus', type: 'boolean' })
+    taxFocus: boolean;
+
     @Column({ name: 'confirmed_by', type: 'uuid', nullable: true }) // FK: users.id
     confirmedBy: string | null;
 

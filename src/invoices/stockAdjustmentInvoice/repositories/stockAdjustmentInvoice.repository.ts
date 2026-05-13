@@ -22,6 +22,8 @@ import {
 } from '@libs/common/dtos/invoices/stockAdjustmentInvoice/crudStockAdjustmentInvoicesRequest.dto';
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
+import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
 @Injectable()
 export class StockAdjustmentInvoiceRepository {
 
@@ -294,7 +296,9 @@ export class StockAdjustmentInvoiceRepository {
         // --- 2. SEARCH (both search + searchBy when used) ---
         if (search && searchBy) {
             if (searchBy === 'invoiceId') {
-                qb.andWhere('invoice.invoiceId ILIKE :search', { search: `${search}%` });
+                qb.andWhere(`invoice.invoiceId ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             } else if (searchBy === 'userId') {
                 qb.andWhere(new Brackets((b) => {
                     b.where('invoice.draftBy = :search', { search })

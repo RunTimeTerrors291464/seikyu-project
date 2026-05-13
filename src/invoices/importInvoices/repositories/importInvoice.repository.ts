@@ -23,6 +23,8 @@ import {
 } from '@libs/common/dtos/invoices/importInvoices/crudImportInvoicesRequest.dto';
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
+import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
 @Injectable()
 export class ImportInvoiceRepository {
 
@@ -277,7 +279,9 @@ export class ImportInvoiceRepository {
         // --- 2. SEARCH (requires both search + searchBy per DTO validation) ---
         if (search && searchBy) {
             if (searchBy === 'invoiceId') {
-                qb.andWhere('invoice.invoiceId ILIKE :search', { search: `${search}%` });
+                qb.andWhere(`invoice.invoiceId ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             } else if (searchBy === 'userId') {
                 qb.andWhere(new Brackets((b) => {
                     b.where('invoice.draftBy = :search', { search })

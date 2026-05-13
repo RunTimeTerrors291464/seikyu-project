@@ -22,6 +22,8 @@ import { ProductsRepository } from '@src/products/repositories/products.reposito
 import { GetListOfReturnImportInvoiceRequestDto } from '@libs/common/dtos/invoices/importInvoices/crudReturnImportInvoicesRequest.dto';
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
+import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
 
 // Interface definition for resolved return product data.
 export interface ResolvedReturnProductData {
@@ -335,9 +337,13 @@ export class ReturnImportInvoiceRepository {
         // --- 2. SEARCH (both search + searchBy when used) ---
         if (search && searchBy) {
             if (searchBy === 'returnInvoiceId') {
-                qb.andWhere('invoice.returnInvoiceId ILIKE :search', { search: `${search}%` });
+                qb.andWhere(`invoice.returnInvoiceId ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             } else if (searchBy === 'importInvoiceId') {
-                qb.andWhere('importInv.invoiceId ILIKE :search', { search: `${search}%` });
+                qb.andWhere(`importInv.invoiceId ILIKE :search${WILDCARD_ILIKE_ESCAPE_SQL}`, {
+                    search: buildWildcardIlikePattern(search),
+                });
             } else if (searchBy === 'userId') {
                 qb.andWhere(new Brackets((b) => {
                     b.where('invoice.draftBy = :search', { search })
