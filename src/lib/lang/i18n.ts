@@ -12,6 +12,8 @@ const dictionaries: Record<Lang, Dictionary> = {
   vi
 };
 
+export const PRINT_LANG_COOKIE = "printLang" as const;
+
 export function getDictionary(lang: Lang): Dictionary {
   return dictionaries[lang];
 }
@@ -32,4 +34,25 @@ export function getLang(): Lang {
   if (lang === "vi") return "vi";
   if (lang === "hu") return "hu";
   return "en";
+}
+
+/**
+ * Client-only. Reads the optional default print locale cookie set from Settings.
+ * When missing or invalid, returns `null` so callers can fall back (e.g. to UI language).
+ */
+export function getPrintLangCookie(): Lang | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${PRINT_LANG_COOKIE}=`;
+  const row = document.cookie.split("; ").find(function matchPrintLang(cookieRow) {
+    return cookieRow.startsWith(prefix);
+  });
+  const raw = row?.slice(prefix.length);
+
+  if (raw === "vi" || raw === "hu" || raw === "en") {
+    return raw;
+  }
+  return null;
 }

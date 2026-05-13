@@ -2,6 +2,10 @@
 
 import clsx from "clsx";
 import { ReactNode, useEffect } from "react";
+import { createPortal } from "react-dom";
+
+/** Above in-app overlays (e.g. `z-50` dropdowns) and out of sidebar `overflow` clipping. */
+const POPUP_LAYER_Z = "z-[100]";
 
 type PopupProps = {
   open: boolean;
@@ -30,8 +34,12 @@ export default function Popup({
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div className={clsx("fixed inset-0 flex items-center justify-center", POPUP_LAYER_Z)}>
 
       {/* BACKDROP */}
       <div
@@ -54,6 +62,7 @@ export default function Popup({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
