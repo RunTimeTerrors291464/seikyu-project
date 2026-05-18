@@ -33,7 +33,7 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Return Import Invoices] These APIs are for return import invoices management.')
 @Controller({
-    path: 'api/v2/return-import-invoices',
+    path: 'api/v2/invoices/return-import',
     version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
@@ -42,7 +42,7 @@ export class ReturnImportInvoiceController {
     constructor(private readonly returnImportInvoiceService: ReturnImportInvoiceService) { }
 
     // Create a draft return import invoice.
-    // POST /api/v2/return-import-invoices
+    // POST /api/v2/invoices/return-import
     @Post()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Create a draft return import invoice' })
@@ -57,7 +57,7 @@ export class ReturnImportInvoiceController {
     }
 
     // Edit a draft return import invoice.
-    // PATCH /api/v2/return-import-invoices
+    // PATCH /api/v2/invoices/return-import
     @Patch()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a draft return import invoice' })
@@ -72,7 +72,7 @@ export class ReturnImportInvoiceController {
     }
 
     // Delete draft return import invoices.
-    // DELETE /api/v2/return-import-invoices
+    // DELETE /api/v2/invoices/return-import
     @Delete()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Delete draft return import invoices' })
@@ -88,7 +88,7 @@ export class ReturnImportInvoiceController {
     }
 
     // Confirm a draft return import invoice.
-    // POST /api/v2/return-import-invoices/:id/confirm
+    // POST /api/v2/invoices/return-import/:id/confirm
     @Post(':id/confirm')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Confirm a draft return import invoice' })
@@ -103,7 +103,7 @@ export class ReturnImportInvoiceController {
     }
 
     // Get a list of return import invoices.
-    // GET /api/v2/return-import-invoices
+    // GET /api/v2/invoices/return-import
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of return import invoices' })
@@ -114,7 +114,7 @@ export class ReturnImportInvoiceController {
     }
 
     // Get a return import invoice by ID.
-    // GET /api/v2/return-import-invoices/:id
+    // GET /api/v2/invoices/return-import/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a return import invoice by ID' })

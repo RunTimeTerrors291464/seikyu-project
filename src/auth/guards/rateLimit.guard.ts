@@ -19,7 +19,7 @@ export class RateLimitGuard implements CanActivate {
     // --- Private variables and methods ---
     private readonly ApiRateLimitBanPrefix: string = 'auth:RL:ban:';
     private readonly ApiRateLimitWindowPrefix: string = 'auth:RL:sec:';
-    private readonly MaxRequestsPerSecond: number = 10;
+    private readonly MaxRequestsPerSecond: number = 64;
     private readonly WindowKeyTtlSeconds: number = 2;
     private readonly BanDurationSeconds: number = 5 * 60;
 
