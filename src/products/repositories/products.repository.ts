@@ -66,7 +66,7 @@ export class ProductsRepository {
         // Check if the fields are valid and update the product overview.
         for (const update of updates) {
             if (update.fieldName && productOverview.hasOwnProperty(update.fieldName)) {
-                const currentValue = ((productOverview as unknown as Record<string, number>)[update.fieldName] as number) ?? 0;
+                const currentValue = Number((productOverview as unknown as Record<string, unknown>)[update.fieldName] ?? 0);
                 const newValue = update.isIncrease ? currentValue + update.quantity : currentValue - update.quantity;
                 (productOverview as unknown as Record<string, number>)[update.fieldName] = newValue;
             }
