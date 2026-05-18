@@ -33,7 +33,7 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 @ApiTags('[Stock Adjustment Invoices] These APIs are for stock adjustment invoices management.')
 @Controller({
-    path: 'api/v2/stock-adjustment-invoices',
+    path: 'api/v2/invoices/stock-adjustment',
     version: '2',
 })
 @UseGuards(JwtAuthGuard, RateLimitGuard, RolesGuard)
@@ -42,7 +42,7 @@ export class StockAdjustmentInvoiceController {
     constructor(private readonly stockAdjustmentInvoiceService: StockAdjustmentInvoiceService) { }
 
     // Create a draft stock adjustment invoice.
-    // POST /api/v2/stock-adjustment-invoices
+    // POST /api/v2/invoices/stock-adjustment
     @Post()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Create a draft stock adjustment invoice' })
@@ -57,7 +57,7 @@ export class StockAdjustmentInvoiceController {
     }
 
     // Edit a draft stock adjustment invoice.
-    // PATCH /api/v2/stock-adjustment-invoices
+    // PATCH /api/v2/invoices/stock-adjustment
     @Patch()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Edit a draft stock adjustment invoice' })
@@ -72,7 +72,7 @@ export class StockAdjustmentInvoiceController {
     }
 
     // Delete draft stock adjustment invoices.
-    // DELETE /api/v2/stock-adjustment-invoices
+    // DELETE /api/v2/invoices/stock-adjustment
     @Delete()
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Delete draft stock adjustment invoices' })
@@ -88,7 +88,7 @@ export class StockAdjustmentInvoiceController {
     }
 
     // Confirm a draft stock adjustment invoice.
-    // POST /api/v2/stock-adjustment-invoices/:id/confirm
+    // POST /api/v2/invoices/stock-adjustment/:id/confirm
     @Post(':id/confirm')
     @Roles(Role.MANAGER)
     @ApiOperation({ summary: '[MANAGER] Confirm a draft stock adjustment invoice' })
@@ -103,7 +103,7 @@ export class StockAdjustmentInvoiceController {
     }
 
     // Get a list of stock adjustment invoices.
-    // GET /api/v2/stock-adjustment-invoices
+    // GET /api/v2/invoices/stock-adjustment
     @Get()
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of stock adjustment invoices' })
@@ -114,7 +114,7 @@ export class StockAdjustmentInvoiceController {
     }
 
     // Get a stock adjustment invoice by ID.
-    // GET /api/v2/stock-adjustment-invoices/:id
+    // GET /api/v2/invoices/stock-adjustment/:id
     @Get(':id')
     @Roles(Role.MANAGER, Role.ADMIN)
     @ApiOperation({ summary: '[MANAGER, ADMIN] Get a stock adjustment invoice by ID' })
