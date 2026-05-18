@@ -3,7 +3,7 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import Select from "@/components/ui/Select";
-import registerInvoicePdfFonts, { INVOICE_PDF_FONT_FAMILY } from "@/features/invoices/layout/registerInvoicePdfFonts";
+import registerInvoicePdfFonts, { INVOICE_PDF_FONT_FAMILY } from "@/features/invoices/types/registerInvoicePdfFonts";
 import { useDict, useUiLang } from "@/lib/lang/DictProvider";
 import type { Dictionary } from "@/lib/lang/i18n";
 import { getDictionary, getPrintLangCookie, type Lang } from "@/lib/lang/i18n";

@@ -4,15 +4,22 @@ import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
 
 import { Dictionary } from "@/lib/lang/i18n";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+} from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 
 import {
   Barcode,
-  Download,
   Filter,
   Package,
   Plus,
   RotateCcw
 } from "lucide-react";
+import { useCallback } from "react";
 
 type Props = {
   dict: Dictionary;
@@ -44,6 +51,22 @@ export default function ProductTableHeader({
   onAddProduct,
   isDirty
 }: Props) {
+
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    onAddProduct?.();
+  }, [onAddProduct]);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+    enabled: onAddProduct != null,
+  });
 
   return (
     <div className="grid grid-cols-3 items-center gap-2">
@@ -109,12 +132,12 @@ export default function ProductTableHeader({
         </Button>
 
         {/* EXPORT */}
-        <Button
+        {/* <Button
           icon={<Download className="h-3.5 w-3.5" />}
           onClick={onExport}
         >
           {dict.export}
-        </Button>
+        </Button> */}
 
         {onAddProduct != null ? (
           <Button

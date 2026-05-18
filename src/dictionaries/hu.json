@@ -31,6 +31,7 @@
   "invoiceDiscountLabel": "Szamlakedvezmeny (%)",
   "discountPercentHint": "A szamlakedvezmeny alapertelmezetten minden termekre ervenyes; a sor kedvezmenye felulirja azt az adott termeknel.",
   "sellingDraft": "Uj ertekesites",
+  "createNewSellingInvoice": "Uj ertekesites letrehozasa",
   "confirmCreateSellingInvoiceTitle": "Letrehozod az ertekesitest?",
   "confirmCreateSellingInvoiceDescription": "Ez megerositi az ertekesitesi szamlat az aktualis sorokkal es kedvezmenyekkel.",
   "sellingCreateNoProductsError": "Adj hozza legalabb egy termeket az ertekesites letrehozasa elott.",
@@ -177,6 +178,10 @@
   "emptyDescription": "A leiras ures",
   "skuAlreadyExists": "Az SKU mar letezik",
   "checkingSku": "SKU ellenorzese...",
+  "addMultipleProducts": "Tobb termek hozzaadasa",
+  "skuProductNotFound": "Nem talalhato termek ezzel a SKU-val",
+  "productInactiveCannotAdd": "Ez a termek inaktiv, nem adhato hozza",
+  "productAlreadyOnInvoice": "Ez a termek mar szerepel a szamlan",
   "invoiceNumber": "Szamlaszam",
   "noInvoiceNo": "Nincs szamlaszam",
   "createdBy": "Letrehozta",
@@ -327,5 +332,13 @@
   "confirmDeactivateUserDescription": "Nem tud majd bejelentkezni, amig egy rendszergazda ujra nem aktivalja a fiokot.",
   "confirmActivateUserTitle": "Aktivalod ezt a felhasznalot?",
   "confirmActivateUserDescription": "Ujra be tud majd jelentkezni.",
-  "noData": "Nincsenek bejegyzesek"
+  "noData": "Nincsenek bejegyzesek",
+  "shortcutsHelpTitle": "Gyorsbillentyuk",
+  "shortcutsHelpSubtitle": "Bezaras: Esc",
+  "shortcutsHelpActionColumn": "Muvelet",
+  "shortcutsHelpKeysColumn": "Billentyuk",
+  "shortcutLabelToggleSidebar": "Oldalso sav ki/be",
+  "shortcutLabelOpenHelp": "Gyorsbillentyuk megjelenitese",
+  "shortcutLabelUniversalNew": "Uj",
+  "shortcutLabelUniversalFocusSearch": "Kereses fokusz"
 }

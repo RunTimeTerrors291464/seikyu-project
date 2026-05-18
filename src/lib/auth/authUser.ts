@@ -126,10 +126,10 @@ export function userHasAnyRole(
 
 /**
  * Whether the user may start a new selling invoice from the cashier sales list.
- * Cashiers, managers, and admins (when they use cashier routes) may create.
+ * Cashiers and managers may create; admin-only accounts may view the list only.
  *
  * @param roles - Roles from the signed-in user.
- * @returns True when the user has cashier, manager, or admin.
+ * @returns True when the user has cashier or manager role.
  */
 export function userMayCreateSellingInvoice(
   roles: readonly UserRoleCode[],
@@ -137,7 +137,6 @@ export function userMayCreateSellingInvoice(
   return userHasAnyRole(roles, [
     USER_ROLE_CASHIER,
     USER_ROLE_MANAGER,
-    USER_ROLE_ADMIN,
   ]);
 }
 

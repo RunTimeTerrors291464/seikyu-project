@@ -130,6 +130,7 @@ export default function RuleInput({
     <div
       ref={containerRef}
       className="relative flex w-full items-stretch"
+      data-universal-search-root=""
     >
 
       <div className="flex w-full items-stretch overflow-hidden rounded-md border border-border bg-card text-xs shadow-sm">

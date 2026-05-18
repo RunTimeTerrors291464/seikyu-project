@@ -1,9 +1,63 @@
 "use client";
 
 import Button from "@/components/ui/Buttons";
+import { isEditableKeyboardTarget } from "@/lib/shortcuts/isEditableKeyboardTarget";
 import clsx from "clsx";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import Popup from "./BlurPopupWrapper";
+
+/**
+ * When a confirm dialog is open: Enter confirms (unless loading), Escape closes via `Popup` / modal stack.
+ *
+ * @param open - Whether the confirm dialog is visible.
+ * @param loading - When true, Enter does not submit.
+ * @param onConfirm - Primary action handler.
+ */
+function useConfirmPopupKeyboard(
+  open: boolean,
+  loading: boolean | undefined,
+  onConfirm: () => void | Promise<void>,
+): void {
+  const onConfirmRef = useRef(onConfirm);
+
+  useEffect(
+    function keepConfirmHandlerFresh(): void {
+      onConfirmRef.current = onConfirm;
+    },
+    [onConfirm],
+  );
+
+  useEffect(
+    function subscribeConfirmEnterKey(): void | (() => void) {
+      if (!open) {
+        return;
+      }
+
+      function handleKeyDown(event: KeyboardEvent): void {
+        if (event.key !== "Enter") {
+          return;
+        }
+        if (loading) {
+          return;
+        }
+        if (isEditableKeyboardTarget(event.target)) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        void onConfirmRef.current();
+      }
+
+      window.addEventListener("keydown", handleKeyDown, true);
+
+      return function removeConfirmEnterListener(): void {
+        window.removeEventListener("keydown", handleKeyDown, true);
+      };
+    },
+    [open, loading],
+  );
+}
 
 type Props = {
   open: boolean;
@@ -37,6 +91,8 @@ export function ConfirmPopup({
   accent = "neutral",
   backdropBlur,
 }: Props) {
+  useConfirmPopupKeyboard(open, loading, onConfirm);
+
   return (
     <Popup open={open} onClose={onClose} backdropBlur={backdropBlur}>
       <div className="overflow-hidden rounded-lg">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
@@ -19,6 +19,13 @@ import AddSellingInvoicePopup from "@/features/invoices/layout/AddSellingInvoice
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
 import { useMayCreateSellingInvoice } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+} from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { Filter, Hash, Package, Plus, RotateCcw, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -78,6 +85,22 @@ export default function CashierSellingInvoicesPage() {
     sortBy,
     sortOrder: sortBy ? sortOrder : undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
+  });
+
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setAddInvoicePopupOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+    enabled: canCreateSelling && !addInvoicePopupOpen,
   });
 
   function handleSort(nextField: string): void {
@@ -187,7 +210,7 @@ export default function CashierSellingInvoicesPage() {
               size="sm"
               onClick={() => setAddInvoicePopupOpen(true)}
             >
-              {dict.create}
+              {dict.createNewSellingInvoice}
             </Button>
           ) : null}
         </div>

@@ -190,6 +190,7 @@ function buildImportInvoiceEditableTailColumns(
         return (
           <Input
             value={row.quantity}
+            invoiceLineQuantityRowId={row.localId}
             onChange={function handleChange(value): void {
               const next = normalizeIntegerStringInput(value, {
                 allowEmpty: true,

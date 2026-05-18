@@ -31,6 +31,7 @@
   "invoiceDiscountLabel": "Chiết khấu hóa đơn (%)",
   "discountPercentHint": "Chiết khấu hóa đơn áp dụng mặc định cho tất cả sản phẩm; chiết khấu theo dòng sẽ ghi đè cho sản phẩm đó.",
   "sellingDraft": "Bán hàng mới",
+  "createNewSellingInvoice": "Tạo hóa đơn bán mới",
   "confirmCreateSellingInvoiceTitle": "Tạo hóa đơn bán?",
   "confirmCreateSellingInvoiceDescription": "Hóa đơn bán sẽ được xác nhận với các dòng và chiết khấu hiện tại.",
   "sellingCreateNoProductsError": "Thêm ít nhất một sản phẩm trước khi tạo hóa đơn bán.",
@@ -177,6 +178,10 @@
   "emptyDescription": "Mô tả đang trống",
   "skuAlreadyExists": "SKU đã tồn tại",
   "checkingSku": "Đang kiểm tra SKU...",
+  "addMultipleProducts": "Thêm nhiều sản phẩm",
+  "skuProductNotFound": "Không tìm thấy sản phẩm với SKU này",
+  "productInactiveCannotAdd": "Sản phẩm đã ngừng hoạt động và không thể thêm",
+  "productAlreadyOnInvoice": "Sản phẩm này đã có trên hóa đơn",
   "invoiceNumber": "Số hóa đơn",
   "noInvoiceNo": "Chưa MSHD",
   "createdBy": "Người tạo",
@@ -327,5 +332,13 @@
   "confirmDeactivateUserDescription": "Họ sẽ không thể đăng nhập cho đến khi quản trị viên kích hoạt lại.",
   "confirmActivateUserTitle": "Kích hoạt người dùng này?",
   "confirmActivateUserDescription": "Họ có thể đăng nhập trở lại.",
-  "noData": "Không có bản ghi"
+  "noData": "Không có bản ghi",
+  "shortcutsHelpTitle": "Phím tắt",
+  "shortcutsHelpSubtitle": "Nhấn Esc để đóng",
+  "shortcutsHelpActionColumn": "Thao tác",
+  "shortcutsHelpKeysColumn": "Phím",
+  "shortcutLabelToggleSidebar": "Bật/tắt thanh bên",
+  "shortcutLabelOpenHelp": "Hiện phím tắt",
+  "shortcutLabelUniversalNew": "Tạo mới",
+  "shortcutLabelUniversalFocusSearch": "Tập trung ô tìm kiếm"
 }

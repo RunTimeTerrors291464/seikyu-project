@@ -4,18 +4,19 @@ import { ACCENT_STYLES, Accent } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
+import { scheduleFocusLastInvoiceLineQuantity } from "@/features/invoices/lib/focusInvoiceLineQuantityInput";
 import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
 import { importInvoiceProductColumns } from "../table/invoiceProductLineColumns";
 import {
   EditableImportInvoiceProduct,
   productToEditableImportLine,
 } from "../types/importInvoiceDetail";
-import AddExistingProductsPopup from "./AddExistingProductsPopup";
+import AddProductPopup from "./AddProductPopup";
 import CreateAndAddProductPopup from "./CreateAndAddProductPopup";
 
 type ImportInvoiceProductsCardProps = {
@@ -56,8 +57,9 @@ export default function ImportInvoiceProductsCard({
     setSearchText,
     filteredRows: filteredProducts,
   } = useSkuNameRuleFilter(products);
-  const [openAddExistingPopup, setOpenAddExistingPopup] = useState<boolean>(false);
+  const [openAddProductPopup, setOpenAddProductPopup] = useState<boolean>(false);
   const [openCreateAndAddPopup, setOpenCreateAndAddPopup] = useState<boolean>(false);
+  const tableScopeRef = useRef<HTMLDivElement>(null);
 
   useEffect(
     function clearSelectionWhenNotDraft(): void {
@@ -121,7 +123,7 @@ export default function ImportInvoiceProductsCard({
     setSelectedIds(new Set());
   }
 
-  function handleAddExistingProducts(selectedProducts: Product[]): void {
+  function handleAddProductsFromCatalog(selectedProducts: Product[]): void {
     if (selectedProducts.length === 0) {
       return;
     }
@@ -129,10 +131,23 @@ export default function ImportInvoiceProductsCard({
       return productToEditableImportLine(product, dict.unnamed);
     });
     onChangeProducts([...products, ...nextProducts]);
+    scheduleFocusLastInvoiceLineQuantity(
+      nextProducts.map(function mapLocalId(line) {
+        return line.localId;
+      }),
+      tableScopeRef.current,
+    );
+  }
+
+  function handleAddSingleProduct(product: Product): void {
+    const line = productToEditableImportLine(product, dict.unnamed);
+    onChangeProducts([...products, line]);
+    scheduleFocusLastInvoiceLineQuantity([line.localId], tableScopeRef.current);
   }
 
   function handleCreateAndAddProduct(product: EditableImportInvoiceProduct): void {
     onChangeProducts([...products, product]);
+    scheduleFocusLastInvoiceLineQuantity([product.localId], tableScopeRef.current);
   }
 
   const allSelected = filteredProducts.length > 0 &&
@@ -167,6 +182,7 @@ export default function ImportInvoiceProductsCard({
 
   return (
     <div
+      ref={tableScopeRef}
       className={clsx(
         "flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg p-3",
         accent !== "neutral"
@@ -203,8 +219,8 @@ export default function ImportInvoiceProductsCard({
         <div className="flex items-center gap-2 ">
           <Button
             icon={<Plus className="h-3.5 w-3.5" />}
-            onClick={function openAddExistingProductPopup(): void {
-              setOpenAddExistingPopup(true);
+            onClick={function openAddProductPopup(): void {
+              setOpenAddProductPopup(true);
             }}
             disabled={!canEditDraft}
           >
@@ -243,13 +259,18 @@ export default function ImportInvoiceProductsCard({
         maxHeight="fill"
       />
 
-      <AddExistingProductsPopup
-        open={openAddExistingPopup}
-        onClose={function closeAddExistingPopup(): void {
-          setOpenAddExistingPopup(false);
+      <AddProductPopup
+        open={openAddProductPopup}
+        onClose={function closeAddProductPopup(): void {
+          setOpenAddProductPopup(false);
         }}
+        onOpenRequest={function openAddProductPopupFromShortcut(): void {
+          setOpenAddProductPopup(true);
+        }}
+        newShortcutEnabled={canEditDraft}
         excludedProductIds={excludedProductIds}
-        onConfirmSelect={handleAddExistingProducts}
+        onConfirmAdd={handleAddSingleProduct}
+        onConfirmAddMultiple={handleAddProductsFromCatalog}
       />
 
       <CreateAndAddProductPopup

@@ -4,6 +4,7 @@ import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import { Field, Input } from "@/components/ui/Fields";
 import { useDict } from "@/lib/lang/DictProvider";
+import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import clsx from "clsx";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ export default function CreateUserPopup({
   const [roles, setRoles] = useState<Set<UserRoleCode>>(new Set());
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [attempted, setAttempted] = useState<boolean>(false);
+  const formFieldsRef = useFocusFirstFormControlOnOpen({ when: open });
 
   function resetForm(): void {
     setFirstName("");
@@ -148,7 +150,10 @@ export default function CreateUserPopup({
           </h2>
         </div>
 
-        <div className="max-h-[70vh] space-y-3 overflow-y-auto px-4 py-4">
+        <div
+          ref={formFieldsRef}
+          className="max-h-[70vh] space-y-3 overflow-y-auto px-4 py-4"
+        >
           <Field
             label={dict.firstNameLabel}
             required

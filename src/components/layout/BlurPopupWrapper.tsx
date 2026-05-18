@@ -1,7 +1,8 @@
 "use client";
 
+import { registerModalEscapeHandler } from "@/components/types/modalEscapeStack";
 import clsx from "clsx";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 /** Above in-app overlays (e.g. `z-50` dropdowns) and out of sidebar `overflow` clipping. */
@@ -22,15 +23,27 @@ export default function Popup({
   backdropBlur,
 }: PopupProps) {
   const useBackdropBlur = backdropBlur !== false;
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
+  const onCloseRef = useRef(onClose);
 
-    if (open) window.addEventListener("keydown", onKeyDown);
+  useEffect(
+    function keepModalEscapeCloseFresh(): void {
+      onCloseRef.current = onClose;
+    },
+    [onClose],
+  );
 
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  useEffect(
+    function subscribeModalEscapeStack(): void | (() => void) {
+      if (!open) {
+        return;
+      }
+
+      return registerModalEscapeHandler(function invokeModalEscapeClose(): void {
+        onCloseRef.current();
+      });
+    },
+    [open],
+  );
 
   if (!open) return null;
 

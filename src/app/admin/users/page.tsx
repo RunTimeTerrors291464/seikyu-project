@@ -19,6 +19,13 @@ import {
 } from "@/features/admin/services/adminUsers.service";
 import { adminUserColumns } from "@/features/admin/table/adminUsersColumns";
 import { useDict } from "@/lib/lang/DictProvider";
+import useShortcut from "@/lib/shortcuts/useShortcut";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+} from "@/lib/shortcuts/universalShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { AtSign, Filter, Plus, RotateCcw, User as UserIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -98,6 +105,21 @@ export default function AdminUsersPage() {
   const onEdit = useCallback(function handleEdit(row: UserResponseDto): void {
     setEditUser(row);
   }, []);
+
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setCreateOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  });
 
   const columns = useMemo(
     function buildColumns() {

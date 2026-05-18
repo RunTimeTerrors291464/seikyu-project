@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
@@ -20,6 +20,13 @@ import { importInvoiceColumns } from "@/features/invoices/table/importInvoiceCol
 import { returnImportInvoiceListColumns } from "@/features/invoices/table/returnImportInvoiceListColumns";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
+import useShortcut from "@/lib/shortcuts/useShortcut";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+} from "@/lib/shortcuts/universalShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
 import {
@@ -108,6 +115,22 @@ export default function ImportInvoicesListPage() {
     sortBy,
     sortOrder: sortBy ? sortOrder : undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
+  });
+
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setAddInvoicePopupOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+    enabled: canManage && !addInvoicePopupOpen,
   });
 
   function compareNullableString(

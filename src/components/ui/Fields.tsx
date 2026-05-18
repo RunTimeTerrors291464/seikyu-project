@@ -94,10 +94,13 @@ type InputProps = {
   warning?: boolean;
   disabled?: boolean;
   onBlur?: () => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   maxLength?: number;
   className?: string;
+  /** When set, tags the input for `focusInvoiceLineQuantityInput` after adding a line. */
+  invoiceLineQuantityRowId?: string;
 };
 
 export function Input({
@@ -109,10 +112,12 @@ export function Input({
   warning = false,
   disabled,
   onBlur,
+  onKeyDown,
   onPaste,
   inputMode,
   maxLength,
   className,
+  invoiceLineQuantityRowId,
 }: InputProps) {
   return (
     <input
@@ -123,7 +128,11 @@ export function Input({
       inputMode={inputMode}
       maxLength={maxLength}
       onBlur={onBlur}
+      onKeyDown={onKeyDown}
       onPaste={onPaste}
+      {...(invoiceLineQuantityRowId
+        ? { "data-invoice-line-quantity": invoiceLineQuantityRowId }
+        : {})}
       onChange={(e) => onChange(e.target.value)}
       className={clsx(
         "h-9 w-full min-w-0 rounded-md border bg-card px-3 text-sm text-text",
