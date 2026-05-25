@@ -23,6 +23,7 @@ import { GetListOfReturnSellingInvoiceRequestDto } from '@libs/common/dtos/invoi
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
 import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+import { isUuid } from '@libs/common/utils/uuid.util';
 
 // Interface definition for resolved return product data.
 export interface ResolvedReturnSellingProductData {
@@ -350,9 +351,24 @@ export class ReturnSellingInvoiceRepository {
                         .orWhere('invoice.confirmedBy = :search', { search });
                 }));
             } else if (searchBy === 'productId') {
+                const productSearchConditions = [`rsip.product_sku ILIKE :productSkuSearch${WILDCARD_ILIKE_ESCAPE_SQL}`];
+                const productSearchParams: Record<string, string> = {
+                    productSkuSearch: buildWildcardIlikePattern(search),
+                };
+
+                if (isUuid(search)) {
+                    productSearchConditions.unshift('rsip.product_id = :productIdSearch');
+                    productSearchParams.productIdSearch = search;
+                }
+
                 qb.andWhere(
-                    `EXISTS (SELECT 1 FROM return_selling_invoice_products rsip WHERE rsip.return_selling_invoice_id = invoice.id AND rsip.product_id = :search)`,
-                    { search },
+                    `EXISTS (
+                        SELECT 1
+                        FROM return_selling_invoice_products rsip
+                        WHERE rsip.return_selling_invoice_id = invoice.id
+                          AND (${productSearchConditions.join(' OR ')})
+                    )`,
+                    productSearchParams,
                 );
             }
         }

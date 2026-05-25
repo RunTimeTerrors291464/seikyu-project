@@ -23,6 +23,7 @@ import {
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
 import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+import { isUuid } from '@libs/common/utils/uuid.util';
 
 @Injectable()
 export class StockAdjustmentInvoiceRepository {
@@ -305,9 +306,24 @@ export class StockAdjustmentInvoiceRepository {
                         .orWhere('invoice.confirmedBy = :search', { search });
                 }));
             } else if (searchBy === 'productId') {
+                const productSearchConditions = [`saip.product_sku ILIKE :productSkuSearch${WILDCARD_ILIKE_ESCAPE_SQL}`];
+                const productSearchParams: Record<string, string> = {
+                    productSkuSearch: buildWildcardIlikePattern(search),
+                };
+
+                if (isUuid(search)) {
+                    productSearchConditions.unshift('saip.product_id = :productIdSearch');
+                    productSearchParams.productIdSearch = search;
+                }
+
                 qb.andWhere(
-                    `EXISTS (SELECT 1 FROM stock_adjustment_invoice_products saip WHERE saip.stock_adjustment_invoice_id = invoice.id AND saip.product_id = :search)`,
-                    { search },
+                    `EXISTS (
+                        SELECT 1
+                        FROM stock_adjustment_invoice_products saip
+                        WHERE saip.stock_adjustment_invoice_id = invoice.id
+                          AND (${productSearchConditions.join(' OR ')})
+                    )`,
+                    productSearchParams,
                 );
             }
         }

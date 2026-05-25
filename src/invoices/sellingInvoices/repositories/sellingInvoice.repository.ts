@@ -24,6 +24,7 @@ import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.inte
 
 // Import search helpers.
 import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+import { isUuid } from '@libs/common/utils/uuid.util';
 
 // Interface for resolved products from service.
 export interface ResolvedSellingProductData {
@@ -216,9 +217,24 @@ export class SellingInvoiceRepository {
             } else if (searchBy === 'userId') {
                 qb.andWhere('invoice.confirmedBy = :search', { search });
             } else if (searchBy === 'productId') {
+                const productSearchConditions = [`sip.product_sku ILIKE :productSkuSearch${WILDCARD_ILIKE_ESCAPE_SQL}`];
+                const productSearchParams: Record<string, string> = {
+                    productSkuSearch: buildWildcardIlikePattern(search),
+                };
+
+                if (isUuid(search)) {
+                    productSearchConditions.unshift('sip.product_id = :productIdSearch');
+                    productSearchParams.productIdSearch = search;
+                }
+
                 qb.andWhere(
-                    `EXISTS (SELECT 1 FROM selling_invoice_products sip WHERE sip.selling_invoice_id = invoice.id AND sip.product_id = :search)`,
-                    { search },
+                    `EXISTS (
+                        SELECT 1
+                        FROM selling_invoice_products sip
+                        WHERE sip.selling_invoice_id = invoice.id
+                          AND (${productSearchConditions.join(' OR ')})
+                    )`,
+                    productSearchParams,
                 );
             }
         }

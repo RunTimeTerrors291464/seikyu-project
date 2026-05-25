@@ -23,6 +23,7 @@ import { GetListOfReturnImportInvoiceRequestDto } from '@libs/common/dtos/invoic
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
 import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+import { isUuid } from '@libs/common/utils/uuid.util';
 
 
 // Interface definition for resolved return product data.
@@ -350,9 +351,24 @@ export class ReturnImportInvoiceRepository {
                         .orWhere('invoice.confirmedBy = :search', { search });
                 }));
             } else if (searchBy === 'productId') {
+                const productSearchConditions = [`riip.product_sku ILIKE :productSkuSearch${WILDCARD_ILIKE_ESCAPE_SQL}`];
+                const productSearchParams: Record<string, string> = {
+                    productSkuSearch: buildWildcardIlikePattern(search),
+                };
+
+                if (isUuid(search)) {
+                    productSearchConditions.unshift('riip.product_id = :productIdSearch');
+                    productSearchParams.productIdSearch = search;
+                }
+
                 qb.andWhere(
-                    `EXISTS (SELECT 1 FROM return_import_invoice_products riip WHERE riip.return_import_invoice_id = invoice.id AND riip.product_id = :search)`,
-                    { search },
+                    `EXISTS (
+                        SELECT 1
+                        FROM return_import_invoice_products riip
+                        WHERE riip.return_import_invoice_id = invoice.id
+                          AND (${productSearchConditions.join(' OR ')})
+                    )`,
+                    productSearchParams,
                 );
             }
         }

@@ -200,7 +200,7 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
     search?: string;
 
     @ApiPropertyOptional({
-        description: 'The field to search by',
+        description: 'The field to search by. productId accepts a product UUID or product SKU.',
         example: 'invoiceId',
         enum: ['invoiceId', 'userId', 'productId'],
     })

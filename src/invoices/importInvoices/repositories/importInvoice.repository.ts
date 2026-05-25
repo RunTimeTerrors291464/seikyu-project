@@ -24,6 +24,7 @@ import {
 import type { AccessTokenPayload } from '@libs/common/dtos/auth/authPayload.interface';
 
 import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+import { isUuid } from '@libs/common/utils/uuid.util';
 
 @Injectable()
 export class ImportInvoiceRepository {
@@ -288,9 +289,24 @@ export class ImportInvoiceRepository {
                         .orWhere('invoice.confirmedBy = :search', { search });
                 }));
             } else if (searchBy === 'productId') {
+                const productSearchConditions = [`iip.product_sku ILIKE :productSkuSearch${WILDCARD_ILIKE_ESCAPE_SQL}`];
+                const productSearchParams: Record<string, string> = {
+                    productSkuSearch: buildWildcardIlikePattern(search),
+                };
+
+                if (isUuid(search)) {
+                    productSearchConditions.unshift('iip.product_id = :productIdSearch');
+                    productSearchParams.productIdSearch = search;
+                }
+
                 qb.andWhere(
-                    `EXISTS (SELECT 1 FROM import_invoice_products iip WHERE iip.import_invoice_id = invoice.id AND iip.product_id = :search)`,
-                    { search },
+                    `EXISTS (
+                        SELECT 1
+                        FROM import_invoice_products iip
+                        WHERE iip.import_invoice_id = invoice.id
+                          AND (${productSearchConditions.join(' OR ')})
+                    )`,
+                    productSearchParams,
                 );
             }
         }

@@ -178,7 +178,7 @@ export class GetListOfImportInvoiceRequestDto {
     search?: string;
 
     @ApiPropertyOptional({
-        description: 'The search by which field. invoiceId: Search by invoice ID (format: IYY-XXXXX). userId: Search by user ID (Must use the /api/v1/users/search first). productId: Search by product ID (UUID).',
+        description: 'The search by which field. invoiceId: Search by invoice ID (format: IYY-XXXXX). userId: Search by user ID (Must use the /api/v1/users/search first). productId: Search by product UUID or product SKU.',
         example: 'invoiceId',
         enum: ['invoiceId', 'userId', 'productId'],
     })

@@ -154,7 +154,7 @@ export class GetListOfReturnImportInvoiceRequestDto {
     search?: string;
 
     @ApiPropertyOptional({
-        description: 'The search by which field',
+        description: 'The search by which field. productId accepts a product UUID or product SKU.',
         example: 'returnInvoiceId',
         enum: ['returnInvoiceId', 'importInvoiceId', 'userId', 'productId'],
     })
