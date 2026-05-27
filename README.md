@@ -94,11 +94,11 @@ Logout clears localStorage, expires the cookie, and navigates to `/login`.
 
 ## Internationalization (i18n)
 
-- Dictionaries: `src/dictionaries/en.json`, `src/dictionaries/vi.json`.
+- Dictionaries: `src/dictionaries/en.json`, `src/dictionaries/vi.json`, `src/dictionaries/hu.json`.
 - Language is resolved from the `lang` cookie (default `en`) in the root layout; `DictProvider` supplies strings to client components via `useDict()`.
 - Login exposes `LanguageToggle`; app settings may also control preferences (see `src/lib/preferences/`).
 
-Supported languages: **en**, **vi** (`src/lib/lang/i18n.ts`).
+Supported languages: **en**, **vi**, **hu** (`src/lib/lang/i18n.ts`).
 
 ## UI shell and theming
 

@@ -15,7 +15,7 @@ The backend returns normalized error bodies via `CustomExceptionFilter`:
 
 - Source catalog: [`src/generated/api-error-codes.json`](../../generated/api-error-codes.json)
 - Regenerate types: `npm run generate:errors`
-- Generated: [`src/lib/api/generated/errorCodes.ts`](../generated/errorCodes.ts)
+- Generated: [`src/lib/api/errors/errorCodes.ts`](./errorCodes.ts)
 
 When the backend enum changes, copy the updated JSON from the API repo and run codegen.
 
@@ -66,4 +66,4 @@ With:
 resolveApiErrorMessage(error, dict)
 ```
 
-Remaining catch sites (follow-up): selling/return/stock-adjustment invoice pages, product hooks, other invoice popups.
+Most invoice and product flows now use this module. When adding new API calls, prefer `resolveApiErrorMessage(error, dict)` to keep user-facing behavior consistent.

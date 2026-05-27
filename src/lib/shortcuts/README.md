@@ -297,12 +297,14 @@ Implemented today:
 
 - **`enabled`** guard on `useShortcut`
 - **Universal** New / focus-search chords and search-root targeting
+- Invoice draft/product-line shortcuts for SKU-first product entry
 - **Priority** for competing registrations
 - **i18n** for catalog labels by shortcut `id`
 
 Reasonable next steps:
 
 - User-editable bindings (localStorage or profile API) layered above this registry
+- Add dedicated i18n label mappings for page-local invoice shortcuts when they become global
 - Export **`universalShortcut`** from `index.ts` if you want a single import path
 - **`data-shortcuts`** (or similar) to opt specific inputs out of the editable guard
 
