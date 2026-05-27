@@ -80,10 +80,14 @@ export function productColumns(
     },
 
     {
-      id: "stock",
+      id: "inventoryStock",
       header: dict.stock,
       field: "inventoryStock",
-      icon: <Warehouse className="h-3.5 w-3.5" />
+      sortable: true,
+      icon: <Warehouse className="h-3.5 w-3.5" />,
+      accessor: (p) => (
+        <span className="tabular-nums text-text">{p.inventoryStock}</span>
+      ),
     },
 
     {

@@ -29,7 +29,7 @@ export function toEditableReturnSellingDetailLine(
     productUnit: line.productUnit,
     sellingPrice: String(line.sellingPrice),
     returnQuantity: String(line.returnQuantity),
-    notes: line.notes ?? "",
+    notes: line.reasonNotes ?? "",
   };
 }
 

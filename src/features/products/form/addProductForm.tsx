@@ -18,15 +18,17 @@ import {
 } from "@/components/ui/Fields";
 
 
+import { getProductCreateSkuFieldError } from "@/features/products/lib/productSkuFieldValidation";
 import { Dictionary } from "@/lib/lang/i18n";
 import {
   finalizeMoneyStringTwoDecimalPlaces,
   normalizeMoneyStringInput,
   parseMoneyLikeString,
 } from "@/lib/numeric/integerAndMoneyInputs";
+import { getSkuCheckingHint, normalizeSkuInput } from "@/lib/sku/skuInputValidation";
 import UnitPickerPopup from "@features/products/layout/UnitPickerPopup";
 
-import useSkuValidation from "../hooks/useSkuValidation";
+import useSkuCheck from "../hooks/useSkuCheck";
 
 /* ============================= */
 
@@ -116,14 +118,24 @@ export default function AddNewProductForm({
     isDebouncing: skuDebouncing,
     isDuplicate: skuDuplicate,
   } =
-    useSkuValidation({ sku: values.sku });
+    useSkuCheck({ sku: values.sku, intent: "checkDuplicate" });
 
   /* ============================= */
   /* FIELD VALIDATION */
   /* ============================= */
 
-  const validateField = (field: keyof FormValues, value: string) => {
-    const error = getFieldError(field, value);
+  const skuDuplicateCheckState = {
+    skuDebouncing,
+    skuChecking,
+    skuDuplicate,
+  };
+
+  const validateField = (
+    field: keyof FormValues,
+    value: string,
+    options?: { validateRequired?: boolean },
+  ) => {
+    const error = getFieldError(field, value, options);
 
     setErrors((prev) => ({
       ...prev,
@@ -133,19 +145,20 @@ export default function AddNewProductForm({
 
   const getFieldError = (
     field: keyof FormValues,
-    value: string
+    value: string,
+    options?: { validateRequired?: boolean },
   ) => {
     switch (field) {
       case "sku":
-        if (!value || !/^\d{13}$/.test(value))
-          return dict.skuMustBe13;
-
-        if (skuDebouncing || skuChecking)
-          return "";
-
-        if (skuDuplicate)
-          return dict.skuAlreadyExists;
-        return "";
+        return getProductCreateSkuFieldError(
+          value,
+          skuDuplicateCheckState,
+          dict,
+          {
+            showEmptyError:
+              options?.validateRequired === true || touched.sku === true,
+          },
+        );
 
       case "name":
         if (!value.trim())
@@ -184,7 +197,9 @@ export default function AddNewProductForm({
     const shouldValidateSku = touched.sku || values.sku.length > 0;
     if (!shouldValidateSku) return;
 
-    const nextSkuError = getFieldError("sku", values.sku);
+    const nextSkuError = getFieldError("sku", values.sku, {
+      validateRequired: touched.sku === true,
+    });
     setErrors((previousErrors) => ({
       ...previousErrors,
       sku: nextSkuError,
@@ -211,10 +226,6 @@ export default function AddNewProductForm({
     reorderThreshold:
       touched.reorderThreshold &&
       values.reorderThreshold === "0",
-
-    description:
-      touched.productDescription &&
-      !values.productDescription.trim(),
   };
 
   /* ============================= */
@@ -225,7 +236,9 @@ export default function AddNewProductForm({
     const newErrors: Partial<Record<keyof FormValues, string>> = {};
 
     (Object.keys(values) as (keyof FormValues)[]).forEach((field) => {
-      const error = getFieldError(field, values[field]);
+      const error = getFieldError(field, values[field], {
+        validateRequired: true,
+      });
       if (error) newErrors[field] = error;
     });
 
@@ -267,15 +280,14 @@ export default function AddNewProductForm({
         label={dict.sku}
         icon={<Barcode className="h-3 w-3" />}
         error={errors.sku}
-        hint={
-          skuDebouncing || skuChecking
-            ? dict.checkingSku
-            : undefined
-        }>
+        hint={getSkuCheckingHint(skuDebouncing, skuChecking, dict.checkingSku)}
+        required
+        messageBesideLabel={true}
+      >
         <Input
           value={values.sku}
           onChange={(v) => {
-            const digits = v.replace(/\D/g, "").slice(0, 13);
+            const digits = normalizeSkuInput(v);
 
             setValue("sku", digits);
 
@@ -287,9 +299,10 @@ export default function AddNewProductForm({
 
             validateField("sku", digits);
           }}
-          onBlur={() =>
-            setTouched((t) => ({ ...t, sku: true }))
-          }
+          onBlur={() => {
+            setTouched((t) => ({ ...t, sku: true }));
+            validateField("sku", getValues("sku"), { validateRequired: true });
+          }}
         />
       </Field>
 
@@ -298,6 +311,8 @@ export default function AddNewProductForm({
         label={dict.productName}
         icon={<Package className="h-3 w-3" />}
         error={errors.name}
+        required
+        messageBesideLabel={true}
       >
         <Input
           value={values.name}
@@ -316,6 +331,8 @@ export default function AddNewProductForm({
         label={dict.unit}
         icon={<Ruler className="h-3 w-3" />}
         error={errors.productUnitId}
+        required
+        messageBesideLabel={true}
       >
         <SelectButton
           value={values.productUnitName}
@@ -343,6 +360,8 @@ export default function AddNewProductForm({
       {/* IMPORT PRICE */}
       <Field
         label={dict.importPrice}
+        required
+        messageBesideLabel={true}
         icon={<DollarSign className="h-3 w-3" />}
         error={errors.importPrice}
         warning={
@@ -380,6 +399,8 @@ export default function AddNewProductForm({
       <Field
         label={dict.sellingPrice}
         icon={<DollarSign className="h-3 w-3" />}
+        required
+        messageBesideLabel={true}
         error={errors.sellingPrice}
         warning={
           warnings.sellingPrice
@@ -416,6 +437,8 @@ export default function AddNewProductForm({
       <Field
         label={dict.reorderThreshold}
         icon={<AlertTriangle className="h-3 w-3" />}
+        required
+        messageBesideLabel={true}
         error={errors.reorderThreshold}
         warning={
           warnings.reorderThreshold
@@ -440,30 +463,14 @@ export default function AddNewProductForm({
       </Field>
 
       {/* DESCRIPTION */}
-      <Field
-        label={dict.description}
-        icon={<Ruler className="h-3 w-3" />}
-        warning={
-          warnings.description
-            ? dict.emptyDescription
-            : undefined
-        }
-      >
+      <Field label={dict.description} icon={<Ruler className="h-3 w-3" />}>
         <Textarea
           value={values.productDescription}
           onChange={(v) =>
             setValue("productDescription", v)
           }
-          onBlur={() =>
-            setTouched((t) => ({
-              ...t,
-              productDescription: true,
-            }))
-          }
         />
       </Field>
-
-      <button type="submit" className="hidden" />
     </form>
   );
 }

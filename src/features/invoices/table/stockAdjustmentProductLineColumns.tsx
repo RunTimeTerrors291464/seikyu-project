@@ -8,6 +8,7 @@
 import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
+import { isEmptyValue, isZeroValue } from "@/lib/numeric/fieldValueChecks";
 import { normalizeIntegerStringInput } from "@/lib/numeric/integerAndMoneyInputs";
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import clsx from "clsx";
@@ -21,14 +22,6 @@ import {
 import type { StockAdjustmentAction } from "../services/stockAdjustmentInvoice.service";
 import type { EditableStockAdjustmentLine } from "../types/stockAdjustmentDetail";
 import { toNumberOrZero } from "../types/stockAdjustmentDetail";
-
-function isEmptyValue(value: string): boolean {
-  return value.trim().length === 0;
-}
-
-function isZeroValue(value: string): boolean {
-  return Number(value) === 0;
-}
 
 type StockAdjustmentProductColumnsParams = {
   dict: Dictionary;

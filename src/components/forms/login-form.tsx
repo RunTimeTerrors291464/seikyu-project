@@ -12,26 +12,13 @@ import { useForm } from "react-hook-form";
 
 import { Eye, EyeOff, Lock, LogIn, User } from "lucide-react";
 
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import type { Dictionary } from "@/lib/lang/i18n";
 
 import { Field } from "@/components/ui/Fields";
 
 import { z } from "zod";
-
-type ApiErrorLike = {
-  response?: {
-    status?: number;
-  };
-};
-
-function toApiErrorLike(error: unknown): ApiErrorLike {
-  if (typeof error === "object" && error !== null) {
-    return error as ApiErrorLike;
-  }
-
-  return {};
-}
 
 /* ---------------- Schema ---------------- */
 
@@ -82,18 +69,12 @@ export default function LoginForm() {
       const home =
         signedInUser.roles.length > 0
           ? defaultHomePathForRoles(signedInUser.roles)
-          : "/admin/dashboard";
+          : "/admin/users";
 
       router.push(home);
 
     } catch (error: unknown) {
-      const apiError = toApiErrorLike(error);
-
-      if ([401, 404].includes(apiError.response?.status ?? 0)) {
-        setAuthError(dict.invalidCredentials);
-      } else {
-        setAuthError(dict.somethingWentWrong ?? "Something went wrong");
-      }
+      setAuthError(resolveApiErrorMessage(error, dict));
     }
   };
 

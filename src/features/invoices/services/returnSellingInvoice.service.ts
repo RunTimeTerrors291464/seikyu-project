@@ -1,6 +1,42 @@
+import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
+import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
 import apiClient from "@/services/api-client";
 
 export type ReturnSellingInvoiceStatus = "draft" | "confirmed";
+
+export type ReturnSellingReasonCategory =
+  | "defective"
+  | "damagedInTransit"
+  | "damagedOnArrival"
+  | "expired"
+  | "qualityIssue"
+  | "wrongSpecification"
+  | "overShipped"
+  | "underShipped"
+  | "duplicateShipment"
+  | "wrongItem"
+  | "incorrectQuantity"
+  | "invoiceMismatch"
+  | "customerRequest"
+  | "notAsDescribed"
+  | "changeOfMind"
+  | "wrongDestination"
+  | "stockAdjustment"
+  | "inventoryCorrection"
+  | "vendorQualityIssue"
+  | "vendorRecall"
+  | "other";
+
+export type ReturnSellingInvoiceListSortBy =
+  | "returnInvoiceId"
+  | "sellingInvoiceId"
+  | "totalProducts"
+  | "totalQuantity"
+  | "totalReturnPrice"
+  | "status"
+  | "draftAt"
+  | "confirmedAt"
+  | "createdAt";
 
 export type ReturnSellingInvoiceProductResponseDto = {
   id: string;
@@ -11,7 +47,8 @@ export type ReturnSellingInvoiceProductResponseDto = {
   returnQuantity: number;
   sellingPrice: number | string;
   totalReturnPrice: number | string;
-  notes: string | null;
+  reasonCategory: ReturnSellingReasonCategory;
+  reasonNotes: string | null;
 };
 
 export type ReturnSellingInvoiceWithoutProductsDto = {
@@ -29,6 +66,7 @@ export type ReturnSellingInvoiceWithoutProductsDto = {
   confirmedBy: string | null;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 };
 
 export type ReturnSellingInvoiceResponseDto = {
@@ -47,6 +85,7 @@ export type ReturnSellingInvoiceResponseDto = {
   confirmedBy: string | null;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 };
 
 export type GetListOfReturnSellingInvoicesResponseDto = {
@@ -61,11 +100,7 @@ export type ReturnSellingInvoiceListQuery = {
   limit?: number;
   search?: string;
   searchBy?: "returnInvoiceId" | "sellingInvoiceId" | "userId" | "productId";
-  sortBy?:
-    | "returnInvoiceId"
-    | "totalReturnPrice"
-    | "createdAt"
-    | "confirmedAt";
+  sortBy?: ReturnSellingInvoiceListSortBy;
   sortOrder?: "asc" | "desc";
   status?: ReturnSellingInvoiceStatus;
   fromDate?: string;
@@ -75,7 +110,8 @@ export type ReturnSellingInvoiceListQuery = {
 export type ReturnSellingInvoiceProductRequestDto = {
   productId: string;
   returnQuantity: number;
-  notes?: string;
+  reasonCategory: ReturnSellingReasonCategory;
+  reasonNotes?: string;
 };
 
 export type CreateReturnSellingInvoiceDraftRequestDto = {
@@ -119,31 +155,11 @@ function buildReturnSellingListCacheKey(
   return JSON.stringify(Object.fromEntries(entries));
 }
 
-function cleanReturnSellingInvoiceParams(
-  params: ReturnSellingInvoiceListParams,
-): ReturnSellingInvoiceListParams {
-  const cleaned: ReturnSellingInvoiceListParams = {};
-
-  (
-    Object.entries(params) as [
-      keyof ReturnSellingInvoiceListParams,
-      string | number | undefined,
-    ][]
-  ).forEach(function filterParam([key, value]): void {
-    if (value === undefined || value === null || value === "") {
-      return;
-    }
-
-    cleaned[key] = value as never;
-  });
-
-  return cleaned;
-}
-
 export async function getReturnSellingInvoiceList(
   params: ReturnSellingInvoiceListQuery,
 ): Promise<GetListOfReturnSellingInvoicesResponseDto> {
-  const cleanedParams = cleanReturnSellingInvoiceParams(params);
+  const paramsWithDates = mergeDefaultListDateRange(params);
+  const cleanedParams = cleanInvoiceListParams(paramsWithDates);
   const cacheKey = buildReturnSellingListCacheKey(cleanedParams);
   const now = Date.now();
   const cached = returnSellingInvoiceListCache.get(cacheKey);
@@ -182,7 +198,7 @@ export async function createReturnSellingDraft(
   payload: CreateReturnSellingInvoiceDraftRequestDto,
 ): Promise<ReturnSellingInvoiceResponseDto> {
   const response = await apiClient.post<ReturnSellingInvoiceResponseDto>(
-    "/invoices/return-selling/draft",
+    "/invoices/return-selling",
     payload,
   );
 
@@ -195,7 +211,7 @@ export async function editReturnSellingDraft(
   payload: EditReturnSellingInvoiceDraftRequestDto,
 ): Promise<ReturnSellingInvoiceResponseDto> {
   const response = await apiClient.patch<ReturnSellingInvoiceResponseDto>(
-    "/invoices/return-selling/draft",
+    "/invoices/return-selling",
     payload,
   );
 
@@ -205,7 +221,7 @@ export async function editReturnSellingDraft(
 }
 
 export async function deleteReturnSellingDrafts(ids: string[]): Promise<void> {
-  await apiClient.delete("/invoices/return-selling/draft", {
+  await apiClient.delete("/invoices/return-selling", {
     data: { ids },
   });
 
@@ -215,7 +231,7 @@ export async function deleteReturnSellingDrafts(ids: string[]): Promise<void> {
 export async function confirmReturnSellingInvoice(
   id: string,
 ): Promise<ReturnSellingInvoiceResponseDto> {
-  const response = await apiClient.patch<ReturnSellingInvoiceResponseDto>(
+  const response = await apiClient.post<ReturnSellingInvoiceResponseDto>(
     `/invoices/return-selling/${id}/confirm`,
   );
 

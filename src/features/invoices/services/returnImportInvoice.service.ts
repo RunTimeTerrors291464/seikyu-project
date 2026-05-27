@@ -1,6 +1,31 @@
+import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
+import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
 import apiClient from "@/services/api-client";
 
 export type ReturnImportInvoiceStatus = "draft" | "confirmed";
+
+export type ReturnImportReasonCategory =
+  | "defective"
+  | "damagedInTransit"
+  | "damagedOnArrival"
+  | "expired"
+  | "qualityIssue"
+  | "wrongSpecification"
+  | "overShipped"
+  | "underShipped"
+  | "duplicateShipment"
+  | "wrongItem"
+  | "incorrectQuantity"
+  | "invoiceMismatch"
+  | "customerRequest"
+  | "notAsDescribed"
+  | "changeOfMind"
+  | "wrongDestination"
+  | "stockAdjustment"
+  | "inventoryCorrection"
+  | "vendorQualityIssue"
+  | "vendorRecall"
+  | "other";
 
 export type ReturnImportInvoiceProductResponseDto = {
   id: string;
@@ -11,7 +36,8 @@ export type ReturnImportInvoiceProductResponseDto = {
   returnQuantity: number;
   importPrice: number | string;
   totalReturnPrice: number | string;
-  notes: string | null;
+  reasonCategory: ReturnImportReasonCategory;
+  reasonNotes: string | null;
 };
 
 export type ReturnImportInvoiceWithoutProductsDto = {
@@ -71,7 +97,8 @@ export type ReturnImportInvoiceListQuery = {
 export type ReturnImportInvoiceProductRequestDto = {
   productId: string;
   returnQuantity: number;
-  notes?: string;
+  reasonCategory: ReturnImportReasonCategory;
+  reasonNotes?: string;
 };
 
 export type CreateReturnImportInvoiceDraftRequestDto = {
@@ -121,27 +148,6 @@ function buildReturnImportListCacheKey(
   return JSON.stringify(Object.fromEntries(entries));
 }
 
-function cleanReturnImportInvoiceParams(
-  params: ReturnImportInvoiceListParams,
-): ReturnImportInvoiceListParams {
-  const cleaned: ReturnImportInvoiceListParams = {};
-
-  (
-    Object.entries(params) as [
-      keyof ReturnImportInvoiceListParams,
-      string | number | undefined,
-    ][]
-  ).forEach(function filterParam([key, value]): void {
-    if (value === undefined || value === null || value === "") {
-      return;
-    }
-
-    cleaned[key] = value as never;
-  });
-
-  return cleaned;
-}
-
 /**
  * Lists return import invoices. Results are cached in-memory per query for a short TTL.
  *
@@ -151,7 +157,8 @@ function cleanReturnImportInvoiceParams(
 export async function getReturnImportInvoiceList(
   params: ReturnImportInvoiceListQuery,
 ): Promise<GetListOfReturnImportInvoicesResponseDto> {
-  const cleanedParams = cleanReturnImportInvoiceParams(params);
+  const paramsWithDates = mergeDefaultListDateRange(params);
+  const cleanedParams = cleanInvoiceListParams(paramsWithDates);
   const cacheKey = buildReturnImportListCacheKey(cleanedParams);
   const now = Date.now();
   const cached = returnImportInvoiceListCache.get(cacheKey);
@@ -189,7 +196,7 @@ export async function createReturnImportDraft(
   payload: CreateReturnImportInvoiceDraftRequestDto,
 ): Promise<ReturnImportInvoiceResponseDto> {
   const response = await apiClient.post<ReturnImportInvoiceResponseDto>(
-    "/invoices/return-import/draft",
+    "/invoices/return-import",
     payload,
   );
 
@@ -202,7 +209,7 @@ export async function editReturnImportDraft(
   payload: EditReturnImportInvoiceDraftRequestDto,
 ): Promise<ReturnImportInvoiceResponseDto> {
   const response = await apiClient.patch<ReturnImportInvoiceResponseDto>(
-    "/invoices/return-import/draft",
+    "/invoices/return-import",
     payload,
   );
 
@@ -212,7 +219,7 @@ export async function editReturnImportDraft(
 }
 
 export async function deleteReturnImportDrafts(ids: string[]): Promise<void> {
-  await apiClient.delete("/invoices/return-import/draft", {
+  await apiClient.delete("/invoices/return-import", {
     data: { ids },
   });
 
@@ -222,7 +229,7 @@ export async function deleteReturnImportDrafts(ids: string[]): Promise<void> {
 export async function confirmReturnImportInvoice(
   id: string,
 ): Promise<ReturnImportInvoiceResponseDto> {
-  const response = await apiClient.patch<ReturnImportInvoiceResponseDto>(
+  const response = await apiClient.post<ReturnImportInvoiceResponseDto>(
     `/invoices/return-import/${id}/confirm`,
   );
 

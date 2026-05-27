@@ -1,3 +1,5 @@
+import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
+import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
 import apiClient from "@/services/api-client";
 
 export type ImportInvoiceStatus =
@@ -6,12 +8,23 @@ export type ImportInvoiceStatus =
   | "partiallyReturned"
   | "returned";
 
+export type ImportInvoiceListSortBy =
+  | "invoiceId"
+  | "totalProducts"
+  | "totalQuantity"
+  | "totalImportPrice"
+  | "status"
+  | "returnCount"
+  | "draftAt"
+  | "confirmedAt"
+  | "createdAt";
+
 export type ImportInvoiceWithoutProductsDto = {
   id: string;
   invoiceId: string | null;
   totalProducts: number;
   totalQuantity: number;
-  totalImportPrice: number;
+  totalImportPrice: number | string;
   notes: string | null;
   status: ImportInvoiceStatus;
   returnCount: number;
@@ -21,15 +34,19 @@ export type ImportInvoiceWithoutProductsDto = {
   confirmedBy: string | null;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 };
 
 export type ImportInvoiceProductDto = {
+  id: string;
   productId: string;
   productSku: string;
   productName: string;
   productUnit: string;
   quantity: number;
-  importPrice: number;
+  returnedQuantity: number;
+  importPrice: number | string;
+  totalImportPrice: number | string;
   notes: string | null;
 };
 
@@ -39,7 +56,7 @@ export type ImportInvoiceResponseDto = {
   products: ImportInvoiceProductDto[];
   totalProducts: number;
   totalQuantity: number;
-  totalImportPrice: number;
+  totalImportPrice: number | string;
   notes: string | null;
   status: ImportInvoiceStatus;
   returnCount: number;
@@ -49,6 +66,7 @@ export type ImportInvoiceResponseDto = {
   confirmedBy: string | null;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 };
 
 export type GetListOfImportInvoicesResponseDto = {
@@ -63,7 +81,7 @@ export type ImportInvoiceListQuery = {
   limit?: number;
   search?: string;
   searchBy?: "invoiceId" | "userId" | "productId";
-  sortBy?: "invoiceId" | "userId" | "totalImportPrice" | "createdAt";
+  sortBy?: ImportInvoiceListSortBy;
   sortOrder?: "asc" | "desc";
   status?: ImportInvoiceStatus;
   fromDate?: string;
@@ -91,29 +109,22 @@ export type CreateImportInvoiceRequestDto = {
   notes?: string;
 };
 
-type ImportInvoiceListParams = ImportInvoiceListQuery;
-
-function cleanImportInvoiceParams(
-  params: ImportInvoiceListParams,
-): ImportInvoiceListParams {
-  const cleaned: ImportInvoiceListParams = {};
-
-  (Object.entries(params) as [keyof ImportInvoiceListParams, string | number | undefined][])
-    .forEach(([key, value]) => {
-      if (value === undefined || value === null || value === "") {
-        return;
-      }
-
-      cleaned[key] = value as never;
-    });
-
-  return cleaned;
+/**
+ * Coerces API money fields that may be returned as strings (e.g. `"3121.00"`).
+ *
+ * @param value - Numeric or string amount from the API.
+ * @returns Finite number, or 0 when unparsable.
+ */
+export function parseImportInvoiceMoney(value: number | string): number {
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
 }
 
 export async function getImportInvoiceList(
   params: ImportInvoiceListQuery,
 ): Promise<GetListOfImportInvoicesResponseDto> {
-  const cleanedParams = cleanImportInvoiceParams(params);
+  const paramsWithDates = mergeDefaultListDateRange(params);
+  const cleanedParams = cleanInvoiceListParams(paramsWithDates);
 
   const response = await apiClient.get<GetListOfImportInvoicesResponseDto>(
     "/invoices/import",
@@ -139,7 +150,7 @@ export async function editImportInvoiceDraft(
   payload: EditImportInvoiceRequestDto,
 ): Promise<ImportInvoiceResponseDto> {
   const response = await apiClient.patch<ImportInvoiceResponseDto>(
-    "/invoices/import/draft",
+    "/invoices/import",
     payload,
   );
 
@@ -150,7 +161,7 @@ export async function createImportInvoiceDraft(
   payload: CreateImportInvoiceRequestDto,
 ): Promise<ImportInvoiceResponseDto> {
   const response = await apiClient.post<ImportInvoiceResponseDto>(
-    "/invoices/import/draft",
+    "/invoices/import",
     payload,
   );
 
@@ -160,7 +171,7 @@ export async function createImportInvoiceDraft(
 export async function confirmImportInvoice(
   id: string,
 ): Promise<ImportInvoiceResponseDto> {
-  const response = await apiClient.patch<ImportInvoiceResponseDto>(
+  const response = await apiClient.post<ImportInvoiceResponseDto>(
     `/invoices/import/${id}/confirm`,
   );
 
@@ -170,7 +181,7 @@ export async function confirmImportInvoice(
 export async function deleteImportInvoiceDrafts(
   ids: string[],
 ): Promise<void> {
-  await apiClient.delete("/invoices/import/draft", {
+  await apiClient.delete("/invoices/import", {
     data: { ids },
   });
 }

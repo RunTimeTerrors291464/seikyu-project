@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm run generate:errors && next dev",
+    "build": "npm run generate:errors && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:errors": "node scripts/generate-api-error-types.mjs",
+    "prebuild": "npm run generate:errors"
   },
   "dependencies": {
     "@fontsource/noto-sans": "^5.2.10",

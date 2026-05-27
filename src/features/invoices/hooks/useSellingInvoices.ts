@@ -13,11 +13,13 @@ export type SellingInvoiceRow = {
   status: SellingInvoiceStatus;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
   totalSellingPrice: number;
-  invoiceDiscount: number | undefined;
+  invoiceDiscount: number;
   totalProducts: number;
   totalQuantity: number;
   returnCount: number;
+  taxFocus: boolean;
   notes: string | null;
 };
 
@@ -41,24 +43,19 @@ type InvoiceListState = {
 };
 
 function mapToRow(dto: SellingInvoiceWithoutProductsDto): SellingInvoiceRow {
-  const returnCount =
-    typeof dto.returnCount === "number"
-      ? dto.returnCount
-      : dto.status !== "confirmed"
-        ? 1
-        : 0;
-
   return {
     id: dto.id,
     invoiceId: dto.invoiceId,
     status: dto.status,
     confirmedByUsername: dto.confirmedByUsername,
     confirmedAt: dto.confirmedAt,
+    createdAt: dto.createdAt,
     totalSellingPrice: dto.totalSellingPrice,
     invoiceDiscount: dto.invoiceDiscount,
     totalProducts: dto.totalProducts,
     totalQuantity: dto.totalQuantity,
-    returnCount,
+    returnCount: dto.returnCount,
+    taxFocus: dto.taxFocus,
     notes: dto.notes,
   };
 }
@@ -130,6 +127,7 @@ export function useSellingInvoices(
     query.sortBy,
     query.sortOrder,
     query.status,
+    query.taxFocus,
     query.fromDate,
     query.toDate,
     refreshKey,

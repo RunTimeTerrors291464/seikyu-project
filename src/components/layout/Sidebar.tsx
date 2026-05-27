@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ClipboardList,
   FileCheck2,
-  FileText,
   FolderOpen,
   LogOut,
   PanelLeftClose,
@@ -76,7 +75,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       requiredRoles: [USER_ROLE_ADMIN],
       items: [
         // { href: "/admin/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
-        { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+        // { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
         { href: "/admin/users", label: dict.usersNav, icon: <UserCog className="h-4 w-4" /> },
       ],
     },
@@ -89,7 +88,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       requiredRoles: [USER_ROLE_CASHIER],
       items: [
         { href: "/cashier/selling", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
-        { href: "/cashier/selling/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+        // { href: "/cashier/selling/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
       ],
     },
     {
@@ -104,7 +103,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { href: "/manager/invoices/import", label: dict.importInvoices, icon: <FileCheck2 className="h-4 w-4" /> },
         { href: "/manager/invoices/stock-adjustment", label: dict.stockAdjustmentInvoices, icon: <Boxes className="h-4 w-4" /> },
         { href: "/manager/invoices/selling", label: dict.sellingInvoicesManager, icon: <ReceiptText className="h-4 w-4" /> },
-        { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
+        // { href: "/manager/stock-audit-logs", label: dict.stockAuditLogs, icon: <ClipboardList className="h-4 w-4" />, disabled: true },
       ],
     },
     // { id: "notifications", label: dict.notifications, icon: <Bell className="h-4 w-4" /> },

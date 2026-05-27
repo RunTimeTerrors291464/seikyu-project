@@ -1,3 +1,5 @@
+import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
+import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
 import apiClient from "@/services/api-client";
 
 export type SellingInvoiceStatus =
@@ -5,20 +7,31 @@ export type SellingInvoiceStatus =
   | "partiallyReturned"
   | "returned";
 
+export type SellingInvoiceListSortBy =
+  | "invoiceId"
+  | "totalProducts"
+  | "totalQuantity"
+  | "totalSellingPrice"
+  | "status"
+  | "returnCount"
+  | "confirmedAt"
+  | "createdAt";
+
 export type SellingInvoiceWithoutProductsDto = {
   id: string;
   invoiceId: string | null;
   totalProducts: number;
   totalQuantity: number;
+  invoiceDiscount: number;
   totalSellingPrice: number;
-  invoiceDiscount?: number;
   notes: string | null;
   status: SellingInvoiceStatus;
-  /** When present, used for expandable return rows in the list UI. */
-  returnCount?: number;
+  returnCount: number;
+  taxFocus: boolean;
   confirmedBy: string | null;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 };
 
 export type SellingInvoiceProductDto = {
@@ -28,6 +41,7 @@ export type SellingInvoiceProductDto = {
   productName: string;
   productUnit: string;
   quantity: number;
+  returnQuantity: number;
   sellingPrice: number;
   productDiscount: number;
   totalSellingPrice: number;
@@ -40,14 +54,16 @@ export type SellingInvoiceResponseDto = {
   products: SellingInvoiceProductDto[];
   totalProducts: number;
   totalQuantity: number;
-  invoiceDiscount?: number;
+  invoiceDiscount: number;
   totalSellingPrice: number;
   notes: string | null;
   status: SellingInvoiceStatus;
-  returnCount?: number;
+  returnCount: number;
+  taxFocus: boolean;
   confirmedBy: string | null;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
+  createdAt: string;
 };
 
 export type GetListOfSellingInvoicesResponseDto = {
@@ -62,16 +78,21 @@ export type SellingInvoiceListQuery = {
   limit?: number;
   search?: string;
   searchBy?: "invoiceId" | "userId" | "productId";
-  sortBy?: "invoiceId" | "totalSellingPrice" | "confirmedAt";
+  sortBy?: SellingInvoiceListSortBy;
   sortOrder?: "asc" | "desc";
   status?: SellingInvoiceStatus;
+  /** Query string `true` or `false`; omit to include all. */
+  taxFocus?: "true" | "false";
   fromDate?: string;
   toDate?: string;
 };
 
 export type SellingInvoiceProductLineRequestDto = {
   productSku: string;
+  productName: string;
+  productUnit: string;
   quantity: number;
+  sellingPrice: number;
   productDiscount: number;
   notes?: string;
 };
@@ -80,31 +101,14 @@ export type CreateSellingInvoiceRequestDto = {
   products: SellingInvoiceProductLineRequestDto[];
   invoiceDiscount?: number;
   notes?: string;
+  taxFocus?: boolean;
 };
-
-type SellingInvoiceListParams = SellingInvoiceListQuery;
-
-function cleanSellingInvoiceParams(
-  params: SellingInvoiceListParams,
-): SellingInvoiceListParams {
-  const cleaned: SellingInvoiceListParams = {};
-
-  (Object.entries(params) as [keyof SellingInvoiceListParams, string | number | undefined][])
-    .forEach(([key, value]) => {
-      if (value === undefined || value === null || value === "") {
-        return;
-      }
-
-      cleaned[key] = value as never;
-    });
-
-  return cleaned;
-}
 
 export async function getSellingInvoiceList(
   params: SellingInvoiceListQuery,
 ): Promise<GetListOfSellingInvoicesResponseDto> {
-  const cleanedParams = cleanSellingInvoiceParams(params);
+  const paramsWithDates = mergeDefaultListDateRange(params);
+  const cleanedParams = cleanInvoiceListParams(paramsWithDates);
 
   const response = await apiClient.get<GetListOfSellingInvoicesResponseDto>(
     "/invoices/selling",

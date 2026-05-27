@@ -5,7 +5,7 @@ import axios, {
 } from "axios";
 
 const DEFAULT_PUBLIC_API_BASE_URL = "http://localhost:4000";
-const DEFAULT_API_VERSION_PATH_SEGMENT = "v1";
+const DEFAULT_API_VERSION_PATH_SEGMENT = "v2";
 
 /**
  * Returns the public API origin (scheme + host + optional port), without `/api/...`.

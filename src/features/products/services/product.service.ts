@@ -1,21 +1,13 @@
 import apiClient from "@/services/api-client";
-import { CreateProductPayload, Product, ProductHistoryDetail, ProductHistoryItem, ProductListResponse, ProductOverview } from "@features/products/types/product";
-
-type ApiErrorLike = {
-  message?: string;
-  response?: {
-    data?: unknown;
-    status?: number;
-  };
-};
-
-function toApiErrorLike(error: unknown): ApiErrorLike {
-  if (typeof error === "object" && error !== null) {
-    return error as ApiErrorLike;
-  }
-
-  return {};
-}
+import {
+  CreateProductPayload,
+  GetProductHistoryListResponse,
+  GetProductStockHistoryResponse,
+  Product,
+  ProductHistoryDetail,
+  ProductListResponse,
+  ProductOverview,
+} from "@features/products/types/product";
 
 /* ============================= */
 /* GET PRODUCT BY ID */
@@ -66,37 +58,71 @@ export async function updateProduct(
 /* PRODUCT QUERY */
 /* ============================= */
 
+export type ProductListSearchBy = "sku" | "productName";
+
+export type ProductListSortBy =
+  | "sku"
+  | "productName"
+  | "productUnitName"
+  | "importPrice"
+  | "sellingPrice"
+  | "stockStatus"
+  | "inventoryStock"
+  | "createdAt"
+  | "updatedAt";
+
+export type ProductIsActiveFilter = "true" | "false" | "all";
+
+/** Stock status filter codes accepted by `GET /products` (`0` in stock, `1` low, `2` out). */
+export type ProductStockStatusFilter = 0 | 1 | 2;
+
+export type PaginatedListParams = {
+  page?: number;
+  limit?: number;
+};
+
 export type ProductQuery = {
   page?: number;
   limit?: number;
   search?: string;
-  searchBy?: "sku" | "productName";
-  sortBy?:
-  | "sku"
-  | "productUnitName"
-  | "productName"
-  | "importPrice"
-  | "sellingPrice"
-  | "createdAt"
-  | "updatedAt"
-  | "status";
+  searchBy?: ProductListSearchBy;
+  sortBy?: ProductListSortBy;
   sortOrder?: "asc" | "desc";
-  isActive: "true" | "false" | "all";
-  stockStatus: "0" | "1" | "2" | "all";
+  isActive?: ProductIsActiveFilter;
+  stockStatus?: ProductStockStatusFilter;
 };
 
 /* ============================= */
 /* CLEAN PARAMS */
 /* ============================= */
 
-function cleanParams(params: ProductQuery) {
-  const cleaned: Partial<ProductQuery> = {};
+/**
+ * Serializes product list query params for the API (omits empty values; sends stock status as a number).
+ *
+ * @param params - List filters and pagination.
+ * @returns Params object passed to Axios `params`.
+ */
+function cleanParams(params: ProductQuery): Record<string, string | number> {
+  const cleaned: Record<string, string | number> = {};
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      cleaned[key as keyof ProductQuery] = value as never;
-    }
-  });
+  (Object.entries(params) as [keyof ProductQuery, ProductQuery[keyof ProductQuery]][])
+    .forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      if (key === "isActive" && value === "all") {
+        cleaned.isActive = value;
+        return;
+      }
+
+      if (key === "stockStatus") {
+        cleaned.stockStatus = value as ProductStockStatusFilter;
+        return;
+      }
+
+      cleaned[key] = value as string | number;
+    });
 
   return cleaned;
 }
@@ -120,6 +146,33 @@ export const productService = {
   },
 };
 
+/**
+ * Lists products that use a given product unit.
+ *
+ * @param productUnitId - Product unit UUID.
+ * @param params - Optional pagination (`page`, `limit`).
+ * @returns Paginated product list for that unit.
+ */
+export async function getProductsByUnit(
+  productUnitId: string,
+  params: PaginatedListParams = {},
+): Promise<ProductListResponse> {
+  const query: Record<string, number> = {};
+  if (params.page != null) {
+    query.page = params.page;
+  }
+  if (params.limit != null) {
+    query.limit = params.limit;
+  }
+
+  const res = await apiClient.get<ProductListResponse>(
+    `/products/by-unit/${encodeURIComponent(productUnitId)}`,
+    { params: query },
+  );
+
+  return res.data;
+}
+
 /* ============================= */
 /* OVERVIEW */
 /* ============================= */
@@ -140,45 +193,88 @@ export async function getProductOverview(): Promise<ProductOverview> {
 /* HISTORY */
 /* ============================= */
 
-export const getProductHistory = async (
-  productId: string
-): Promise<ProductHistoryItem[]> => {
-  try {
-    const res = await apiClient.get(
-      `/products/history/${productId}`
-    );
-
-    return res.data;
-  } catch (error: unknown) {
-    throw error;
-  }
-};
-
-export const getProductHistoryDetail = async (
+/**
+ * Fetches paginated audit history for a product.
+ *
+ * @param productId - Product UUID.
+ * @param params - Optional pagination (`page`, `limit`).
+ * @returns History list page from the API.
+ */
+export async function getProductHistory(
   productId: string,
-  version: number
-): Promise<ProductHistoryDetail> => {
-  try {
-    const res = await apiClient.get(
-      `/products/history/${productId}/${version}`
-    );
-
-    return res.data;
-  } catch (error: unknown) {
-    throw error;
+  params: PaginatedListParams = {},
+): Promise<GetProductHistoryListResponse> {
+  const query: Record<string, number> = {};
+  if (params.page != null) {
+    query.page = params.page;
   }
-};
+  if (params.limit != null) {
+    query.limit = params.limit;
+  }
+
+  const res = await apiClient.get<GetProductHistoryListResponse>(
+    `/products/history/${encodeURIComponent(productId)}`,
+    { params: query },
+  );
+
+  return res.data;
+}
+
+/**
+ * Fetches a single product history version (field-level diff or snapshot).
+ *
+ * @param productId - Product UUID.
+ * @param version - History version number.
+ * @returns History detail DTO.
+ */
+export async function getProductHistoryDetail(
+  productId: string,
+  version: number,
+): Promise<ProductHistoryDetail> {
+  const res = await apiClient.get<ProductHistoryDetail>(
+    `/products/history/${encodeURIComponent(productId)}/${version}`,
+  );
+
+  return res.data;
+}
+
+/**
+ * Fetches paginated inventory stock movement history for a product.
+ *
+ * @param productId - Product UUID.
+ * @param params - Optional pagination (`page`, `limit`).
+ * @returns Stock history list page from the API.
+ */
+export async function getProductStockHistory(
+  productId: string,
+  params: PaginatedListParams = {},
+): Promise<GetProductStockHistoryResponse> {
+  const query: Record<string, number> = {};
+  if (params.page != null) {
+    query.page = params.page;
+  }
+  if (params.limit != null) {
+    query.limit = params.limit;
+  }
+
+  const res = await apiClient.get<GetProductStockHistoryResponse>(
+    `/products/stock-history/${encodeURIComponent(productId)}`,
+    { params: query },
+  );
+
+  return res.data;
+}
 
 /* ============================= */
 /* ACTIVE DEACTIVE */
 /* ============================= */
 export const deactivateProduct = async (id: string) => {
-  const res = await apiClient.patch(`/products/${id}/deactivate`);
+  const res = await apiClient.patch(`/products/activation/${id}/deactivate`);
   return res.data;
 };
 
 export const activateProduct = async (id: string) => {
-  const res = await apiClient.patch(`/products/${id}/activate`);
+  const res = await apiClient.patch(`/products/activation/${id}/activate`);
   return res.data;
 };
 

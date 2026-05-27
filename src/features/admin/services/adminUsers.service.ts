@@ -29,11 +29,22 @@ export type GetListOfUsersResponseDto = {
   users: UserResponseDto[];
 };
 
+export type UserListSearchBy = "fullName" | "username";
+
+export type UserListIsActiveFilter = "true" | "false" | "all";
+
+export type UserListSortBy =
+  | "fullName"
+  | "username"
+  | "createdAt"
+  | "updatedAt"
+  | "isActive";
+
 export type UserListQuery = {
   page?: number;
   limit?: number;
   search?: string;
-  searchBy?: "name" | "username";
+  searchBy?: UserListSearchBy;
   /**
    * When omitted, the list is not filtered by role. When set (one or more codes),
    * the API should return only users who **include at least one** of these roles.
@@ -41,8 +52,8 @@ export type UserListQuery = {
    * so the table can show every role they have (not only the filter subset).
    */
   roles?: UserRoleCode[];
-  active?: "true" | "false" | "all";
-  sortBy?: string;
+  isActive?: UserListIsActiveFilter;
+  sortBy?: UserListSortBy;
   sortOrder?: "asc" | "desc";
 };
 
@@ -99,8 +110,8 @@ function buildUserListQueryString(query: UserListQuery): string {
       params.append("roles", String(role));
     }
   }
-  if (query.active) {
-    params.set("active", query.active);
+  if (query.isActive) {
+    params.set("isActive", query.isActive);
   }
   if (query.sortBy) {
     params.set("sortBy", query.sortBy);
@@ -182,7 +193,7 @@ export async function deactivateUser(
   userId: string,
 ): Promise<UserResponseDto> {
   const { data } = await apiClient.patch<UserResponseDto>(
-    `/admin/users/deactivate/${encodeURIComponent(userId)}`,
+    `/admin/users/activation/${encodeURIComponent(userId)}/deactivate`,
   );
   return data;
 }
@@ -195,7 +206,7 @@ export async function deactivateUser(
  */
 export async function activateUser(userId: string): Promise<UserResponseDto> {
   const { data } = await apiClient.patch<UserResponseDto>(
-    `/admin/users/activate/${encodeURIComponent(userId)}`,
+    `/admin/users/activation/${encodeURIComponent(userId)}/activate`,
   );
   return data;
 }

@@ -78,7 +78,7 @@ export function adminUserColumns(
       header: dict.userFullNameColumn,
       width: NAME_AND_USERNAME_WIDTH,
       icon: <UserIcon className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      sortable: false,
+      sortable: true,
       accessor: (row) => (
         <span className="block truncate font-medium text-text">
           {displayFullName(row)}
@@ -119,7 +119,9 @@ export function adminUserColumns(
       id: "isActive",
       header: dict.status,
       icon: <CirclePower className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      sortable: false,
+      field: "isActive",
+      sortable: true,
+      sortAccessor: (row) => (row.isActive ? 1 : 0),
       accessor: (row) => <ActivePill active={row.isActive} />,
       thClassName: "w-[120px]",
     },

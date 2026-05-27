@@ -8,13 +8,13 @@ There is no central JSON or database. At runtime the source of truth is the **re
 
 ## Where it is wired in the app
 
-| Piece | Location |
-|--------|-----------|
-| **`ShortcutProvider`** | `src/components/layout/AppShell.tsx` — wraps the main shell (not login/register/forgot-password; see `LayoutWrapper.tsx`). |
-| **`ShortcutHelpHost`** | Mounted inside `ShortcutProvider` — **Ctrl+/** (mod+Slash) toggles the help popup. |
-| **`UniversalShortcutHost`** | Mounted inside `ShortcutProvider` — **Ctrl+,** focuses the active search field. |
-| **Help UI** | `ShortcutHelpHost.tsx`, `ShortcutHelpPopup.tsx` under `src/components/layout/`. |
-| **Modal Escape** | `modalEscapeStack.ts` + `BlurPopupWrapper.tsx` — separate from the shortcut registry; see [Escape and overlays](#escape-and-overlays). |
+| Piece                       | Location                                                                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **`ShortcutProvider`**      | `src/components/layout/AppShell.tsx` — wraps the main shell (not login/register/forgot-password; see `LayoutWrapper.tsx`).             |
+| **`ShortcutHelpHost`**      | Mounted inside `ShortcutProvider` — **Ctrl+/** (mod+Slash) toggles the help popup.                                                     |
+| **`UniversalShortcutHost`** | Mounted inside `ShortcutProvider` — **Ctrl+,** focuses the active search field.                                                        |
+| **Help UI**                 | `ShortcutHelpHost.tsx`, `ShortcutHelpPopup.tsx` under `src/components/layout/`.                                                        |
+| **Modal Escape**            | `modalEscapeStack.ts` + `BlurPopupWrapper.tsx` — separate from the shortcut registry; see [Escape and overlays](#escape-and-overlays). |
 
 ---
 
@@ -57,23 +57,23 @@ flowchart TB
 
 ## File map
 
-| File | Role |
-|------|------|
-| **`types.ts`** | `ShortcutChord`, `ShortcutRegistration`, `ShortcutCatalogEntry`, context types. |
-| **`ShortcutProvider.tsx`** | Registry model, global `keydown` listener, contexts, mounts help + universal hosts. |
-| **`shortcutRegistryModel.ts`** | `entries[]`, add/remove, `getDispatchEntries`, owns `catalogStore`. |
-| **`shortcutCatalogStore.ts`** | `subscribe`, `getVersion`, `bump`, `getEntries`. |
-| **`buildShortcutCatalog.ts`** | One row per `id` (newest `order` wins), sorted by `label`. |
-| **`matchesShortcutChord.ts`** | Chord matching + `normalizeKeyboardKey`. |
-| **`isEditableKeyboardTarget.ts`** | Input/textarea/select/contenteditable guard. |
-| **`formatShortcutChordForDisplay.ts`** | OS-aware display strings for the help table. |
-| **`resolveShortcutCatalogLabel.ts`** | Maps stable shortcut `id` → i18n dictionary keys. |
-| **`universalShortcut.ts`** | Shared chords/ids for **New** (Ctrl+.) and **Focus search** (Ctrl+,); search-root helper. |
-| **`useShortcut.ts`** | Effect-based registration; optional **`enabled`**. |
-| **`useShortcutsCatalog.ts`** | Help dialog data source. |
-| **`ShortcutRegisterContext.tsx`** | `registerShortcut` / `useShortcutContext`. |
-| **`ShortcutCatalogStoreContext.tsx`** | Catalog store instance. |
-| **`index.ts`** | Public re-exports (core API only; import `universalShortcut` by path). |
+| File                                   | Role                                                                                      |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **`types.ts`**                         | `ShortcutChord`, `ShortcutRegistration`, `ShortcutCatalogEntry`, context types.           |
+| **`ShortcutProvider.tsx`**             | Registry model, global `keydown` listener, contexts, mounts help + universal hosts.       |
+| **`shortcutRegistryModel.ts`**         | `entries[]`, add/remove, `getDispatchEntries`, owns `catalogStore`.                       |
+| **`shortcutCatalogStore.ts`**          | `subscribe`, `getVersion`, `bump`, `getEntries`.                                          |
+| **`buildShortcutCatalog.ts`**          | One row per `id` (newest `order` wins), sorted by `label`.                                |
+| **`matchesShortcutChord.ts`**          | Chord matching + `normalizeKeyboardKey`.                                                  |
+| **`isEditableKeyboardTarget.ts`**      | Input/textarea/select/contenteditable guard.                                              |
+| **`formatShortcutChordForDisplay.ts`** | OS-aware display strings for the help table.                                              |
+| **`resolveShortcutCatalogLabel.ts`**   | Maps stable shortcut `id` → i18n dictionary keys.                                         |
+| **`universalShortcut.ts`**             | Shared chords/ids for **New** (Ctrl+.) and **Focus search** (Ctrl+,); search-root helper. |
+| **`useShortcut.ts`**                   | Effect-based registration; optional **`enabled`**.                                        |
+| **`useShortcutsCatalog.ts`**           | Help dialog data source.                                                                  |
+| **`ShortcutRegisterContext.tsx`**      | `registerShortcut` / `useShortcutContext`.                                                |
+| **`ShortcutCatalogStoreContext.tsx`**  | Catalog store instance.                                                                   |
+| **`index.ts`**                         | Public re-exports (core API only; import `universalShortcut` by path).                    |
 
 Layout-only (not in this folder): `ShortcutHelpHost.tsx`, `ShortcutHelpPopup.tsx`, `UniversalShortcutHost.tsx`, `modalEscapeStack.ts`.
 
@@ -94,15 +94,15 @@ If both `code` and `key` are set, **`code` wins** in `matchesShortcutChord`.
 
 ### `ShortcutRegistration`
 
-| Field | Purpose |
-|--------|---------|
-| **`id`** | Stable string; catalog dedupes by `id` (newest registration wins). |
-| **`chord`** | Key combination to match. |
-| **`handler`** | `(event: KeyboardEvent) => void` when chord matches and guards pass. |
+| Field                 | Purpose                                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`id`**              | Stable string; catalog dedupes by `id` (newest registration wins).                                                                                        |
+| **`chord`**           | Key combination to match.                                                                                                                                 |
+| **`handler`**         | `(event: KeyboardEvent) => void` when chord matches and guards pass.                                                                                      |
 | **`allowInEditable`** | Default **false**: skipped while focus is in an input-like control. Set **`true`** for shortcuts that should work while typing (New, focus search, help). |
-| **`priority`** | Higher runs **earlier**; **first match wins** for the whole keypress. |
-| **`label`** | Help table fallback; localized via `resolveShortcutCatalogLabel` when mapped. |
-| **`stopEvent`** | Default **true**: `preventDefault` + `stopPropagation` after handler. |
+| **`priority`**        | Higher runs **earlier**; **first match wins** for the whole keypress.                                                                                     |
+| **`label`**           | Help table fallback; localized via `resolveShortcutCatalogLabel` when mapped.                                                                             |
+| **`stopEvent`**       | Default **true**: `preventDefault` + `stopPropagation` after handler.                                                                                     |
 
 ### `useShortcut` and `enabled`
 
@@ -145,25 +145,25 @@ Read **`modifiersMatch`** before changing behavior.
 
 ## Built-in and universal shortcuts
 
-| Chord | `id` | Where | `allowInEditable` | `priority` | Behavior |
-|--------|------|--------|-------------------|------------|----------|
-| **mod + \\** (`Backslash`) | `app-shell.toggle-sidebar` | `AppShell.tsx` | false | 0 | Toggle sidebar |
-| **mod + /** (`Slash`) | `shortcuts.open-help` | `ShortcutHelpHost.tsx` | true | 1000 | Toggle shortcuts help |
-| **Ctrl + ,** (`Comma`) | `app.universal-focus-search` | `UniversalShortcutHost.tsx` | true | 500 | Focus first text control in topmost `[data-universal-search-root]` |
-| **Ctrl + .** | `app.universal-new` | List pages (below) | true | 0 | Open “create new” for that screen |
-| **Ctrl + .** | `invoice.add-product` | `AddProductPopup.tsx` | true | **2000** | Open add-by-SKU popup on invoice product tables |
+| Chord                      | `id`                         | Where                       | `allowInEditable` | `priority` | Behavior                                                           |
+| -------------------------- | ---------------------------- | --------------------------- | ----------------- | ---------- | ------------------------------------------------------------------ |
+| **mod + \\** (`Backslash`) | `app-shell.toggle-sidebar`   | `AppShell.tsx`              | false             | 0          | Toggle sidebar                                                     |
+| **mod + /** (`Slash`)      | `shortcuts.open-help`        | `ShortcutHelpHost.tsx`      | true              | 1000       | Toggle shortcuts help                                              |
+| **Ctrl + ,** (`Comma`)     | `app.universal-focus-search` | `UniversalShortcutHost.tsx` | true              | 500        | Focus first text control in topmost `[data-universal-search-root]` |
+| **Ctrl + .**               | `app.universal-new`          | List pages (below)          | true              | 0          | Open “create new” for that screen                                  |
+| **Ctrl + .**               | `invoice.add-product`        | `AddProductPopup.tsx`       | true              | **2000**   | Open add-by-SKU popup on invoice product tables                    |
 
 ### `app.universal-new` (Ctrl+.) on list screens
 
 Same chord and **`id`** everywhere so the help dialog shows one **New** row. Each page supplies its own handler:
 
-| Page / component | Handler effect | Typical `enabled` |
-|------------------|----------------|-------------------|
-| `admin/users/page.tsx` | Open add-user flow | always (admin page) |
-| `cashier/selling/page.tsx` | Open `AddSellingInvoicePopup` | `canCreateSelling && !addInvoicePopupOpen` |
-| `manager/invoices/import/page.tsx` | Open create import invoice | `canManage && !addInvoicePopupOpen` |
-| `manager/invoices/stock-adjustment/page.tsx` | Open create stock adjustment | `canManage && !addInvoicePopupOpen` |
-| `ProductTableHeader.tsx` | `onAddProduct()` | `onAddProduct != null` |
+| Page / component                             | Handler effect                | Typical `enabled`                          |
+| -------------------------------------------- | ----------------------------- | ------------------------------------------ |
+| `admin/users/page.tsx`                       | Open add-user flow            | always (admin page)                        |
+| `cashier/selling/page.tsx`                   | Open `AddSellingInvoicePopup` | `canCreateSelling && !addInvoicePopupOpen` |
+| `manager/invoices/import/page.tsx`           | Open create import invoice    | `canManage && !addInvoicePopupOpen`        |
+| `manager/invoices/stock-adjustment/page.tsx` | Open create stock adjustment  | `canManage && !addInvoicePopupOpen`        |
+| `ProductTableHeader.tsx`                     | `onAddProduct()`              | `onAddProduct != null`                     |
 
 Constants live in **`universalShortcut.ts`** (`UNIVERSAL_NEW_SHORTCUT_*`).
 
@@ -227,8 +227,7 @@ const SAVE_CHORD = { key: "s", mod: true } as const;
 export default function Example() {
   const [dirty, setDirty] = useState(false);
 
-  const onSave = useCallback(function onSave(): void {
-  }, []);
+  const onSave = useCallback(function onSave(): void {}, []);
 
   useShortcut({
     id: "example.save",

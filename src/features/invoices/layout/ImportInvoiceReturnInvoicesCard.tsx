@@ -11,7 +11,7 @@ import { returnImportInvoiceListColumns } from "../table/returnImportInvoiceList
 const RELATED_RETURNS_LIMIT = 100 as const;
 
 type ImportInvoiceReturnInvoicesCardProps = {
-  /** Human-readable import invoice number (e.g. I26-0000001), not the internal UUID. */
+  /** Display import invoice number (e.g. I26-0000001) for `searchBy: importInvoiceId`. */
   importInvoiceNo: string | null;
 };
 

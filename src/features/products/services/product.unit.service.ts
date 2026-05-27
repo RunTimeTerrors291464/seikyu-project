@@ -68,7 +68,7 @@ export const productUnitService = {
   },
 
   async deactivate(id: string): Promise<ProductUnitUpdateResponse> {
-    const res = await api.patch(`/product-units/${id}/deactivate`);
+    const res = await api.patch(`/product-units/activation/${id}/deactivate`);
 
     return {
       productUnit: res.data.productUnit,
@@ -77,7 +77,7 @@ export const productUnitService = {
   },
 
   async activate(id: string): Promise<ProductUnitUpdateResponse> {
-    const res = await api.patch(`/product-units/${id}/activate`);
+    const res = await api.patch(`/product-units/activation/${id}/activate`);
 
     return {
       productUnit: res.data.productUnit,

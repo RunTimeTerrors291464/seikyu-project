@@ -8,19 +8,21 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
+import { buildReturnImportProductRequest } from "@/features/invoices/lib/returnInvoiceReason";
 import type { ImportInvoiceProductDto } from "@/features/invoices/services/importInvoice.service";
 import { createReturnImportDraft } from "@/features/invoices/services/returnImportInvoice.service";
 import { returnImportDraftProductColumns } from "@/features/invoices/table/invoiceProductLineColumns";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
-  EditableReturnImportLine,
-  toEditableReturnImportLine,
+    EditableReturnImportLine,
+    toEditableReturnImportLine,
 } from "@/features/invoices/types/returnImportDraft";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
-  formatPriceNumber,
-  lineTotalFromQuantityAndMoneyStrings,
+    formatPriceNumber,
+    lineTotalFromQuantityAndMoneyStrings,
 } from "@/lib/numeric/integerAndMoneyInputs";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReturnImportProductsCard from "./ReturnImportProductsCard";
@@ -197,11 +199,13 @@ export default function CreateReturnImportInvoicePopup({
   async function handleCreateConfirmed(): Promise<void> {
     const productsPayload = lines
       .filter((line) => toNumberOrZero(line.returnQuantity) > 0)
-      .map((line) => ({
-        productId: line.productId,
-        returnQuantity: Math.floor(toNumberOrZero(line.returnQuantity)),
-        notes: line.notes.trim() ? line.notes.trim() : undefined,
-      }));
+      .map((line) =>
+        buildReturnImportProductRequest(
+          line.productId,
+          Math.floor(toNumberOrZero(line.returnQuantity)),
+          line.notes,
+        ),
+      );
 
     if (productsPayload.length === 0) {
       setErrorMessage(returnNeedsLineMessage);
@@ -209,7 +213,7 @@ export default function CreateReturnImportInvoicePopup({
     }
 
     const payloadMissingNotes = productsPayload.some(
-      (line) => !line.notes || line.notes.trim() === "",
+      (line) => !line.reasonNotes || line.reasonNotes.trim() === "",
     );
 
     if (payloadMissingNotes) {
@@ -230,9 +234,7 @@ export default function CreateReturnImportInvoicePopup({
       handleClose();
       onCreated?.(response.id);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
-      );
+      setErrorMessage(resolveApiErrorMessage(error, dict));
     } finally {
       setCreating(false);
     }

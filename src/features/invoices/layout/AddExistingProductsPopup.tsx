@@ -55,7 +55,6 @@ export default function AddExistingProductsPopup({
     searchBy: undefined,
     sortBy: "sku",
     sortOrder: "asc",
-    stockStatus: "all",
     isActive: "all",
   };
 
@@ -235,7 +234,10 @@ export default function AddExistingProductsPopup({
                         onClick={function setStockFilter(): void {
                           setStatusFilter(option.value);
                           table.setFilters({
-                            stockStatus: String(option.value) as ProductQuery["stockStatus"],
+                            stockStatus:
+                              option.value === "all"
+                                ? undefined
+                                : option.value,
                           });
                         }}
                         className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${
@@ -270,7 +272,12 @@ export default function AddExistingProductsPopup({
                         onClick={function setActiveStatus(): void {
                           setActiveFilter(option.value);
                           table.setFilters({
-                            isActive: String(option.value) as ProductQuery["isActive"],
+                            isActive:
+                              option.value === "all"
+                                ? "all"
+                                : option.value === true
+                                  ? "true"
+                                  : "false",
                           });
                         }}
                         className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${

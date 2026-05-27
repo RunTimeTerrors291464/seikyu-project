@@ -4,20 +4,18 @@ import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
 import { INVOICE_DRAFT_ERRORS } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
-import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
-import KpiTile from "@/components/ui/KpiTile";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
-import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
-import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useImportInvoiceProductsEditor } from "../hooks/useImportInvoiceProductsEditor";
 import { createImportInvoiceDraft } from "../services/importInvoice.service";
 import {
   EditableImportInvoiceProduct,
-  toNumberOrZero,
+  importCreateLinesToRequest,
 } from "../types/importInvoiceDetail";
-import ImportInvoiceProductsCard from "./ImportInvoiceProductsCard";
+import ImportInvoiceDraftWorkspace from "./ImportInvoiceDraftWorkspace";
 
 type AddImportInvoicePopupProps = {
   open: boolean;
@@ -48,7 +46,7 @@ export default function AddImportInvoicePopup({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const nowText = useMemo(() => new Date().toISOString(), [open]);
+  const nowText = useMemo(() => new Date().toISOString(), []);
   const previousProductCountRef = useRef<number>(0);
 
   const isDraftDirty = useMemo(
@@ -130,24 +128,14 @@ export default function AddImportInvoicePopup({
 
     try {
       const created = await createImportInvoiceDraft({
-        products: products.map((product) => ({
-          productId: product.productId,
-          productSku: product.productSku,
-          productName: product.productName,
-          productUnit: product.productUnit,
-          quantity: toNumberOrZero(product.quantity),
-          importPrice: toNumberOrZero(product.importPrice),
-          notes: product.notes || undefined,
-        })),
+        products: importCreateLinesToRequest(products),
         notes: notes.trim() ? notes.trim() : undefined,
       });
 
       handleClose();
       onCreated?.(created.id);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
-      );
+      setErrorMessage(resolveApiErrorMessage(error, dict));
     } finally {
       setCreating(false);
     }
@@ -171,10 +159,8 @@ export default function AddImportInvoicePopup({
     setConfirmAction("create");
   }
 
-  const noteWarning = createAttempted && !notes.trim();
-
   const productsCardDangerAccent =
-    createAttempted && products.length === 0;
+    createAttempted && products.length === 0 ? "danger" : "neutral";
 
   if (!open) {
     return null;
@@ -182,11 +168,11 @@ export default function AddImportInvoicePopup({
 
   return (
     <Popup open={open} onClose={requestCancel}>
-      <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <h1 className="shrink-0 text-sm font-semibold text-text">
+      <div className="flex h-[90vh] w-[90vw] max-w-[1500px] bg-bg flex-col overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <p className="text-xl shrink-0 font-semibold text-text">
             {dict.importDraft}
-          </h1>
+          </p>
           <div className="flex min-w-0 flex-1 justify-center px-2">
             {draftError != null ? (
               <HeaderMeta
@@ -211,56 +197,20 @@ export default function AddImportInvoicePopup({
           </div>
         </div>
 
-        <div className="flex flex-1 gap-4 flex-col overflow-auto p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <KpiTile
-              label={dict.totalImportPriceLabel}
-              value={formatPriceNumber(totals.totalImportPrice)}
-              icon={<DollarSign className="h-4 w-4 text-muted" />}
-              accent={totals.totalImportPrice === 0 ? "warning" : "primary"}
-              helpText={dict.totalImportPriceKpiHelp}
-              sub={dict.totalImportPriceKpiSub}
-            />
-            <KpiTile
-              label={dict.totalProducts}
-              value={totals.totalProducts.toLocaleString()}
-              icon={<Package className="h-4 w-4 text-muted" />}
-              accent={totals.totalProducts === 0 ? "warning" : "neutral"}
-              helpText={dict.totalProductsKpiHelp}
-              sub={dict.totalProductsKpiSub}
-            />
-            <KpiTile
-              label={dict.totalQuantity}
-              value={totals.totalQuantity.toLocaleString()}
-              icon={<Boxes className="h-4 w-4 text-muted" />}
-              accent={totals.totalQuantity === 0 ? "warning" : "neutral"}
-              helpText={dict.totalQuantityKpiHelp}
-              sub={dict.totalQuantityKpiSub}
-            />
-          </div>
-
-          <ImportInvoiceProductsCard
+        <div className="flex flex-1 flex-col overflow-auto px-4 py-3">
+          <ImportInvoiceDraftWorkspace
             products={products}
-            canEditDraft={true}
             onChangeProducts={setProducts}
+            notes={notes}
+            onNotesChange={setNotes}
             updateRow={updateRow}
-            accent={productsCardDangerAccent ? "danger" : "neutral"}
+            totals={totals}
             lineFieldValidationActive={createAttempted}
+            productsCardAccent={productsCardDangerAccent}
           />
-
-          <Field
-            label={dict.noteLabel}
-            warning={noteWarning ? dict.emptyDescription : undefined}
-          >
-            <Textarea
-              value={notes}
-              onChange={setNotes}
-              placeholder={dict.invoiceDescriptionPlaceholder}
-            />
-          </Field>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
           <Button accent="neutral" onClick={requestCancel}>
             {dict.cancel}
           </Button>

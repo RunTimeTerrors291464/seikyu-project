@@ -2,6 +2,8 @@ import type { ShortcutChord } from "@/lib/shortcuts/types";
 
 const CODE_TO_LABEL: Record<string, string> = {
   Backslash: "\\",
+  Semicolon: ";",
+  Quote: "'",
   Comma: ",",
   Slash: "/",
   Space: "Space",

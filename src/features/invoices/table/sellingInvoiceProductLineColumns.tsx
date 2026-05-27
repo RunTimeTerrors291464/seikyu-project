@@ -9,6 +9,7 @@
 import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
+import { isEmptyValue, isZeroValue } from "@/lib/numeric/fieldValueChecks";
 import {
   finalizeMoneyStringTwoDecimalPlaces,
   formatPriceMoneyLike,
@@ -31,48 +32,7 @@ import { toNumberOrZero } from "../types/importInvoiceDetail";
 import type { EditableReturnSellingDetailLine } from "../types/returnSellingDetail";
 import type { EditableReturnSellingLine } from "../types/returnSellingDraft";
 import type { EditableSellingInvoiceCreateLine } from "../types/sellingInvoiceCreate";
-
-function isZeroValue(value: string): boolean {
-  return Number(value) === 0;
-}
-
-function isEmptyValue(value: string): boolean {
-  return value.trim().length === 0;
-}
-
-function buildProductIdentityColumnsReadOnly<
-  T extends { productSku: string; productName: string; productUnit: string },
->(dict: Dictionary): Column<T>[] {
-  return [
-    {
-      id: "productSku",
-      header: dict.sku,
-      icon: <Barcode className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      accessor: function renderSku(row) {
-        return <span className="text-text">{row.productSku || "—"}</span>;
-      },
-      thClassName: "w-[140px]",
-    },
-    {
-      id: "productName",
-      header: dict.productName,
-      icon: <Package className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      accessor: function renderName(row) {
-        return <span className="text-text">{row.productName || "—"}</span>;
-      },
-      thClassName: "w-[140px]",
-    },
-    {
-      id: "productUnit",
-      header: dict.unit,
-      icon: <Ruler className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      accessor: function renderUnit(row) {
-        return <span className="text-text">{row.productUnit || "—"}</span>;
-      },
-      thClassName: "w-[100px]",
-    },
-  ];
-}
+import { buildProductIdentityColumns } from "./invoiceProductIdentityColumns";
 
 // --- Create selling invoice (cashier popup) ---
 
@@ -146,7 +106,7 @@ export function sellingInvoiceCreateProductColumns({
   };
 
   const bodyColumns: Column<EditableSellingInvoiceCreateLine>[] = [
-    ...buildProductIdentityColumnsReadOnly<EditableSellingInvoiceCreateLine>(
+    ...buildProductIdentityColumns<EditableSellingInvoiceCreateLine>(
       dict,
     ),
     {
@@ -327,7 +287,7 @@ export function sellingInvoiceDetailReadOnlyProductColumns(
 ): Column<SellingInvoiceProductDto>[] {
   return [
     rowIndexColumn<SellingInvoiceProductDto>(),
-    ...buildProductIdentityColumnsReadOnly<SellingInvoiceProductDto>(dict),
+    ...buildProductIdentityColumns<SellingInvoiceProductDto>(dict),
     {
       id: "quantity",
       header: dict.quantityLabel,
@@ -485,7 +445,7 @@ function buildReturnSellingReadOnlyIdentityAndPrice<
   },
 >(dict: Dictionary): Column<T>[] {
   return [
-    ...buildProductIdentityColumnsReadOnly<T>(dict),
+    ...buildProductIdentityColumns<T>(dict),
     {
       id: "sellingPrice",
       header: dict.sellingPrice,

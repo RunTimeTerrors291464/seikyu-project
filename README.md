@@ -4,24 +4,24 @@ Next.js application for an inventory and invoicing dashboard. It talks to a REST
 
 ## Tech stack
 
-| Area | Libraries |
-|------|-----------|
-| Framework | [Next.js](https://nextjs.org/) 16 (App Router), React 19 |
-| Styling | [Tailwind CSS](https://tailwindcss.com/) 4 |
-| HTTP | [Axios](https://axios-http.com/) with interceptors (auth header, token refresh) |
-| State | [Zustand](https://zustand-demo.pmnd.rs/) (auth) |
-| Server/async data | [TanStack Query](https://tanstack.com/query) |
-| Tables | [TanStack Table](https://tanstack.com/table) |
-| Forms | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) (`@hookform/resolvers`) |
-| Theming | [next-themes](https://github.com/pacocoursey/next-themes) |
-| Toasts | [Sonner](https://sonner.emilkowal.ski/) |
-| PDF | [@react-pdf/renderer](https://react-pdf.org/) |
-| Icons | [Lucide React](https://lucide.dev/) |
+| Area              | Libraries                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| Framework         | [Next.js](https://nextjs.org/) 16 (App Router), React 19                                          |
+| Styling           | [Tailwind CSS](https://tailwindcss.com/) 4                                                        |
+| HTTP              | [Axios](https://axios-http.com/) with interceptors (auth header, token refresh)                   |
+| State             | [Zustand](https://zustand-demo.pmnd.rs/) (auth)                                                   |
+| Server/async data | [TanStack Query](https://tanstack.com/query)                                                      |
+| Tables            | [TanStack Table](https://tanstack.com/table)                                                      |
+| Forms             | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) (`@hookform/resolvers`) |
+| Theming           | [next-themes](https://github.com/pacocoursey/next-themes)                                         |
+| Toasts            | [Sonner](https://sonner.emilkowal.ski/)                                                           |
+| PDF               | [@react-pdf/renderer](https://react-pdf.org/)                                                     |
+| Icons             | [Lucide React](https://lucide.dev/)                                                               |
 
 ## Prerequisites
 
 - **Node.js** — use an LTS version compatible with Next.js 16 (see Next.js docs for the exact range).
-- **Backend API** — the app expects a v1 REST API. By default the client targets `http://localhost:4000/api/v1` (see [Environment variables](#environment-variables)).
+- **Backend API** — the app expects a v2 REST API. By default the client targets `http://localhost:4000/api/v2` (see [Environment variables](#environment-variables)).
 
 ## Getting started
 
@@ -34,22 +34,23 @@ Open [http://localhost:3000](http://localhost:3000). The dev server uses Next’
 
 ### Scripts
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Development server |
-| `npm run build` | Production build |
+| Command         | Purpose                               |
+| --------------- | ------------------------------------- |
+| `npm run dev`   | Development server                    |
+| `npm run build` | Production build                      |
 | `npm run start` | Run production server (after `build`) |
-| `npm run lint` | ESLint (Next.js config) |
+| `npm run lint`  | ESLint (Next.js config)               |
 
 ## Environment variables
 
 Create a `.env.local` in the project root (Next.js loads it automatically). At minimum you will usually set:
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_URL` | Base URL of the API **without** the `/api/v1` suffix. Example: `http://localhost:4000`. If unset, the client falls back to `http://localhost:4000`. |
+| Variable                  | Description                                                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`     | Base URL of the API **without** the `/api/v2` suffix. Example: `http://localhost:4000`. If unset, the client falls back to `http://localhost:4000`. |
+| `NEXT_PUBLIC_API_VERSION` | Optional API version segment (e.g. `2` or `v2`). Defaults to `v2`.                                                                                  |
 
-The Axios instance in `src/services/api-client.ts` appends `/api/v1` to this base URL.
+The Axios instance in `src/services/api-client.ts` appends `/api/v2` to this base URL by default.
 
 > Do not commit secrets or production URLs in tracked env files; keep `.env.local` out of version control.
 
@@ -163,12 +164,12 @@ Invoice flows include print-oriented UI (e.g. `InvoicePrintPreviewPopup`) and PD
 
 ## Troubleshooting
 
-| Symptom | Things to check |
-|---------|-----------------|
-| API calls fail or hit wrong host | `NEXT_PUBLIC_API_URL`, CORS on the backend, network tab |
-| Redirect loop or stuck on login | Cookie `access_token` present and not expired; middleware vs client both need a valid session |
-| 401 after idle | Refresh-token endpoint and cookie/localStorage alignment in `api-client.ts` |
-| Blank translations | `lang` cookie and matching keys in `en.json` / `vi.json` |
+| Symptom                          | Things to check                                                                               |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| API calls fail or hit wrong host | `NEXT_PUBLIC_API_URL`, CORS on the backend, network tab                                       |
+| Redirect loop or stuck on login  | Cookie `access_token` present and not expired; middleware vs client both need a valid session |
+| 401 after idle                   | Refresh-token endpoint and cookie/localStorage alignment in `api-client.ts`                   |
+| Blank translations               | `lang` cookie and matching keys in `en.json` / `vi.json`                                      |
 
 ## License
 

@@ -5,6 +5,7 @@ import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
 import { Field, Input } from "@/components/ui/Fields";
 import { StatusToggle } from "@/components/ui/StatusToggle";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import clsx from "clsx";
@@ -219,8 +220,8 @@ export default function EditUserPopup({
       toast.success(dict.userSaveSuccess);
       onSaved?.();
       handleClose();
-    } catch {
-      toast.error(dict.somethingWentWrong);
+    } catch (error: unknown) {
+      toast.error(resolveApiErrorMessage(error, dict));
     } finally {
       setSubmitting(false);
     }

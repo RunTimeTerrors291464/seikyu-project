@@ -14,6 +14,7 @@ import {
   getSellingInvoiceById,
   type SellingInvoiceResponseDto,
 } from "@/features/invoices/services/sellingInvoice.service";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Boxes, DollarSign, Package, User } from "lucide-react";
@@ -52,9 +53,7 @@ export default function ManagerSellingInvoiceDetailPage() {
           return;
         }
 
-        setErrorMessage(
-          error instanceof Error ? error.message : dict.somethingWentWrong,
-        );
+        setErrorMessage(resolveApiErrorMessage(error, dict));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -67,7 +66,7 @@ export default function ManagerSellingInvoiceDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [invoiceId, dict.somethingWentWrong]);
+  }, [invoiceId, dict]);
 
   const canReturn =
     invoice?.status === "confirmed" || invoice?.status === "partiallyReturned";
@@ -99,7 +98,7 @@ export default function ManagerSellingInvoiceDetailPage() {
     invoiceCode: invoice.invoiceId ?? dict.noInvoiceNo,
     status: invoice.status,
     createdBy: invoice.confirmedByUsername,
-    createdAt: invoice.confirmedAt,
+    createdAt: invoice.createdAt,
     confirmedBy: invoice.confirmedByUsername,
     confirmedAt: invoice.confirmedAt,
     notes: invoice.notes,

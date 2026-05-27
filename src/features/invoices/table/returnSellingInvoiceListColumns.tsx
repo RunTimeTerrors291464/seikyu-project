@@ -149,6 +149,18 @@ export function returnSellingInvoiceListColumns(
       thClassName: "w-[120px]",
     },
     {
+      id: "taxFocus",
+      header: "",
+      accessor: function renderTaxFocusSpacer() {
+        return (
+          <span className="tabular-nums text-muted" aria-hidden>
+            {"\u00a0"}
+          </span>
+        );
+      },
+      thClassName: "w-[120px]",
+    },
+    {
       id: "notes",
       header: dict.noteLabel,
       icon: (

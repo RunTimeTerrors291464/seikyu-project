@@ -3,12 +3,18 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import { Input } from "@/components/ui/Fields";
+import {
+  getInvoiceSkuCheckingHint,
+  getInvoiceSkuDisplayError,
+  getInvoiceSkuFieldError,
+  isInvoiceSkuValidated,
+  normalizeInvoiceSkuInput,
+} from "@/features/invoices/lib/invoiceSkuFieldValidation";
 import type { AddExistingProductsColumnPreset } from "@/features/invoices/table/addExistingProductsColumns";
-import useSkuLookupValidation from "@/features/products/hooks/useSkuLookupValidation";
+import useSkuCheck from "@/features/products/hooks/useSkuCheck";
 import type { Product } from "@/features/products/types/product";
 import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { useDict } from "@/lib/lang/DictProvider";
-import useShortcut from "@/lib/shortcuts/useShortcut";
 import {
   INVOICE_ADD_PRODUCT_NEW_SHORTCUT_FALLBACK_LABEL,
   INVOICE_ADD_PRODUCT_NEW_SHORTCUT_ID,
@@ -16,6 +22,7 @@ import {
   UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
   UNIVERSAL_NEW_SHORTCUT_CHORD,
 } from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import { Barcode } from "lucide-react";
 import { useCallback, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import AddExistingProductsPopup from "./AddExistingProductsPopup";
@@ -77,61 +84,44 @@ export default function AddProductPopup({
     checking: skuChecking,
     product: resolvedProduct,
     notFound: skuNotFound,
-  } = useSkuLookupValidation({ sku, skip: !open });
+  } = useSkuCheck({ sku, skip: !open, intent: "lookupExisting" });
 
-  const getSkuFieldError = useCallback(
-    function getSkuFieldError(value: string): string {
-      if (!value || !/^\d{13}$/.test(value)) {
-        return dict.skuMustBe13;
-      }
-
-      if (skuDebouncing || skuChecking) {
-        return "";
-      }
-
-      if (skuNotFound) {
-        return dict.skuProductNotFound;
-      }
-
-      if (resolvedProduct && !resolvedProduct.isActive) {
-        return dict.productInactiveCannotAdd;
-      }
-
-      if (resolvedProduct && excludedProductIds.has(resolvedProduct.id)) {
-        return dict.productAlreadyOnInvoice;
-      }
-
-      return "";
+  const skuLookupState = useMemo(
+    function buildSkuLookupState() {
+      return {
+        sku,
+        skuDebouncing,
+        skuChecking,
+        skuNotFound,
+        resolvedProduct,
+        excludedProductIds,
+      };
     },
     [
-      dict,
-      excludedProductIds,
-      resolvedProduct,
-      skuChecking,
+      sku,
       skuDebouncing,
+      skuChecking,
       skuNotFound,
+      resolvedProduct,
+      excludedProductIds,
     ],
+  );
+
+  const getSkuFieldError = useCallback(
+    function resolveSkuFieldError(value: string): string {
+      return getInvoiceSkuFieldError(value, skuLookupState, dict);
+    },
+    [dict, skuLookupState],
   );
 
   const skuError = useMemo(
     function computeSkuError(): string {
-      if (!touched && sku.length === 0) {
-        return "";
-      }
-
-      return getSkuFieldError(sku);
+      return getInvoiceSkuDisplayError(sku, touched, getSkuFieldError);
     },
     [getSkuFieldError, sku, touched],
   );
 
-  const canAdd =
-    /^\d{13}$/.test(sku) &&
-    !skuDebouncing &&
-    !skuChecking &&
-    resolvedProduct !== null &&
-    resolvedProduct.isActive &&
-    !excludedProductIds.has(resolvedProduct.id) &&
-    getSkuFieldError(sku) === "";
+  const canAdd = isInvoiceSkuValidated(sku, skuLookupState, dict);
 
   function resetSkuForm(): void {
     setSku("");
@@ -144,8 +134,7 @@ export default function AddProductPopup({
   }
 
   function handleSkuChange(value: string): void {
-    const digits = value.replace(/\D/g, "").slice(0, 13);
-    setSku(digits);
+    setSku(normalizeInvoiceSkuInput(value));
   }
 
   function handleSkuBlur(): void {
@@ -190,7 +179,7 @@ export default function AddProductPopup({
     return null;
   }
 
-  const skuHint = skuDebouncing || skuChecking ? dict.checkingSku : undefined;
+  const skuHint = getInvoiceSkuCheckingHint(skuDebouncing, skuChecking, dict);
   const hasSkuError = skuError.length > 0;
 
   return (

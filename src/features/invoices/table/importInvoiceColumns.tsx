@@ -69,7 +69,6 @@ export function importInvoiceColumns(
       id: "userId",
       header: dict.confirmBy,
       icon: <UserIcon className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      sortable: true,
       accessor: (row) => (
         <span className="text-text">
           {row.confirmedByUsername ?? "—"}
@@ -93,9 +92,10 @@ export function importInvoiceColumns(
       header: dict.createdAt,
       icon: <Clock className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       sortable: true,
+      field: "createdAt",
       accessor: (row) => (
         <span className="tabular-nums text-text">
-          {row.draftAt ? formatDate(row.draftAt) : "—"}
+          {row.createdAt ? formatDate(row.createdAt) : "—"}
         </span>
       ),
       thClassName: "w-[180px]",
@@ -104,6 +104,8 @@ export function importInvoiceColumns(
       id: "totalImportPrice",
       header: dict.totalPriceLabel,
       icon: <Receipt className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      field: "totalImportPrice",
+      sortable: true,
       accessor: (row) => (
         <span className="tabular-nums text-success">
           {formatPriceNumber(row.totalImportPrice)}

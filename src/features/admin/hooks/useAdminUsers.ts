@@ -1,3 +1,7 @@
+"use client";
+
+import { parseApiError, resolveApiErrorMessage } from "@/lib/api/errors";
+import { useDict } from "@/lib/lang/DictProvider";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -25,6 +29,7 @@ export type UseAdminUsersResult = {
  * @returns Rows, pagination metadata, loading state, and refetch.
  */
 export function useAdminUsers(query: UserListQuery): UseAdminUsersResult {
+  const dict = useDict();
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [page, setPage] = useState<number>(query.page ?? 1);
@@ -58,11 +63,11 @@ export function useAdminUsers(query: UserListQuery): UseAdminUsersResult {
           if (cancelled) {
             return;
           }
-          const nextError =
-            unknownError instanceof Error
-              ? unknownError
-              : new Error("Failed to load users");
-          setError(nextError);
+          const message = parseApiError(unknownError)
+            ? resolveApiErrorMessage(unknownError, dict)
+            : dict.userListLoadError;
+
+          setError(new Error(message));
           setRows([]);
           setTotal(0);
         } finally {
@@ -78,7 +83,7 @@ export function useAdminUsers(query: UserListQuery): UseAdminUsersResult {
         cancelled = true;
       };
     },
-    [tick, query],
+    [dict, tick, query],
   );
 
   return {

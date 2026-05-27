@@ -1,0 +1,1888 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-26T04:41:29.886Z",
+    "source": "libs/common/enums/errorCode.enum.ts",
+    "apiVersion": "1.0"
+  },
+  "responseShape": {
+    "description": "All API errors are normalized by CustomExceptionFilter",
+    "fields": {
+      "status": "HTTP status code (number)",
+      "errorCode": "Numeric error code from ErrorCode enum (number)",
+      "message": "Human-readable top-level message (string)",
+      "errorDetails": "Extra context: object, array, or empty array"
+    },
+    "defaultMessage": "Something went wrong, please try again later!"
+  },
+  "errorCodes": [
+    {
+      "code": 1001,
+      "name": "USER_ALREADY_EXISTS",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The username is already taken."
+        }
+      ]
+    },
+    {
+      "code": 1002,
+      "name": "USER_NOT_FOUND",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "The user is not found."
+        },
+        {
+          "httpStatus": 404,
+          "message": "The users are not found."
+        }
+      ]
+    },
+    {
+      "code": 1003,
+      "name": "FIRST_ADMIN_ACCOUNT_ALREADY_EXISTS",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The first admin account already exists."
+        }
+      ]
+    },
+    {
+      "code": 1004,
+      "name": "USER_CANNOT_DEACTIVATE_SELF",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "You cannot deactivate or activate yourself."
+        }
+      ]
+    },
+    {
+      "code": 1005,
+      "name": "USER_ALREADY_DEACTIVATED",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The user is already deactivated."
+        },
+        {
+          "httpStatus": 401,
+          "message": "The user is not active."
+        }
+      ]
+    },
+    {
+      "code": 1006,
+      "name": "USER_ALREADY_ACTIVATED",
+      "module": "users",
+      "thrownInCode": false,
+      "messageType": "enumOnly",
+      "note": "Defined in enum but not thrown in current codebase"
+    },
+    {
+      "code": 1007,
+      "name": "OLD_PASSWORD_INCORRECT",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The current password is incorrect."
+        }
+      ]
+    },
+    {
+      "code": 1101,
+      "name": "CREATE_USER_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1102,
+      "name": "GET_USER_BY_ID_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1103,
+      "name": "GET_USER_BY_USERNAME_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1104,
+      "name": "GET_LIST_OF_USERS_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1105,
+      "name": "DEACTIVATE_OR_ACTIVATE_USER_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1106,
+      "name": "EDIT_USER_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1107,
+      "name": "FORGOT_PASSWORD_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1108,
+      "name": "UPDATE_USER_PASSWORD_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 1109,
+      "name": "SEARCH_USERS_SERVICE",
+      "module": "users",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 2001,
+      "name": "USERNAME_OR_PASSWORD_INCORRECT",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 401,
+          "message": "The username or password is incorrect."
+        }
+      ]
+    },
+    {
+      "code": 2002,
+      "name": "INVALID_JWT_PAYLOAD",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 401,
+          "message": "Invalid JWT payload structure."
+        }
+      ]
+    },
+    {
+      "code": 2003,
+      "name": "INVALID_JWT_TOKEN",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 401,
+          "message": "You are not authorized to access this resource."
+        },
+        {
+          "httpStatus": 401,
+          "message": "The access token is not provided."
+        },
+        {
+          "httpStatus": 401,
+          "message": "The access token has expired."
+        },
+        {
+          "httpStatus": 401,
+          "message": "The access token is invalid."
+        },
+        {
+          "httpStatus": 401,
+          "message": "Invalid token payload"
+        },
+        {
+          "httpStatus": 401,
+          "message": "Failed to decrypt token payload"
+        },
+        {
+          "httpStatus": 401,
+          "message": "The refresh token ID is missing in access token payload."
+        },
+        {
+          "httpStatus": 401,
+          "message": "User identity is required for rate limiting."
+        }
+      ]
+    },
+    {
+      "code": 2004,
+      "name": "NO_ROLES_FOUND_FOR_USER",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 401,
+          "message": "No roles found for user."
+        }
+      ]
+    },
+    {
+      "code": 2005,
+      "name": "REQUIRED_ROLES_NOT_FOUND",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 403,
+          "message": "User does not have the required roles to access this resource."
+        }
+      ]
+    },
+    {
+      "code": 2006,
+      "name": "INVALID_REFRESH_TOKEN",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 401,
+          "message": "The refresh token is invalid."
+        },
+        {
+          "httpStatus": 401,
+          "message": "The refresh token is revoked or expired."
+        },
+        {
+          "httpStatus": 401,
+          "message": "The access token is revoked or expired."
+        }
+      ]
+    },
+    {
+      "code": 2007,
+      "name": "RATE_LIMIT_EXCEEDED",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 429,
+          "message": "You have exceeded the rate limit. Access is blocked for 5 minutes."
+        },
+        {
+          "httpStatus": 429,
+          "message": "Rate limit exceeded. Your access is blocked for 5 minutes."
+        },
+        {
+          "httpStatus": 429,
+          "message": "The rate limit of the refresh token has been exceeded."
+        }
+      ]
+    },
+    {
+      "code": 2008,
+      "name": "TOO_MANY_REFRESH_TOKENS",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 429,
+          "message": "The user has too many refresh tokens."
+        }
+      ]
+    },
+    {
+      "code": 2101,
+      "name": "LOGIN_SERVICE",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 2102,
+      "name": "NEW_ACCESS_TOKEN_SERVICE",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 2103,
+      "name": "LOGOUT_SERVICE",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 2104,
+      "name": "VALIDATE_REFRESH_TOKEN_SERVICE",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 2105,
+      "name": "VALIDATE_REFRESH_TOKEN_BY_ID_SERVICE",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 2106,
+      "name": "REVOKE_ALL_REFRESH_TOKENS_SERVICE",
+      "module": "auth",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3001,
+      "name": "PRODUCT_UNIT_NOT_FOUND",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "The product unit is not found."
+        },
+        {
+          "httpStatus": 404,
+          "message": "The product unit version {version} is not found."
+        }
+      ]
+    },
+    {
+      "code": 3002,
+      "name": "PRODUCT_UNIT_NAME_ALREADY_EXISTS",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product unit name is already taken."
+        }
+      ]
+    },
+    {
+      "code": 3003,
+      "name": "PRODUCT_UNIT_ALREADY_ACTIVATED",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product unit is already activated."
+        }
+      ]
+    },
+    {
+      "code": 3004,
+      "name": "PRODUCT_UNIT_ALREADY_DEACTIVATED",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product unit is already deactivated."
+        }
+      ]
+    },
+    {
+      "code": 3005,
+      "name": "PRODUCT_UNIT_NOT_ACTIVE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product unit is not active."
+        }
+      ]
+    },
+    {
+      "code": 3101,
+      "name": "CREATE_PRODUCT_UNIT_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3102,
+      "name": "EDIT_PRODUCT_UNIT_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3103,
+      "name": "GET_PRODUCT_UNIT_BY_ID_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3104,
+      "name": "GET_LIST_OF_PRODUCT_UNITS_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3105,
+      "name": "DEACTIVATE_OR_ACTIVATE_PRODUCT_UNIT_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3106,
+      "name": "GET_PRODUCT_UNIT_HISTORY_LIST_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 3107,
+      "name": "GET_PRODUCT_UNIT_HISTORY_BY_VERSION_SERVICE",
+      "module": "productUnits",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4001,
+      "name": "PRODUCT_SKU_ALREADY_EXISTS",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product SKU is already taken."
+        }
+      ]
+    },
+    {
+      "code": 4002,
+      "name": "PRODUCT_NOT_FOUND",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "The product is not found."
+        },
+        {
+          "httpStatus": 404,
+          "message": "One or more products were not found."
+        },
+        {
+          "httpStatus": 404,
+          "message": "The product version {version} is not found."
+        }
+      ]
+    },
+    {
+      "code": 4003,
+      "name": "PRODUCT_NOT_ACTIVE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product is not active."
+        },
+        {
+          "httpStatus": 400,
+          "message": "One or more products are not active."
+        },
+        {
+          "httpStatus": 400,
+          "message": "One or more products are not active and cannot have inventory updated."
+        }
+      ]
+    },
+    {
+      "code": 4004,
+      "name": "PRODUCT_ALREADY_ACTIVATED",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product is already activated."
+        }
+      ]
+    },
+    {
+      "code": 4005,
+      "name": "PRODUCT_ALREADY_DEACTIVATED",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product is already deactivated."
+        }
+      ]
+    },
+    {
+      "code": 4006,
+      "name": "PRODUCT_STOCK_CANNOT_BE_NEGATIVE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "One or more products would have negative stock when subtracted."
+        }
+      ]
+    },
+    {
+      "code": 4007,
+      "name": "PRODUCT_STOCK_HISTORY_NOT_FOUND",
+      "module": "products",
+      "thrownInCode": false,
+      "messageType": "enumOnly",
+      "note": "Defined in enum but not thrown in current codebase"
+    },
+    {
+      "code": 4008,
+      "name": "TOO_MANY_PRODUCT_NAMES",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product names has maximum 8 items."
+        }
+      ]
+    },
+    {
+      "code": 4009,
+      "name": "TOO_MANY_PRODUCT_IDS",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The product ids are not more than 64."
+        }
+      ]
+    },
+    {
+      "code": 4101,
+      "name": "CREATE_PRODUCT_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4102,
+      "name": "EDIT_PRODUCT_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4103,
+      "name": "GET_PRODUCT_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4104,
+      "name": "GET_PRODUCTS_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4105,
+      "name": "GET_PRODUCT_CASHIER_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4106,
+      "name": "DEACTIVATE_OR_ACTIVATE_PRODUCT_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4107,
+      "name": "GET_PRODUCT_HISTORY_LIST_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4108,
+      "name": "GET_PRODUCT_HISTORY_BY_VERSION_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4109,
+      "name": "UPDATE_INVENTORY_STOCK_BULK_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4110,
+      "name": "GET_PRODUCT_STOCK_HISTORY_LIST_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 4111,
+      "name": "GET_PRODUCT_OVERVIEW_SERVICE",
+      "module": "products",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5001,
+      "name": "IMPORT_INVOICE_NOT_FOUND",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "Import invoice with ID {id} not found"
+        }
+      ]
+    },
+    {
+      "code": 5002,
+      "name": "TOO_MANY_IMPORT_INVOICE_PRODUCTS",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Too many products in import invoice. Maximum is 64."
+        }
+      ]
+    },
+    {
+      "code": 5003,
+      "name": "INVOICE_NOT_DRAFT",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Invoice is not in draft status."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Return import invoice is not in draft status."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Return selling invoice is not in draft status."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Stock adjustment invoice is not in draft status."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Return import invoice could not be confirmed."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Return selling invoice could not be confirmed."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Stock adjustment invoice could not be confirmed."
+        }
+      ]
+    },
+    {
+      "code": 5004,
+      "name": "INVOICE_NO_PERMISSION_DRAFT",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "User has no permission to edit this invoice."
+        },
+        {
+          "httpStatus": 400,
+          "message": "User has no permission to delete this invoice."
+        },
+        {
+          "httpStatus": 400,
+          "message": "User has no permission to confirm this invoice."
+        }
+      ]
+    },
+    {
+      "code": 5101,
+      "name": "CREATE_DRAFT_IMPORT_INVOICE_SERVICE",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5102,
+      "name": "EDIT_DRAFT_IMPORT_INVOICE_SERVICE",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5103,
+      "name": "DELETE_DRAFT_IMPORT_INVOICE_SERVICE",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5104,
+      "name": "CONFIRM_IMPORT_INVOICE_SERVICE",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5105,
+      "name": "GET_IMPORT_INVOICE_BY_ID_SERVICE",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5106,
+      "name": "GET_LIST_OF_IMPORT_INVOICES_SERVICE",
+      "module": "importInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5201,
+      "name": "RETURN_IMPORT_INVOICE_NOT_FOUND",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "Return import invoice with ID {id} not found"
+        }
+      ]
+    },
+    {
+      "code": 5202,
+      "name": "TOO_MANY_RETURN_IMPORT_INVOICE_PRODUCTS",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Too many products in return import invoice. Maximum is 64."
+        }
+      ]
+    },
+    {
+      "code": 5203,
+      "name": "IMPORT_INVOICE_NOT_RETURNABLE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Import invoice must be CONFIRMED or PARTIALLY_RETURNED to create a return."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Import invoice must be CONFIRMED or PARTIALLY_RETURNED to edit this return."
+        }
+      ]
+    },
+    {
+      "code": 5301,
+      "name": "CREATE_DRAFT_RETURN_IMPORT_INVOICE_SERVICE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5302,
+      "name": "EDIT_DRAFT_RETURN_IMPORT_INVOICE_SERVICE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5303,
+      "name": "DELETE_DRAFT_RETURN_IMPORT_INVOICE_SERVICE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5304,
+      "name": "CONFIRM_RETURN_IMPORT_INVOICE_SERVICE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5305,
+      "name": "GET_RETURN_IMPORT_INVOICE_BY_ID_SERVICE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5306,
+      "name": "GET_LIST_OF_RETURN_IMPORT_INVOICES_SERVICE",
+      "module": "returnImportInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5401,
+      "name": "SELLING_INVOICE_NOT_FOUND",
+      "module": "sellingInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "Selling invoice with ID {id} not found"
+        }
+      ]
+    },
+    {
+      "code": 5402,
+      "name": "TOO_MANY_SELLING_INVOICE_PRODUCTS",
+      "module": "sellingInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Too many products in selling invoice. Maximum is 64."
+        }
+      ]
+    },
+    {
+      "code": 5403,
+      "name": "SELLING_INVOICE_INSUFFICIENT_STOCK",
+      "module": "sellingInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "One or more products do not have enough stock for this sale."
+        }
+      ]
+    },
+    {
+      "code": 5501,
+      "name": "CREATE_SELLING_INVOICE_SERVICE",
+      "module": "sellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5502,
+      "name": "GET_SELLING_INVOICE_BY_ID_SERVICE",
+      "module": "sellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5503,
+      "name": "GET_LIST_OF_SELLING_INVOICES_SERVICE",
+      "module": "sellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5601,
+      "name": "RETURN_SELLING_INVOICE_NOT_FOUND",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "Return selling invoice with ID {id} not found"
+        }
+      ]
+    },
+    {
+      "code": 5602,
+      "name": "TOO_MANY_RETURN_SELLING_INVOICE_PRODUCTS",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Too many products in return selling invoice. Maximum is 64."
+        }
+      ]
+    },
+    {
+      "code": 5603,
+      "name": "SELLING_INVOICE_NOT_RETURNABLE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Selling invoice must be CONFIRMED or PARTIALLY_RETURNED to create a return."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Selling invoice must be CONFIRMED or PARTIALLY_RETURNED to edit this return."
+        }
+      ]
+    },
+    {
+      "code": 5701,
+      "name": "CREATE_DRAFT_RETURN_SELLING_INVOICE_SERVICE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5702,
+      "name": "EDIT_DRAFT_RETURN_SELLING_INVOICE_SERVICE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5703,
+      "name": "DELETE_DRAFT_RETURN_SELLING_INVOICE_SERVICE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5704,
+      "name": "CONFIRM_RETURN_SELLING_INVOICE_SERVICE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5705,
+      "name": "GET_RETURN_SELLING_INVOICE_BY_ID_SERVICE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5706,
+      "name": "GET_LIST_OF_RETURN_SELLING_INVOICES_SERVICE",
+      "module": "returnSellingInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5801,
+      "name": "STOCK_ADJUSTMENT_INVOICE_NOT_FOUND",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 404,
+          "message": "Stock adjustment invoice with ID {id} not found"
+        }
+      ]
+    },
+    {
+      "code": 5802,
+      "name": "TOO_MANY_STOCK_ADJUSTMENT_INVOICE_PRODUCTS",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Too many products in stock adjustment invoice. Maximum is 64."
+        }
+      ]
+    },
+    {
+      "code": 5803,
+      "name": "CREATE_DRAFT_STOCK_ADJUSTMENT_INVOICE_SERVICE",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5804,
+      "name": "EDIT_DRAFT_STOCK_ADJUSTMENT_INVOICE_SERVICE",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5805,
+      "name": "DELETE_DRAFT_STOCK_ADJUSTMENT_INVOICE_SERVICE",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5806,
+      "name": "CONFIRM_STOCK_ADJUSTMENT_INVOICE_SERVICE",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5807,
+      "name": "GET_STOCK_ADJUSTMENT_INVOICE_BY_ID_SERVICE",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 5808,
+      "name": "GET_LIST_OF_STOCK_ADJUSTMENT_INVOICES_SERVICE",
+      "module": "stockAdjustmentInvoices",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 6001,
+      "name": "DATE_CAN_NOT_BE_IN_FUTURE",
+      "module": "dashboard",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "Start date cannot be in the future. Maximum allowed date is today."
+        },
+        {
+          "httpStatus": 400,
+          "message": "End date cannot be in the future. Maximum allowed date is today."
+        }
+      ]
+    },
+    {
+      "code": 6002,
+      "name": "END_DATE_MUST_BE_PROVIDED",
+      "module": "dashboard",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "End date is required for custom date range."
+        }
+      ]
+    },
+    {
+      "code": 6003,
+      "name": "DATE_RANGE_TOO_LARGE",
+      "module": "dashboard",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "The date range for custom date type cannot exceed 90 days."
+        }
+      ]
+    },
+    {
+      "code": 6004,
+      "name": "END_DATE_BEFORE_START_DATE",
+      "module": "dashboard",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "End date cannot be before start date."
+        }
+      ]
+    },
+    {
+      "code": 6101,
+      "name": "GET_LIST_PRODUCT_RANKING_SERVICE",
+      "module": "dashboard",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 6102,
+      "name": "GET_PRICE_TREND_SERVICE",
+      "module": "dashboard",
+      "thrownInCode": true,
+      "messageType": "dynamic",
+      "httpStatus": 500,
+      "messagePattern": "[ERROR] {underlyingErrorMessage}",
+      "note": "Returned by @HandleServiceError when an unexpected error occurs in the service method"
+    },
+    {
+      "code": 8001,
+      "name": "DTO_VALIDATION_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoWrapper",
+      "httpStatus": 400,
+      "messages": [
+        {
+          "httpStatus": 400,
+          "message": "[ERROR] DTO Validation Error",
+          "note": "Top-level wrapper for ValidationPipe failures"
+        },
+        {
+          "httpStatus": 400,
+          "message": "One or more products are not part of the original import invoice."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Return quantity exceeds returnable quantity for one or more products."
+        },
+        {
+          "httpStatus": 400,
+          "message": "One or more products are not part of the original selling invoice."
+        },
+        {
+          "httpStatus": 400,
+          "message": "Return quantity exceeds returnable quantity for one or more products."
+        }
+      ],
+      "errorDetailsShape": {
+        "type": "array",
+        "items": {
+          "errorObject": "string (field name)",
+          "errorMessages": [
+            {
+              "errorCode": "number (8100-8199)",
+              "errorMessage": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "code": 8100,
+      "name": "IS_NOT_EMPTY_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isNotEmpty",
+      "description": "Property must not be empty",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8101,
+      "name": "IS_STRING_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isString",
+      "description": "Property must be a string",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8102,
+      "name": "IS_NUMBER_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isNumber",
+      "description": "Property must be a number",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8103,
+      "name": "IS_BOOLEAN_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isBoolean",
+      "description": "Property must be a boolean",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8104,
+      "name": "IS_ARRAY_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isArray",
+      "description": "Property must be an array",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8105,
+      "name": "IS_OBJECT_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isObject",
+      "description": "Property must be an object",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8106,
+      "name": "IS_DATE_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isDate",
+      "description": "Property must be a date",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8107,
+      "name": "IS_EMAIL_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isEmail",
+      "description": "Property must be an email",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8108,
+      "name": "IS_URL_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isUrl",
+      "description": "Property must be a URL",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8109,
+      "name": "IS_IP_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isIP",
+      "description": "Property must be an IP address",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8110,
+      "name": "IS_INT_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isInt",
+      "description": "Property must be an integer",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8111,
+      "name": "IS_ENUM_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isEnum",
+      "description": "Property must be a valid enum value",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8112,
+      "name": "MIN_LENGTH_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "minLength",
+      "description": "Property is shorter than minimum length",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8113,
+      "name": "MAX_LENGTH_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "maxLength",
+      "description": "Property is longer than maximum length",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8114,
+      "name": "MIN_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "min",
+      "description": "Property is less than minimum value",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8115,
+      "name": "MAX_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "max",
+      "description": "Property is greater than maximum value",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8116,
+      "name": "MATCHES_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "matches",
+      "description": "Property does not match regex pattern",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8117,
+      "name": "IS_STRONG_PASSWORD_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isStrongPassword",
+      "description": "Property is not a strong password",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8118,
+      "name": "WHITELISTED_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "whitelistValidation",
+      "description": "Property is not allowed by DTO whitelist",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8119,
+      "name": "IS_UUID_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isUuid",
+      "description": "Property must be a UUID",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8120,
+      "name": "IS_DATE_STRING_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isDateString",
+      "description": "Property must be an ISO date string",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8121,
+      "name": "IS_IN_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "isIn",
+      "description": "Property must be one of allowed values",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8122,
+      "name": "NESTED_VALIDATION_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "nestedValidation",
+      "description": "Nested object/array validation failed",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8123,
+      "name": "ARRAY_MAX_SIZE_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "arrayMaxSize",
+      "description": "Array exceeds maximum size",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8124,
+      "name": "ARRAY_UNIQUE_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "arrayUnique",
+      "description": "Array contains duplicate values",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8125,
+      "name": "INVOICE_DATE_RANGE_INVALID",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "InvoiceDateRange",
+      "description": "Invoice date range is invalid",
+      "exampleMessage": "fromDate and toDate must be valid ISO dates with fromDate <= toDate, and the range must not exceed 180 days.",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 8199,
+      "name": "UNKNOWN_CONSTRAINT_ERROR",
+      "module": "validation",
+      "thrownInCode": true,
+      "messageType": "dtoField",
+      "constraint": "unknown",
+      "description": "Unmapped class-validator constraint",
+      "httpStatus": 400,
+      "parentErrorCode": 8001,
+      "note": "Found in errorDetails[].errorMessages[] when parent errorCode is 8001"
+    },
+    {
+      "code": 9001,
+      "name": "DB_CONNECTION_ERROR",
+      "module": "common",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 503,
+          "message": "[ERROR] Database connection error. Please try again later."
+        }
+      ]
+    },
+    {
+      "code": 9002,
+      "name": "RACE_CONDITION_ERROR",
+      "module": "common",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 409,
+          "message": "[ERROR] Race condition error occurred. Please try again later."
+        }
+      ]
+    },
+    {
+      "code": 9003,
+      "name": "DB_QUERY_ERROR",
+      "module": "common",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 500,
+          "message": "[ERROR] Database query error."
+        }
+      ]
+    },
+    {
+      "code": 9901,
+      "name": "HTTP_EXCEPTION",
+      "module": "common",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": null,
+          "message": "[ERROR] HTTP Exception Error"
+        }
+      ]
+    },
+    {
+      "code": 9999,
+      "name": "UNKNOWN_ERROR",
+      "module": "common",
+      "thrownInCode": true,
+      "messageType": "fixed",
+      "messages": [
+        {
+          "httpStatus": 500,
+          "message": "[ERROR] Undefined or Unknown Error"
+        }
+      ]
+    }
+  ],
+  "dtoCustomMessages": [
+    {
+      "field": "firstName",
+      "message": "firstName must be less than 64 characters."
+    },
+    {
+      "field": "middleName",
+      "message": "middleName must be less than 64 characters."
+    },
+    {
+      "field": "lastName",
+      "message": "lastName must be less than 64 characters."
+    },
+    {
+      "field": "username",
+      "message": "username must be less than 64 characters."
+    },
+    {
+      "field": "password",
+      "message": "password must be at least 8 characters."
+    },
+    {
+      "field": "password",
+      "message": "password must be less than 64 characters."
+    },
+    {
+      "field": "currentPassword",
+      "message": "currentPassword must be at least 8 characters."
+    },
+    {
+      "field": "currentPassword",
+      "message": "currentPassword must be less than 64 characters."
+    },
+    {
+      "field": "newPassword",
+      "message": "newPassword must be at least 8 characters."
+    },
+    {
+      "field": "newPassword",
+      "message": "newPassword must be less than 64 characters."
+    },
+    {
+      "field": "sku",
+      "message": "sku must be exactly 13 characters."
+    },
+    {
+      "field": "productSku",
+      "message": "productSku must be exactly 13 characters."
+    },
+    {
+      "field": "productNames",
+      "message": "productNames must contain at most 8 items"
+    },
+    {
+      "field": "unitName",
+      "message": "unitName must be less than 255 characters."
+    },
+    {
+      "field": "quantity",
+      "message": "quantity must be at least 1"
+    },
+    {
+      "field": "returnQuantity",
+      "message": "returnQuantity must be at least 1"
+    },
+    {
+      "field": "importPrice",
+      "message": "importPrice must be at least 0"
+    },
+    {
+      "field": "sellingPrice",
+      "message": "sellingPrice must be at least 0"
+    },
+    {
+      "field": "productId",
+      "message": "Each productId must appear only once in the list."
+    },
+    {
+      "field": "productSku",
+      "message": "Each productSku must appear only once in the list."
+    },
+    {
+      "field": "id",
+      "message": "Each product id must appear only once in the list."
+    }
+  ]
+}

@@ -11,7 +11,7 @@ import { returnSellingInvoiceListColumns } from "../table/returnSellingInvoiceLi
 const RELATED_RETURNS_LIMIT = 100 as const;
 
 type SellingInvoiceReturnInvoicesCardProps = {
-  /** Human-readable selling invoice number (e.g. S26-0000001), not the internal UUID. */
+  /** Display selling invoice number (e.g. S26-0000001) for `searchBy: sellingInvoiceId`. */
   sellingInvoiceNo: string | null;
 };
 

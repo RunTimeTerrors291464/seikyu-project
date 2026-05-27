@@ -9,6 +9,7 @@
 import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
+import { isEmptyValue, isZeroValue } from "@/lib/numeric/fieldValueChecks";
 import {
   finalizeMoneyStringTwoDecimalPlaces,
   formatPriceMoneyLike,
@@ -18,70 +19,17 @@ import {
   normalizeMoneyStringInput,
 } from "@/lib/numeric/integerAndMoneyInputs";
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
-import {
-  Barcode,
-  DollarSign,
-  MessageSquare,
-  Package,
-  Ruler,
-  Sigma,
-} from "lucide-react";
+import { DollarSign, MessageSquare, Sigma } from "lucide-react";
 import type { EditableImportInvoiceProduct } from "../types/importInvoiceDetail";
 import { toNumberOrZero } from "../types/importInvoiceDetail";
 import type { EditableReturnInvoiceDetailLine } from "../types/returnImportDetail";
 import type { EditableReturnImportLine } from "../types/returnImportDraft";
-
-// --- Shared row shapes for internal builders ---
-
-type ProductIdentityRow = {
-  productSku: string;
-  productName: string;
-  productUnit: string;
-};
+import {
+  buildProductIdentityColumns,
+  type ProductIdentityRow,
+} from "./invoiceProductIdentityColumns";
 
 type WithImportPriceReadOnly = ProductIdentityRow & { importPrice: string };
-
-// --- Internal: identity + read-only price (return flows) ---
-
-/**
- * Read-only SKU, product name, and unit. Uses `Barcode` for SKU (aligned with import product lines).
- *
- * @param dict - UI strings.
- * @returns Three column definitions.
- */
-function buildProductIdentityColumns<T extends ProductIdentityRow>(
-  dict: Dictionary,
-): Column<T>[] {
-  return [
-    {
-      id: "productSku",
-      header: dict.sku,
-      icon: <Barcode className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      accessor: function renderSku(row) {
-        return <span className="text-text">{row.productSku || "—"}</span>;
-      },
-      thClassName: "w-[140px]",
-    },
-    {
-      id: "productName",
-      header: dict.productName,
-      icon: <Package className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      accessor: function renderName(row) {
-        return <span className="text-text">{row.productName || "—"}</span>;
-      },
-      thClassName: "w-[220px]",
-    },
-    {
-      id: "productUnit",
-      header: dict.unit,
-      icon: <Ruler className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
-      accessor: function renderUnit(row) {
-        return <span className="text-text">{row.productUnit || "—"}</span>;
-      },
-      thClassName: "w-[120px]",
-    },
-  ];
-}
 
 /**
  * Read-only import price cell for return-import product tables.
@@ -123,14 +71,6 @@ function buildReturnImportReadOnlyStaticColumns<T extends WithImportPriceReadOnl
   ];
 }
 
-function isZeroValue(value: string): boolean {
-  return Number(value) === 0;
-}
-
-function isEmptyValue(value: string): boolean {
-  return value.trim().length === 0;
-}
-
 /**
  * Read-only line total (quantity × import price) for import invoice product rows.
  *
@@ -159,26 +99,31 @@ function buildImportLineTotalColumn(
   };
 }
 
-/**
- * Editable quantity, import price, computed line total, and notes for import invoice lines.
- *
- * @param dict - UI strings.
- * @param canEditDraft - When false, inputs are disabled and validation styling is off.
- * @param showLineFieldErrors - When false, quantity/price omit error/warning styling (create popup until Create is pressed).
- * @param onUpdateRow - Persists a field on a row by `localId`.
- * @returns Four column definitions.
- */
-function buildImportInvoiceEditableTailColumns(
-  dict: Dictionary,
-  canEditDraft: boolean,
-  showLineFieldErrors: boolean,
+type ImportInvoiceTailColumnsOptions = {
+  dict: Dictionary;
+  readOnly: boolean;
+  canEditDraft: boolean;
+  showLineFieldErrors: boolean;
   onUpdateRow: (
     rowLocalId: string,
     key: keyof EditableImportInvoiceProduct,
     value: string,
-  ) => void,
+  ) => void;
+};
+
+/**
+ * Quantity, import price, line total, and notes for import invoice product lines.
+ *
+ * @param options - Read-only vs editable mode, validation flags, and row updater.
+ * @returns Four column definitions.
+ */
+function buildImportInvoiceTailColumns(
+  options: ImportInvoiceTailColumnsOptions,
 ): Column<EditableImportInvoiceProduct>[] {
-  const showQuantityPriceIssues = canEditDraft && showLineFieldErrors;
+  const { dict, readOnly, canEditDraft, showLineFieldErrors, onUpdateRow } =
+    options;
+  const showQuantityPriceIssues =
+    !readOnly && canEditDraft && showLineFieldErrors;
 
   return [
     {
@@ -186,65 +131,94 @@ function buildImportInvoiceEditableTailColumns(
       header: dict.quantityLabel,
       icon: <Sigma className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderQuantity(row) {
+        if (readOnly) {
+          return (
+            <span className="tabular-nums text-text">
+              {toNumberOrZero(row.quantity)}
+            </span>
+          );
+        }
         const isEmpty = isEmptyValue(row.quantity);
         return (
-          <Input
-            value={row.quantity}
-            invoiceLineQuantityRowId={row.localId}
-            onChange={function handleChange(value): void {
-              const next = normalizeIntegerStringInput(value, {
-                allowEmpty: true,
-              });
-              onUpdateRow(row.localId, "quantity", next);
+          <div
+            onMouseDown={function stopRowCapture(event): void {
+              event.stopPropagation();
             }}
-            disabled={!canEditDraft}
-            error={showQuantityPriceIssues ? isEmpty : false}
-            warning={
-              showQuantityPriceIssues
-                ? !isEmpty && isZeroValue(row.quantity)
-                : false
-            }
-            inputMode="numeric"
-          />
+          >
+            <Input
+              value={row.quantity}
+              invoiceLineQuantityRowId={row.localId}
+              onChange={function handleChange(value): void {
+                const next = normalizeIntegerStringInput(value, {
+                  allowEmpty: true,
+                });
+                onUpdateRow(row.localId, "quantity", next);
+              }}
+              disabled={!canEditDraft}
+              error={showQuantityPriceIssues ? isEmpty : false}
+              warning={
+                showQuantityPriceIssues
+                  ? !isEmpty && isZeroValue(row.quantity)
+                  : false
+              }
+              inputMode="numeric"
+            />
+          </div>
         );
       },
       thClassName: "w-[120px]",
+      tdClassName: readOnly
+        ? undefined
+        : "!max-w-none !overflow-visible whitespace-normal [overflow-wrap:anywhere]",
     },
     {
       id: "importPrice",
       header: dict.importPrice,
       icon: <DollarSign className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderImportPrice(row) {
+        if (readOnly) {
+          return (
+            <span className="tabular-nums text-text">
+              {formatPriceMoneyLike(row.importPrice)}
+            </span>
+          );
+        }
         const isEmpty = isEmptyValue(row.importPrice);
         return (
-          <Input
-            value={row.importPrice}
-            onChange={function handleChange(value): void {
-              const next = normalizeMoneyStringInput(value, {
-                allowEmpty: true,
-              });
-              onUpdateRow(row.localId, "importPrice", next);
+          <div
+            onMouseDown={function stopRowCapture(event): void {
+              event.stopPropagation();
             }}
-            onBlur={function handleBlur(): void {
-              if (!canEditDraft) {
-                return;
-              }
-              const next = finalizeMoneyStringTwoDecimalPlaces(row.importPrice, {
-                allowEmpty: true,
-              });
-              if (next !== row.importPrice) {
+          >
+            <Input
+              value={row.importPrice}
+              onChange={function handleChange(value): void {
+                const next = normalizeMoneyStringInput(value, {
+                  allowEmpty: true,
+                });
                 onUpdateRow(row.localId, "importPrice", next);
+              }}
+              onBlur={function handleBlur(): void {
+                if (!canEditDraft) {
+                  return;
+                }
+                const next = finalizeMoneyStringTwoDecimalPlaces(row.importPrice, {
+                  allowEmpty: true,
+                });
+                if (next !== row.importPrice) {
+                  onUpdateRow(row.localId, "importPrice", next);
+                }
+              }}
+              disabled={!canEditDraft}
+              error={showQuantityPriceIssues ? isEmpty : false}
+              warning={
+                showQuantityPriceIssues
+                  ? !isEmpty && isZeroValue(row.importPrice)
+                  : false
               }
-            }}
-            disabled={!canEditDraft}
-            error={showQuantityPriceIssues ? isEmpty : false}
-            warning={
-              showQuantityPriceIssues
-                ? !isEmpty && isZeroValue(row.importPrice)
-                : false
-            }
-            inputMode="numeric"
-          />
+              inputMode="decimal"
+            />
+          </div>
         );
       },
       thClassName: "w-[160px]",
@@ -255,19 +229,68 @@ function buildImportInvoiceEditableTailColumns(
       header: dict.noteLabel,
       icon: <MessageSquare className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderNotes(row) {
+        if (readOnly) {
+          return <span className="text-text">{row.notes || "—"}</span>;
+        }
         return (
-          <Input
-            value={row.notes}
-            onChange={function handleChange(value): void {
-              onUpdateRow(row.localId, "notes", value);
+          <div
+            onMouseDown={function stopRowCapture(event): void {
+              event.stopPropagation();
             }}
-            disabled={!canEditDraft}
-          />
+          >
+            <Input
+              value={row.notes}
+              onChange={function handleChange(value): void {
+                onUpdateRow(row.localId, "notes", value);
+              }}
+              disabled={!canEditDraft}
+            />
+          </div>
         );
       },
       tdClassName: "max-w-[280px]",
     },
   ];
+}
+
+function buildImportInvoiceSelectColumn(
+  dict: Dictionary,
+  selectedIds: Set<string>,
+  allSelected: boolean,
+  hasRows: boolean,
+  onToggleSelectAll: (checked: boolean) => void,
+  onToggleSelectOne: (localId: string, checked: boolean) => void,
+): Column<EditableImportInvoiceProduct> {
+  return {
+    id: "select",
+    header: "",
+    icon: (
+      <input
+        type="checkbox"
+        checked={allSelected}
+        onChange={function handleSelectAll(event): void {
+          onToggleSelectAll(event.target.checked);
+        }}
+        className="h-4 w-4 rounded border-border"
+        disabled={!hasRows}
+        aria-label={dict.selected}
+      />
+    ),
+    accessor: function renderRowSelect(row) {
+      return (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.localId)}
+          onChange={function handleSelectOne(event): void {
+            onToggleSelectOne(row.localId, event.target.checked);
+          }}
+          className="h-4 w-4 rounded border-border"
+        />
+      );
+    },
+    thClassName: "w-[46px]",
+    tdClassName: "w-[46px]",
+  };
 }
 
 type ReturnQuantityColumnParams<T extends { returnQuantity: string }> = {
@@ -389,6 +412,62 @@ function buildReturnLineTotalColumn<
   };
 }
 
+// --- Public: import invoice create popup (read-only table + entry card) ---
+
+type ImportInvoiceCreateProductColumnsParams = {
+  dict: Dictionary;
+  readOnly: boolean;
+  showLineFieldErrors?: boolean;
+  enableSelection: boolean;
+  selectedIds: Set<string>;
+  allSelected: boolean;
+  hasRows: boolean;
+  onToggleSelectAll: (checked: boolean) => void;
+  onToggleSelectOne: (localId: string, checked: boolean) => void;
+  onUpdateRow: (
+    rowLocalId: string,
+    key: keyof EditableImportInvoiceProduct,
+    value: string,
+  ) => void;
+};
+
+export function importInvoiceCreateProductColumns({
+  dict,
+  readOnly,
+  showLineFieldErrors = true,
+  enableSelection,
+  selectedIds,
+  allSelected,
+  hasRows,
+  onToggleSelectAll,
+  onToggleSelectOne,
+  onUpdateRow,
+}: ImportInvoiceCreateProductColumnsParams): Column<EditableImportInvoiceProduct>[] {
+  const selectColumn = buildImportInvoiceSelectColumn(
+    dict,
+    selectedIds,
+    allSelected,
+    hasRows,
+    onToggleSelectAll,
+    onToggleSelectOne,
+  );
+  const bodyColumns: Column<EditableImportInvoiceProduct>[] = [
+    ...buildProductIdentityColumns<EditableImportInvoiceProduct>(dict),
+    ...buildImportInvoiceTailColumns({
+      dict,
+      readOnly,
+      canEditDraft: true,
+      showLineFieldErrors,
+      onUpdateRow,
+    }),
+  ];
+  const indexColumn = rowIndexColumn<EditableImportInvoiceProduct>();
+
+  return enableSelection
+    ? [selectColumn, indexColumn, ...bodyColumns]
+    : [indexColumn, ...bodyColumns];
+}
+
 // --- Public: import invoice product lines (draft / confirmed) ---
 
 type ImportInvoiceProductColumnsParams = {
@@ -422,47 +501,24 @@ export function importInvoiceProductColumns({
   onToggleSelectOne,
   onUpdateRow,
 }: ImportInvoiceProductColumnsParams): Column<EditableImportInvoiceProduct>[] {
-  const selectColumn: Column<EditableImportInvoiceProduct> = {
-    id: "select",
-    header: "",
-    icon: (
-      <input
-        type="checkbox"
-        checked={allSelected}
-        onChange={function handleSelectAll(event): void {
-          onToggleSelectAll(event.target.checked);
-        }}
-        className="h-4 w-4 rounded border-border"
-        disabled={!hasRows}
-        aria-label={dict.selected}
-      />
-    ),
-    accessor: function renderRowSelect(row) {
-      return (
-        <input
-          type="checkbox"
-          checked={selectedIds.has(row.localId)}
-          onChange={function handleSelectOne(event): void {
-            onToggleSelectOne(row.localId, event.target.checked);
-          }}
-          className="h-4 w-4 rounded border-border"
-        />
-      );
-    },
-    thClassName: "w-[46px]",
-    tdClassName: "w-[46px]",
-  };
-
+  const selectColumn = buildImportInvoiceSelectColumn(
+    dict,
+    selectedIds,
+    allSelected,
+    hasRows,
+    onToggleSelectAll,
+    onToggleSelectOne,
+  );
   const bodyColumns: Column<EditableImportInvoiceProduct>[] = [
     ...buildProductIdentityColumns<EditableImportInvoiceProduct>(dict),
-    ...buildImportInvoiceEditableTailColumns(
+    ...buildImportInvoiceTailColumns({
       dict,
+      readOnly: !canEditDraft,
       canEditDraft,
       showLineFieldErrors,
       onUpdateRow,
-    ),
+    }),
   ];
-
   const indexColumn = rowIndexColumn<EditableImportInvoiceProduct>();
 
   return canEditDraft

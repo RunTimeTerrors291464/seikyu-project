@@ -3,6 +3,7 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import { Field, Input } from "@/components/ui/Fields";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import clsx from "clsx";
@@ -119,8 +120,8 @@ export default function CreateUserPopup({
       toast.success(dict.userCreateSuccess);
       onCreated?.();
       handleClose();
-    } catch {
-      toast.error(dict.somethingWentWrong);
+    } catch (error: unknown) {
+      toast.error(resolveApiErrorMessage(error, dict));
     } finally {
       setSubmitting(false);
     }

@@ -163,7 +163,7 @@ export default function CashierSellingInvoicesPage() {
                 icon: <UserIcon className="h-3 w-3" />,
               },
               {
-                label: dict.productIdSearchLabel,
+                label: dict.productSkuSearchLabel,
                 icon: <Package className="h-3 w-3" />,
               },
             ]}
@@ -173,7 +173,7 @@ export default function CashierSellingInvoicesPage() {
                 "invoiceId";
               if (rule === dict.confirmBy) {
                 normalized = "userId";
-              } else if (rule === dict.productIdSearchLabel) {
+              } else if (rule === dict.productSkuSearchLabel) {
                 normalized = "productId";
               }
               setSearchRule(normalized);

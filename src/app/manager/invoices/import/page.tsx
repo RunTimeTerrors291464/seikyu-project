@@ -13,20 +13,23 @@ import {
   IMPORT_INVOICE_STATUS_OPTIONS,
   ImportInvoiceStatusFilter,
 } from "@/features/invoices/filters/importInvoiceFilters";
-import type { ImportInvoiceStatus } from "@/features/invoices/services/importInvoice.service";
+import type {
+  ImportInvoiceListSortBy,
+  ImportInvoiceStatus,
+} from "@/features/invoices/services/importInvoice.service";
 import type { ReturnImportInvoiceWithoutProductsDto } from "@/features/invoices/services/returnImportInvoice.service";
 import { getReturnImportInvoiceList } from "@/features/invoices/services/returnImportInvoice.service";
 import { importInvoiceColumns } from "@/features/invoices/table/importInvoiceColumns";
 import { returnImportInvoiceListColumns } from "@/features/invoices/table/returnImportInvoiceListColumns";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
-import useShortcut from "@/lib/shortcuts/useShortcut";
 import {
   UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
   UNIVERSAL_NEW_SHORTCUT_CHORD,
-  UNIVERSAL_NEW_SHORTCUT_ID,
   UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+  UNIVERSAL_NEW_SHORTCUT_ID,
 } from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 
 import {
@@ -43,7 +46,7 @@ import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePo
 import { useRouter } from "next/navigation";
 
 const RETURN_CHILDREN_LIMIT = 100;
-type ImportInvoiceSortBy = "invoiceId" | "userId" | "createdAt";
+type ImportInvoiceSortBy = ImportInvoiceListSortBy;
 type ReturnImportInvoiceSortBy = "returnInvoiceId" | "userId" | "createdAt";
 type SortOrder = "asc" | "desc";
 
@@ -182,16 +185,20 @@ export default function ImportInvoicesListPage() {
   }
 
   function handleSort(nextField: string): void {
-    if (
-      nextField !== "invoiceId" &&
-      nextField !== "userId" &&
-      nextField !== "createdAt"
-    ) {
+    const apiSortFields: ImportInvoiceListSortBy[] = [
+      "invoiceId",
+      "totalImportPrice",
+      "createdAt",
+      "confirmedAt",
+      "draftAt",
+    ];
+
+    if (!apiSortFields.includes(nextField as ImportInvoiceListSortBy)) {
       return;
     }
 
     if (sortBy !== nextField) {
-      setSortBy(nextField);
+      setSortBy(nextField as ImportInvoiceListSortBy);
       setSortOrder("asc");
       setPage(1);
       return;

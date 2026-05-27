@@ -1,4 +1,4 @@
-import type { StockAdjustmentActionReason } from "../services/stockAdjustmentInvoice.service";
+import type { StockAdjustmentReasonCategory } from "../services/stockAdjustmentInvoice.service";
 
 export type StockAdjustmentInvoiceStatusFilter = "all" | "draft" | "confirmed";
 
@@ -11,20 +11,24 @@ export const STOCK_ADJUSTMENT_INVOICE_STATUS_OPTIONS: {
   { value: "confirmed", dictKey: "confirmed" },
 ];
 
-export const STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS: {
-  value: StockAdjustmentActionReason | "all";
+export const STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS: {
+  value: StockAdjustmentReasonCategory;
   dictKey: string;
 }[] = [
-  { value: "all", dictKey: "all" },
-  { value: "damagedGoods", dictKey: "actionReasonDamagedGoods" },
-  { value: "expiredGoods", dictKey: "actionReasonExpiredGoods" },
-  { value: "lostGoods", dictKey: "actionReasonLostGoods" },
-  { value: "theft", dictKey: "actionReasonTheft" },
-  { value: "sampleUsage", dictKey: "actionReasonSampleUsage" },
-  { value: "internalUse", dictKey: "actionReasonInternalUse" },
-  { value: "foundGoods", dictKey: "actionReasonFoundGoods" },
-  { value: "supplierBonus", dictKey: "actionReasonSupplierBonus" },
-  { value: "returnedGoods", dictKey: "actionReasonReturnedGoods" },
-  { value: "periodicInventoryCheck", dictKey: "actionReasonPeriodicInventoryCheck" },
-  { value: "other", dictKey: "actionReasonOther" },
+  { value: "damage", dictKey: "reasonCategoryDamage" },
+  { value: "expired", dictKey: "reasonCategoryExpired" },
+  { value: "shrinkage", dictKey: "reasonCategoryShrinkage" },
+  { value: "foundInventory", dictKey: "reasonCategoryFoundInventory" },
+  { value: "physicalInventory", dictKey: "reasonCategoryPhysicalInventory" },
+  { value: "cycleCountVariance", dictKey: "reasonCategoryCycleCountVariance" },
+  { value: "inventoryCorrection", dictKey: "reasonCategoryInventoryCorrection" },
+  { value: "obsolescence", dictKey: "reasonCategoryObsolescence" },
+  { value: "qualityRejection", dictKey: "reasonCategoryQualityRejection" },
+  { value: "recall", dictKey: "reasonCategoryRecall" },
+  { value: "receivingVariance", dictKey: "reasonCategoryReceivingVariance" },
+  { value: "pickingError", dictKey: "reasonCategoryPickingError" },
+  { value: "shippingError", dictKey: "reasonCategoryShippingError" },
+  { value: "transferVariance", dictKey: "reasonCategoryTransferVariance" },
+  { value: "dataCorrection", dictKey: "reasonCategoryDataCorrection" },
+  { value: "other", dictKey: "reasonCategoryOther" },
 ];

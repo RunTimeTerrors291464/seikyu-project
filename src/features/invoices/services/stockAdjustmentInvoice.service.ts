@@ -1,20 +1,27 @@
+import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
+import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
 import apiClient from "@/services/api-client";
 
 export type StockAdjustmentInvoiceStatus = "draft" | "confirmed";
 
 export type StockAdjustmentAction = "add" | "subtract";
 
-export type StockAdjustmentActionReason =
-  | "damagedGoods"
-  | "expiredGoods"
-  | "lostGoods"
-  | "theft"
-  | "sampleUsage"
-  | "internalUse"
-  | "foundGoods"
-  | "supplierBonus"
-  | "returnedGoods"
-  | "periodicInventoryCheck"
+export type StockAdjustmentReasonCategory =
+  | "cycleCountVariance"
+  | "physicalInventory"
+  | "inventoryCorrection"
+  | "damage"
+  | "expired"
+  | "shrinkage"
+  | "obsolescence"
+  | "qualityRejection"
+  | "recall"
+  | "receivingVariance"
+  | "pickingError"
+  | "shippingError"
+  | "transferVariance"
+  | "foundInventory"
+  | "dataCorrection"
   | "other";
 
 export type StockAdjustmentInvoiceProductDto = {
@@ -25,6 +32,8 @@ export type StockAdjustmentInvoiceProductDto = {
   productUnit: string;
   action: StockAdjustmentAction;
   quantity: number;
+  reasonCategory: StockAdjustmentReasonCategory;
+  reasonNotes: string | null;
   notes: string | null;
 };
 
@@ -34,7 +43,6 @@ export type StockAdjustmentInvoiceResponseDto = {
   products: StockAdjustmentInvoiceProductDto[];
   totalProducts: number;
   totalQuantity: number;
-  actionReason: StockAdjustmentActionReason;
   notes: string | null;
   status: StockAdjustmentInvoiceStatus;
   draftBy: string | null;
@@ -50,7 +58,6 @@ export type StockAdjustmentInvoiceWithoutProductsDto = {
   invoiceId: string | null;
   totalProducts: number;
   totalQuantity: number;
-  actionReason: StockAdjustmentActionReason;
   notes: string | null;
   status: StockAdjustmentInvoiceStatus;
   draftBy: string | null;
@@ -76,7 +83,6 @@ export type StockAdjustmentInvoiceListQuery = {
   sortBy?: "invoiceId" | "totalQuantity" | "createdAt" | "confirmedAt";
   sortOrder?: "asc" | "desc";
   status?: StockAdjustmentInvoiceStatus;
-  actionReason?: StockAdjustmentActionReason;
   fromDate?: string;
   toDate?: string;
 };
@@ -88,45 +94,27 @@ export type StockAdjustmentProductRequestDto = {
   productUnit: string;
   action: StockAdjustmentAction;
   quantity: number;
+  reasonCategory: StockAdjustmentReasonCategory;
+  reasonNotes?: string;
   notes?: string;
 };
 
 export type CreateStockAdjustmentInvoiceRequestDto = {
   products: StockAdjustmentProductRequestDto[];
-  actionReason: StockAdjustmentActionReason;
   notes?: string;
 };
 
 export type EditStockAdjustmentInvoiceRequestDto = {
   id: string;
   products: StockAdjustmentProductRequestDto[];
-  actionReason: StockAdjustmentActionReason;
   notes?: string;
 };
-
-type StockAdjustmentListParams = StockAdjustmentInvoiceListQuery;
-
-function cleanStockAdjustmentParams(
-  params: StockAdjustmentListParams,
-): StockAdjustmentListParams {
-  const cleaned: StockAdjustmentListParams = {};
-
-  (Object.entries(params) as [keyof StockAdjustmentListParams, string | number | undefined][])
-    .forEach(([key, value]) => {
-      if (value === undefined || value === null || value === "") {
-        return;
-      }
-
-      cleaned[key] = value as never;
-    });
-
-  return cleaned;
-}
 
 export async function getStockAdjustmentInvoiceList(
   params: StockAdjustmentInvoiceListQuery,
 ): Promise<GetListOfStockAdjustmentInvoicesResponseDto> {
-  const cleanedParams = cleanStockAdjustmentParams(params);
+  const paramsWithDates = mergeDefaultListDateRange(params);
+  const cleanedParams = cleanInvoiceListParams(paramsWithDates);
 
   const response = await apiClient.get<GetListOfStockAdjustmentInvoicesResponseDto>(
     "/invoices/stock-adjustment",
@@ -152,7 +140,7 @@ export async function editStockAdjustmentInvoiceDraft(
   payload: EditStockAdjustmentInvoiceRequestDto,
 ): Promise<StockAdjustmentInvoiceResponseDto> {
   const response = await apiClient.patch<StockAdjustmentInvoiceResponseDto>(
-    "/invoices/stock-adjustment/draft",
+    "/invoices/stock-adjustment",
     payload,
   );
 
@@ -163,7 +151,7 @@ export async function createStockAdjustmentInvoiceDraft(
   payload: CreateStockAdjustmentInvoiceRequestDto,
 ): Promise<StockAdjustmentInvoiceResponseDto> {
   const response = await apiClient.post<StockAdjustmentInvoiceResponseDto>(
-    "/invoices/stock-adjustment/draft",
+    "/invoices/stock-adjustment",
     payload,
   );
 
@@ -173,7 +161,7 @@ export async function createStockAdjustmentInvoiceDraft(
 export async function confirmStockAdjustmentInvoice(
   id: string,
 ): Promise<StockAdjustmentInvoiceResponseDto> {
-  const response = await apiClient.patch<StockAdjustmentInvoiceResponseDto>(
+  const response = await apiClient.post<StockAdjustmentInvoiceResponseDto>(
     `/invoices/stock-adjustment/${id}/confirm`,
   );
 
@@ -183,7 +171,7 @@ export async function confirmStockAdjustmentInvoice(
 export async function deleteStockAdjustmentInvoiceDrafts(
   ids: string[],
 ): Promise<void> {
-  await apiClient.delete("/invoices/stock-adjustment/draft", {
+  await apiClient.delete("/invoices/stock-adjustment", {
     data: { ids },
   });
 }

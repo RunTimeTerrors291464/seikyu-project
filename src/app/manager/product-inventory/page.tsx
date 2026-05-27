@@ -67,7 +67,6 @@ export default function ProductInventoryPage() {
     searchBy: undefined,
     sortBy: "sku",
     sortOrder: "asc",
-    stockStatus: "all",
     isActive: "all",
   };
 
@@ -257,7 +256,10 @@ export default function ProductInventoryPage() {
                     setStatusFilter(opt.value);
 
                     table.setFilters({
-                      stockStatus: String(opt.value) as ProductQuery["stockStatus"],
+                      stockStatus:
+                        opt.value === "all"
+                          ? undefined
+                          : opt.value,
                     });
                   }}
                   className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
@@ -295,7 +297,12 @@ export default function ProductInventoryPage() {
                     setActiveFilter(opt.value as ProductStatusFilter);
 
                     table.setFilters({
-                      isActive: opt.value as ProductQuery["isActive"],
+                      isActive:
+                        opt.value === "all"
+                          ? "all"
+                          : opt.value === true
+                            ? "true"
+                            : "false",
                     });
                   }}
                   className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
