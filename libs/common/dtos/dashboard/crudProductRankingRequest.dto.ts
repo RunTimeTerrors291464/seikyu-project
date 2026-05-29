@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MinLength, IsNumber, IsIn, IsEnum, Max, Min, IsISO8601 } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsIn, IsEnum, Max, Min, IsISO8601, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -8,6 +8,8 @@ export class GetListOfProductRankingRequestDto {
     @ApiPropertyOptional({
         description: 'The page number',
         example: 1,
+        minimum: 1,
+        maximum: 2147483647,
     })
     @IsNumber()
     @IsOptional()
@@ -19,20 +21,22 @@ export class GetListOfProductRankingRequestDto {
     @ApiPropertyOptional({
         description: 'The page size',
         example: 10,
+        minimum: 1,
     })
     @IsNumber()
     @IsOptional()
     @Type(() => Number)
     @Min(1)
-    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({
         description: 'Search query by product name',
         example: 'iPhone',
+        maxLength: 255,
     })
     @IsString()
     @IsOptional()
+    @MaxLength(255, { message: 'search must be less than 255 characters.' })
     search?: string;
 
     @ApiPropertyOptional({
@@ -65,16 +69,20 @@ export class GetListOfProductRankingRequestDto {
     @ApiProperty({
         description: 'Start date for filtering (ISO 8601 format)',
         example: '2024-01-01',
+        maxLength: 32,
     })
     @IsISO8601()
     @IsNotEmpty()
+    @MaxLength(32, { message: 'startDate must be less than 32 characters.' })
     startDate: string;
 
     @ApiPropertyOptional({
         description: 'End date for filtering (ISO 8601 format)',
         example: '2024-12-31',
+        maxLength: 32,
     })
     @IsISO8601()
     @IsOptional()
+    @MaxLength(32, { message: 'endDate must be less than 32 characters.' })
     endDate?: string;
 }

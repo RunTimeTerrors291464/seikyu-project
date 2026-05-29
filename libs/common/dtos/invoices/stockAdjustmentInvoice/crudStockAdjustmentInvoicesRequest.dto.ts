@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, ArrayUnique, Validate } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, ArrayUnique, Validate, MaxLength, MinLength, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -23,25 +23,33 @@ export class StockAdjustmentInvoiceProductRequestDto {
     @ApiProperty({
         description: 'Product SKU',
         example: '1234567890123',
+        minLength: 13,
+        maxLength: 13,
     })
     @IsNotEmpty()
     @IsString()
+    @MinLength(13, { message: 'productSku must be exactly 13 characters.' })
+    @MaxLength(13, { message: 'productSku must be exactly 13 characters.' })
     productSku: string;
 
     @ApiProperty({
         description: 'Product name',
         example: 'Coca Cola 330ml',
+        maxLength: 255,
     })
     @IsNotEmpty()
     @IsString()
+    @MaxLength(255, { message: 'productName must be less than 255 characters.' })
     productName: string;
 
     @ApiProperty({
         description: 'Product unit',
         example: 'PCS',
+        maxLength: 255,
     })
     @IsNotEmpty()
     @IsString()
+    @MaxLength(255, { message: 'productUnit must be less than 255 characters.' })
     productUnit: string;
 
     @ApiProperty({
@@ -57,10 +65,12 @@ export class StockAdjustmentInvoiceProductRequestDto {
         description: 'Quantity to add or subtract',
         example: 10,
         minimum: 1,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @IsNumber()
     @Min(1, { message: 'quantity must be at least 1' })
+    @Max(2147483647)
     quantity: number;
 
     @ApiProperty({
@@ -75,17 +85,21 @@ export class StockAdjustmentInvoiceProductRequestDto {
     @ApiPropertyOptional({
         description: 'Free-text notes for the reason (line level)',
         example: 'Crushed cases in aisle 3',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'reasonNotes must be less than 2048 characters.' })
     reasonNotes?: string;
 
     @ApiPropertyOptional({
         description: 'Additional notes for this product line',
         example: 'Counted during cycle count',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'notes must be less than 2048 characters.' })
     notes?: string;
 }
 
@@ -94,6 +108,7 @@ export class CreateStockAdjustmentInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to adjust. Each productId must appear at most once.',
         type: [StockAdjustmentInvoiceProductRequestDto],
+        maxItems: 100,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -110,6 +125,7 @@ export class CreateStockAdjustmentInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => StockAdjustmentInvoiceProductRequestDto)
     @ArrayUnique((item: StockAdjustmentInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
@@ -118,9 +134,11 @@ export class CreateStockAdjustmentInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'Additional notes for this stock adjustment invoice (header)',
         example: 'Periodic inventory check - Q1 2026',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'notes must be less than 2048 characters.' })
     notes?: string;
 }
 
@@ -137,6 +155,7 @@ export class EditStockAdjustmentInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to adjust (replace existing lines). Each productId must appear at most once.',
         type: [StockAdjustmentInvoiceProductRequestDto],
+        maxItems: 100,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -153,6 +172,7 @@ export class EditStockAdjustmentInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => StockAdjustmentInvoiceProductRequestDto)
     @ArrayUnique((item: StockAdjustmentInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
@@ -161,9 +181,11 @@ export class EditStockAdjustmentInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'Additional notes for this stock adjustment invoice (header)',
         example: 'Updated notes after recount',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'notes must be less than 2048 characters.' })
     notes?: string;
 }
 
@@ -172,6 +194,8 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'The page number',
         example: 1,
+        minimum: 1,
+        maximum: 2147483647,
     })
     @Type(() => Number)
     @IsNumber()
@@ -183,19 +207,21 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'The page size',
         example: 10,
+        minimum: 1,
     })
     @Type(() => Number)
     @IsNumber()
     @IsOptional()
     @Min(1)
-    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({
         description: 'The search query',
         example: 'SA26-0000001',
+        maxLength: 255,
     })
     @IsString()
+    @MaxLength(255, { message: 'search must be less than 255 characters.' })
     @ValidateIf((object) => object.searchBy !== undefined || object.search !== undefined)
     search?: string;
 
@@ -261,10 +287,12 @@ export class DeleteDraftStockAdjustmentInvoicesRequestDto {
     @ApiProperty({
         description: 'Draft stock adjustment invoice UUIDs to delete',
         type: [String],
+        maxItems: 100,
         example: ['550e8400-e29b-41d4-a716-446655440000'],
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(100, { message: 'ids must contain at most 100 items.' })
     @IsUUID('4', { each: true })
     ids: string[];
 }

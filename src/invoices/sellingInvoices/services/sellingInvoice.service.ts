@@ -117,17 +117,6 @@ export class SellingInvoiceService {
         const productSkus = dto.products.map((p) => p.productSku);
         const productDetails = await this.productsService.getProductsBySkus(productSkus);
 
-        // Check inventory stock is sufficient for each line.
-        const productBySku = new Map(productDetails.map((p) => [p.sku, p] as const));
-        const insufficient: { sku: string; requested: number; available: number }[] = [];
-        for (const line of dto.products) {
-            const p = productBySku.get(line.productSku);
-            if (p && line.quantity > p.inventoryStock) {
-                insufficient.push({ sku: line.productSku, requested: line.quantity, available: p.inventoryStock });
-            }
-        }
-        if (insufficient.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.SELLING_INVOICE_INSUFFICIENT_STOCK, 'One or more products do not have enough stock for this sale.', { lines: insufficient });
-
         // Calculate invoice totals.
         const invoiceDiscountPercent = dto.invoiceDiscount ?? 0;
         const calculatedTotals = this.calculateInvoiceTotals(dto.products, productDetails, invoiceDiscountPercent);

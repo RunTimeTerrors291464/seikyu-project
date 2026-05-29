@@ -11,7 +11,7 @@ export class GetProductHistoryListRequestDto {
     @IsUUID()
     id: string;
 
-    @ApiPropertyOptional({ description: 'Page number', example: 1, minimum: 1 })
+    @ApiPropertyOptional({ description: 'Page number', example: 1, minimum: 1, maximum: 2147483647 })
     @IsNumber()
     @IsOptional()
     @Min(1)
@@ -19,11 +19,10 @@ export class GetProductHistoryListRequestDto {
     @Type(() => Number)
     page?: number = 1;
 
-    @ApiPropertyOptional({ description: 'Page size', example: 10, minimum: 10, maximum: 100 })
+    @ApiPropertyOptional({ description: 'Page size', example: 10, minimum: 10 })
     @IsNumber()
     @IsOptional()
     @Min(10)
-    @Max(100)
     @Type(() => Number)
     limit?: number = 10;
 }
@@ -37,7 +36,7 @@ export class GetProductStockHistoryListRequestDto {
     @IsUUID()
     id: string;
 
-    @ApiPropertyOptional({ description: 'Page number', example: 1, minimum: 1 })
+    @ApiPropertyOptional({ description: 'Page number', example: 1, minimum: 1, maximum: 2147483647 })
     @IsNumber()
     @IsOptional()
     @Min(1)
@@ -45,11 +44,10 @@ export class GetProductStockHistoryListRequestDto {
     @Type(() => Number)
     page?: number = 1;
 
-    @ApiPropertyOptional({ description: 'Page size', example: 10, minimum: 10, maximum: 64 })
+    @ApiPropertyOptional({ description: 'Page size', example: 10, minimum: 10 })
     @IsNumber()
     @IsOptional()
     @Min(10)
-    @Max(64)
     @Type(() => Number)
     limit?: number = 10;
 }
@@ -66,9 +64,13 @@ export class GetProductHistoryByVersionRequestDto {
     @ApiProperty({
         description: 'The version number to retrieve',
         example: 1,
+        minimum: 1,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @Type(() => Number)
     @IsNumber()
+    @Min(1)
+    @Max(2147483647)
     version: number;
 }

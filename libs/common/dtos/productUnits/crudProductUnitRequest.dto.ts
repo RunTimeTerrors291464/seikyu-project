@@ -16,9 +16,11 @@ export class CreateProductUnitRequestDto {
     @ApiPropertyOptional({
         description: 'The description of the product unit',
         example: 'Kilogram',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'unitDescription must be less than 2048 characters.' })
     unitDescription?: string;
 }
 
@@ -45,9 +47,11 @@ export class EditProductUnitRequestDto {
     @ApiPropertyOptional({
         description: 'The description of the product unit',
         example: 'Kilogram',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'unitDescription must be less than 2048 characters.' })
     unitDescription?: string;
 }
 
@@ -55,6 +59,8 @@ export class GetListOfProductUnitRequestDto {
     @ApiPropertyOptional({
         description: 'The page number',
         example: 1,
+        minimum: 1,
+        maximum: 2147483647,
     })
     @IsNumber()
     @IsOptional()
@@ -66,21 +72,23 @@ export class GetListOfProductUnitRequestDto {
     @ApiPropertyOptional({
         description: 'The page size',
         example: 10,
+        minimum: 1,
     })
     @IsNumber()
     @IsOptional()
     @Type(() => Number)
     @Min(1)
-    @Max(100)
     limit?: number = 10;
 
     // Only search by unit name.
     @ApiPropertyOptional({
         description: 'The search query for unit name only',
         example: 'kg',
+        maxLength: 255,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(255, { message: 'search must be less than 255 characters.' })
     search?: string;
 
     @ApiPropertyOptional({

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique, IsBoolean, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -13,6 +13,8 @@ export class SellingInvoiceProductRequestDto {
     @ApiProperty({
         description: 'Product SKU',
         example: '1234567890123',
+        minLength: 13,
+        maxLength: 13,
     })
     @IsNotEmpty()
     @IsString()
@@ -23,37 +25,45 @@ export class SellingInvoiceProductRequestDto {
     @ApiProperty({
         description: 'Product name',
         example: 'Coca Cola 330ml',
+        maxLength: 255,
     })
     @IsNotEmpty()
     @IsString()
+    @MaxLength(255, { message: 'productName must be less than 255 characters.' })
     productName: string;
 
     @ApiProperty({
         description: 'Product unit',
         example: 'PCS',
+        maxLength: 255,
     })
     @IsNotEmpty()
     @IsString()
+    @MaxLength(255, { message: 'productUnit must be less than 255 characters.' })
     productUnit: string;
 
     @ApiProperty({
         description: 'Quantity to sell',
         example: 10,
         minimum: 1,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @IsNumber()
     @Min(1, { message: 'quantity must be at least 1' })
+    @Max(2147483647)
     quantity: number;
 
     @ApiProperty({
         description: 'Selling price per unit',
         example: 15000,
         minimum: 0,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
-    @IsNumber()
+    @IsNumber({ maxDecimalPlaces: 2 })
     @Min(0, { message: 'sellingPrice must be at least 0' })
+    @Max(2147483647)
     sellingPrice: number;
 
     @ApiPropertyOptional({
@@ -71,9 +81,11 @@ export class SellingInvoiceProductRequestDto {
     @ApiPropertyOptional({
         description: 'Additional notes for this selling invoice product',
         example: 'Gift-wrapped',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'notes must be less than 2048 characters.' })
     notes?: string;
 }
 
@@ -82,6 +94,7 @@ export class CreateSellingInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to sell (cashier). Each productSku must appear at most once.',
         type: [SellingInvoiceProductRequestDto],
+        maxItems: 100,
         example: [
             {
                 productSku: '1234567890123',
@@ -96,6 +109,7 @@ export class CreateSellingInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => SellingInvoiceProductRequestDto)
     @ArrayUnique((item: SellingInvoiceProductRequestDto) => item.productSku, { message: 'Each productSku must appear only once in the list.' })
@@ -116,9 +130,11 @@ export class CreateSellingInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'Additional notes for this selling invoice',
         example: '4th of July promotion',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'notes must be less than 2048 characters.' })
     notes?: string;
 
     @ApiProperty({
@@ -142,6 +158,7 @@ export class EditSellingInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products (replace existing lines). Each productSku must appear at most once.',
         type: [SellingInvoiceProductRequestDto],
+        maxItems: 100,
         example: [
             {
                 productSku: '1234567890123',
@@ -156,6 +173,7 @@ export class EditSellingInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => SellingInvoiceProductRequestDto)
     @ArrayUnique((item: SellingInvoiceProductRequestDto) => item.productSku, { message: 'Each productSku must appear only once in the list.' })
@@ -164,9 +182,11 @@ export class EditSellingInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'Additional notes for this selling invoice',
         example: 'Updated selling invoice notes',
+        maxLength: 2048,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'notes must be less than 2048 characters.' })
     notes?: string;
 }
 
@@ -175,6 +195,8 @@ export class GetListOfSellingInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'The page number',
         example: 1,
+        minimum: 1,
+        maximum: 2147483647,
     })
     @Type(() => Number)
     @IsNumber()
@@ -186,19 +208,21 @@ export class GetListOfSellingInvoiceRequestDto {
     @ApiPropertyOptional({
         description: 'The page size',
         example: 10,
+        minimum: 1,
     })
     @Type(() => Number)
     @IsNumber()
     @IsOptional()
     @Min(1)
-    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({
         description: 'The search query',
         example: 'S26-0000001',
+        maxLength: 255,
     })
     @IsString()
+    @MaxLength(255, { message: 'search must be less than 255 characters.' })
     @ValidateIf((object) => object.searchBy !== undefined || object.search !== undefined)
     search?: string;
 

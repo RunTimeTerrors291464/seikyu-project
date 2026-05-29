@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber, Max, IsIn, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, IsArray, IsEnum, IsOptional, MaxLength, IsUUID, Min, IsNumber, Max, IsIn, MinLength, ArrayMaxSize } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 // Import swagger.
@@ -70,9 +70,11 @@ export class CreateNewUserRequestDto {
         example: [Role.CASHIER],
         enum: Role,
         isArray: true,
+        maxItems: 3,
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(3, { message: 'roles must contain at most 3 items.' })
     @IsEnum(Role, { each: true })
     roles: Role[];
 }
@@ -188,9 +190,11 @@ export class EditUserRequestDto {
         example: [Role.CASHIER],
         enum: Role,
         isArray: true,
+        maxItems: 3,
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(3, { message: 'roles must contain at most 3 items.' })
     @IsEnum(Role, { each: true })
     roles: Role[];
 }
@@ -201,6 +205,7 @@ export class GetListOfUsersRequestDto {
         description: 'Page number for pagination',
         example: 1,
         minimum: 1,
+        maximum: 2147483647,
     })
     @IsOptional()
     @Type(() => Number)
@@ -218,15 +223,16 @@ export class GetListOfUsersRequestDto {
     @Type(() => Number)
     @IsNumber()
     @Min(1)
-    @Max(100)
     limit?: number = 25;
 
     @ApiPropertyOptional({
         description: 'Search keyword',
         example: 'john',
+        maxLength: 255,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(255, { message: 'search must be less than 255 characters.' })
     search?: string;
 
     @ApiPropertyOptional({
@@ -243,6 +249,7 @@ export class GetListOfUsersRequestDto {
         example: [1, 2, 3],
         enum: Role,
         isArray: true,
+        maxItems: 3,
     })
     @IsOptional()
     @Transform(({ value }) => {
@@ -250,6 +257,7 @@ export class GetListOfUsersRequestDto {
         return Array.isArray(value) ? value.map(Number) : [Number(value)];
     })
     @IsArray()
+    @ArrayMaxSize(3, { message: 'roles must contain at most 3 items.' })
     @IsEnum(Role, { each: true })
     roles?: Role[];
 

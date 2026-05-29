@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsUUID, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -25,9 +25,13 @@ export class GetProductUnitHistoryByVersionRequestDto {
     @ApiProperty({
         description: 'The version number to retrieve',
         example: 1,
+        minimum: 1,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @Type(() => Number)
     @IsNumber()
+    @Min(1)
+    @Max(2147483647)
     version: number;
 }

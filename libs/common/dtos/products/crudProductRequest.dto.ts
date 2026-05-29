@@ -25,11 +25,13 @@ export class CreateProductRequestDto {
         example: ['Product Name 1', 'Product Name 2'],
         isArray: true,
         type: [String],
+        maxLength: 255,
     })
     @IsNotEmpty()
     @IsArray()
     @ArrayMaxSize(8, { message: 'productNames must contain at most 8 items' })
     @IsString({ each: true })
+    @MaxLength(255, { each: true, message: 'Each productName must be less than 255 characters.' })
     productNames: string[];
 
     @ApiProperty({
@@ -43,20 +45,24 @@ export class CreateProductRequestDto {
     @ApiPropertyOptional({
         description: 'Product description',
         example: 'Detailed description of the product',
+        maxLength: 2048,
         required: false,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'productDescription must be less than 2048 characters.' })
     productDescription?: string;
 
     @ApiProperty({
         description: 'Import price of the product',
         example: 100.50,
         minimum: 0,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @IsNumber({ maxDecimalPlaces: 2 })
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     importPrice: number;
 
@@ -64,10 +70,12 @@ export class CreateProductRequestDto {
         description: 'Selling price of the product',
         example: 150.75,
         minimum: 0,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @IsNumber({ maxDecimalPlaces: 2 })
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     sellingPrice: number;
 
@@ -75,10 +83,12 @@ export class CreateProductRequestDto {
         description: 'Reorder threshold of the product',
         example: 10,
         minimum: 0,
+        maximum: 2147483647,
     })
     @IsOptional()
     @IsNumber()
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     reorderThreshold?: number;
 }
@@ -112,12 +122,14 @@ export class EditProductRequestDto {
         example: ['Product Name English', 'Product Name Vietnamese'],
         isArray: true,
         type: [String],
+        maxLength: 255,
         required: false,
     })
     @IsOptional()
     @IsArray()
     @ArrayMaxSize(8, { message: 'productNames must contain at most 8 items' })
     @IsString({ each: true })
+    @MaxLength(255, { each: true, message: 'Each productName must be less than 255 characters.' })
     productNames?: string[];
 
     @ApiPropertyOptional({
@@ -132,21 +144,25 @@ export class EditProductRequestDto {
     @ApiPropertyOptional({
         description: 'Product description',
         example: 'Detailed description of the product',
+        maxLength: 2048,
         required: false,
     })
     @IsOptional()
     @IsString()
+    @MaxLength(2048, { message: 'productDescription must be less than 2048 characters.' })
     productDescription?: string;
 
     @ApiPropertyOptional({
         description: 'Import price of the product',
         example: 100.50,
         minimum: 0,
+        maximum: 2147483647,
         required: false,
     })
     @IsOptional()
     @IsNumber({ maxDecimalPlaces: 2 })
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     importPrice?: number;
 
@@ -154,11 +170,13 @@ export class EditProductRequestDto {
         description: 'Selling price of the product',
         example: 150.75,
         minimum: 0,
+        maximum: 2147483647,
         required: false,
     })
     @IsOptional()
     @IsNumber({ maxDecimalPlaces: 2 })
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     sellingPrice?: number;
 
@@ -166,11 +184,13 @@ export class EditProductRequestDto {
         description: 'Reorder threshold of the product',
         example: 10,
         minimum: 0,
+        maximum: 2147483647,
         required: false,
     })
     @IsOptional()
     @IsNumber()
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     reorderThreshold?: number;
 }
@@ -195,14 +215,15 @@ export class GetListOfProductRequestDto {
     @IsOptional()
     @Type(() => Number)
     @Min(1)
-    @Max(100)
     limit?: number = 10;
 
     @ApiPropertyOptional({
         description: 'The search query',
         example: 'Product',
+        maxLength: 255,
     })
     @IsString()
+    @MaxLength(255, { message: 'search must be less than 255 characters.' })
     @ValidateIf((object) => object.searchBy !== undefined || object.search !== undefined)
     search?: string;
 
@@ -275,7 +296,6 @@ export class GetListOfProductByProductUnitIdRequestDto {
     @IsOptional()
     @Type(() => Number)
     @Min(1)
-    @Max(100)
     limit?: number = 10;
 
     @ApiProperty({
@@ -301,10 +321,12 @@ export class UpdateProductInventoryRequestDto {
         description: 'Quantity to add or subtract',
         example: 10,
         minimum: 0,
+        maximum: 2147483647,
     })
     @IsNotEmpty()
     @IsNumber()
     @Min(0)
+    @Max(2147483647)
     @Type(() => Number)
     quantity: number;
 
@@ -323,6 +345,7 @@ export class UpdateProductInventoryBulkRequestDto {
     @ApiProperty({
         description: 'List of products to update inventory (each product id must appear at most once)',
         type: [UpdateProductInventoryRequestDto],
+        maxItems: 100,
         example: [
             {
                 id: '550e8400-e29b-41d4-a716-446655440000',
@@ -333,6 +356,7 @@ export class UpdateProductInventoryBulkRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ArrayUnique((item: UpdateProductInventoryRequestDto) => item.id, { message: 'Each product id must appear only once in the list.' })
     @ValidateNested({ each: true })
     @Type(() => UpdateProductInventoryRequestDto)
