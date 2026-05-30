@@ -3,6 +3,7 @@
 import { Field, Input } from "@/components/ui/Fields";
 import type { Product } from "@/features/products/types/product";
 import type { Dictionary } from "@/lib/lang/i18n";
+import { isEmptyValue, isZeroValue } from "@/lib/numeric/fieldValueChecks";
 import {
   finalizeMoneyStringTwoDecimalPlaces,
   formatPriceNumber,
@@ -113,6 +114,18 @@ export function createSellingLineEntryConfig(
         toNumberOrZero(ctx.variantFields.sellingPrice) > 0
       );
     },
+    isVariantFieldsInvalidForCommit: function isVariantFieldsInvalidForCommit(
+      ctx: InvoiceLineEntryContext<SellingLineEntryVariantFields>,
+    ): boolean {
+      if (!ctx.skuValidated) {
+        return false;
+      }
+
+      return (
+        isEmptyValue(ctx.variantFields.sellingPrice) ||
+        isZeroValue(ctx.variantFields.sellingPrice)
+      );
+    },
     parseLineForEdit: function parseLineForEdit(
       line: EditableSellingInvoiceCreateLine,
     ) {
@@ -203,17 +216,27 @@ export function createSellingLineEntryConfig(
       ctx: InvoiceLineEntryContext<SellingLineEntryVariantFields>,
     ) {
       const fieldsEnabled = ctx.skuValidated;
+      const showPriceIssues = ctx.lineFieldValidationActive || ctx.lineCommitAttempted;
+      const priceEmpty = isEmptyValue(ctx.variantFields.sellingPrice);
+      const priceInvalid =
+        fieldsEnabled &&
+        (priceEmpty || isZeroValue(ctx.variantFields.sellingPrice));
+      const priceErrorMessage =
+        showPriceIssues && priceInvalid ? dict.missingPriceError : undefined;
 
       return (
         <>
           <Field
             label={dict.sellingPrice}
             icon={<DollarSign className="h-3 w-3" />}
+            error={priceErrorMessage}
+            messageBesideLabel={true}
             required
           >
             <Input
               value={ctx.variantFields.sellingPrice ?? ""}
               onChange={function handleSellingPriceChange(value): void {
+                ctx.clearLineCommitAttempt();
                 const next = normalizeMoneyStringInput(value, { allowEmpty: true });
                 ctx.setVariantField("sellingPrice", next);
               }}

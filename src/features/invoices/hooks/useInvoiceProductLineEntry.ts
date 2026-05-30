@@ -24,9 +24,11 @@ import type {
   InvoiceLineEntryVariantConfig,
 } from "../types/invoiceLineEntryTypes";
 
-type UseInvoiceProductLineEntryOptions<TLine> = {
+type UseInvoiceProductLineEntryOptions<TLine, TVariantFields> = {
   excludedProductIds: Set<string>;
   lineFieldValidationActive: boolean;
+  lineCommitAttempted: boolean;
+  clearLineCommitAttempt: () => void;
   enabled?: boolean;
   /** When set, the card edits this row (SKU locked, Enter commits an update). */
   editSourceLine?: TLine | null;
@@ -43,7 +45,7 @@ type UseInvoiceProductLineEntryOptions<TLine> = {
  */
 export function useInvoiceProductLineEntry<TLine, TVariantFields>(
   config: InvoiceLineEntryVariantConfig<TLine, TVariantFields>,
-  options: UseInvoiceProductLineEntryOptions<TLine>,
+  options: UseInvoiceProductLineEntryOptions<TLine, TVariantFields>,
 ): {
   context: InvoiceLineEntryContext<TVariantFields>;
   isEditMode: boolean;
@@ -61,6 +63,8 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
   const {
     excludedProductIds,
     lineFieldValidationActive,
+    lineCommitAttempted,
+    clearLineCommitAttempt,
     enabled = true,
     editSourceLine = null,
   } = options;
@@ -244,6 +248,8 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
         touched,
         variantFields,
         lineFieldValidationActive,
+        lineCommitAttempted,
+        clearLineCommitAttempt,
         setQuantity,
         setNotes,
         setVariantField,
@@ -262,6 +268,8 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
       touched,
       variantFields,
       lineFieldValidationActive,
+      lineCommitAttempted,
+      clearLineCommitAttempt,
       setVariantField,
     ],
   );

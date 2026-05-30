@@ -91,7 +91,15 @@ export function ConfirmPopup({
   accent = "neutral",
   backdropBlur,
 }: Props) {
-  useConfirmPopupKeyboard(open, loading, onConfirm);
+  async function handleConfirm(): Promise<void> {
+    try {
+      await onConfirm();
+    } catch {
+      onClose();
+    }
+  }
+
+  useConfirmPopupKeyboard(open, loading, handleConfirm);
 
   return (
     <Popup open={open} onClose={onClose} backdropBlur={backdropBlur}>
@@ -129,7 +137,7 @@ export function ConfirmPopup({
           </Button>
 
           <Button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={loading}
             accent={accent === "danger" ? "danger" : "primary"}
           >

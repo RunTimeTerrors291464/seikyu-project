@@ -28,6 +28,7 @@ import {
 import { getSkuCheckingHint, normalizeSkuInput } from "@/lib/sku/skuInputValidation";
 import UnitPickerPopup from "@features/products/layout/UnitPickerPopup";
 
+import { normalizeIntegerStringInput, normalizedIntegerStringToNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import useSkuCheck from "../hooks/useSkuCheck";
 
 /* ============================= */
@@ -317,8 +318,9 @@ export default function AddNewProductForm({
         <Input
           value={values.name}
           onChange={(v) => {
-            setValue("name", v);
-            validateField("name", v);
+            const limitedValue = v.slice(0, 255);
+            setValue("name", limitedValue);
+            validateField("name", limitedValue);
           }}
           onBlur={() =>
             setTouched((t) => ({ ...t, name: true }))
@@ -450,8 +452,15 @@ export default function AddNewProductForm({
           type="number"
           value={values.reorderThreshold}
           onChange={(v) => {
-            setValue("reorderThreshold", v);
-            validateField("reorderThreshold", v);
+            const normalized = normalizeIntegerStringInput(v, {
+              allowEmpty: false,
+            });
+            const num = normalizedIntegerStringToNumber(normalized);
+            if (num === null) {
+              return;
+            }
+            setValue("reorderThreshold", String(num));
+            validateField("reorderThreshold", String(num));
           }}
           onBlur={() =>
             setTouched((t) => ({

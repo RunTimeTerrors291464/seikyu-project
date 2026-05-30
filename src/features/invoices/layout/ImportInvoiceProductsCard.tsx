@@ -9,11 +9,13 @@ import { scheduleFocusLastInvoiceLineQuantity } from "@/features/invoices/lib/fo
 import { INVOICE_DRAFT_TABLE_SEARCH_DATA_ATTR } from "@/features/invoices/lib/invoiceDraftTableShortcuts";
 import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
+import { formatShortcutChordForDisplay } from "@/lib/shortcuts/formatShortcutChordForDisplay";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useInvoiceDraftTableRowNavigation } from "../hooks/useInvoiceDraftTableRowNavigation";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
+import { INVOICE_DRAFT_TABLE_ROW_DOWN_CHORD, INVOICE_DRAFT_TABLE_ROW_UP_CHORD, INVOICE_DRAFT_TABLE_SELECT_FIRST_KEY_CHORD } from "../lib/invoiceDraftTableShortcuts";
 import {
   importInvoiceCreateProductColumns,
   importInvoiceProductColumns,
@@ -239,6 +241,25 @@ export default function ImportInvoiceProductsCard({
 
   const excludedProductIds = excludedProductIdsProp ?? excludedProductIdsInternal;
 
+  const tableEntryShortcutsHint = useMemo(
+    function buildTableEntryShortcutsHint(): string {
+      return dict.tableEntryShortcutsHint
+        .replace(
+          "{selectKeys}",
+          formatShortcutChordForDisplay(INVOICE_DRAFT_TABLE_SELECT_FIRST_KEY_CHORD),
+        )
+        .replace(
+          "{arrowUpKeys}",
+          formatShortcutChordForDisplay(INVOICE_DRAFT_TABLE_ROW_UP_CHORD),
+        )
+        .replace(
+          "{arrowDownKeys}",
+          formatShortcutChordForDisplay(INVOICE_DRAFT_TABLE_ROW_DOWN_CHORD),
+        );
+    },
+    [dict.tableEntryShortcutsHint],
+  );
+
   return (
     <div
       ref={tableScopeRef}
@@ -322,6 +343,8 @@ export default function ImportInvoiceProductsCard({
         selectedRowId={activeEditRowId}
         onRowClick={onRowClick}
       />
+
+      <p className="mt-3 text-center text-xs text-muted">{tableEntryShortcutsHint}</p>
 
       <AddProductPopup
         open={openAddProductPopup}

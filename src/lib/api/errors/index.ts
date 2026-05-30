@@ -4,6 +4,7 @@ export {
   resolveApiErrorMessage,
   resolveDtoValidationSummary,
 } from "@/lib/api/errors/resolveApiErrorMessage";
+export { rethrowApiErrorWithMessage } from "@/lib/api/errors/rethrowApiErrorWithMessage";
 export type {
   ApiErrorBody,
   DtoFieldErrorMessage,

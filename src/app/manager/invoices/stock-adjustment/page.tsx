@@ -14,7 +14,6 @@ import {
 import { useStockAdjustmentInvoices } from "@/features/invoices/hooks/useStockAdjustmentInvoices";
 import AddStockAdjustmentInvoicePopup from "@/features/invoices/layout/AddStockAdjustmentInvoicePopup";
 import { stockAdjustmentInvoiceColumns } from "@/features/invoices/table/stockAdjustmentInvoiceColumns";
-import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
@@ -81,30 +80,15 @@ export default function StockAdjustmentInvoicesListPage() {
   );
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
-  const listQuery = useMemo(
-    function buildListQuery() {
-      return mergeDefaultListDateRange({
-        page,
-        limit: rowsPerPage,
-        search: search || undefined,
-        searchBy: search ? searchRule : undefined,
-        sortBy,
-        sortOrder: sortBy ? sortOrder : undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
-      });
-    },
-    [
-      page,
-      rowsPerPage,
-      search,
-      searchRule,
-      sortBy,
-      sortOrder,
-      statusFilter,
-    ],
-  );
-
-  const { rows, total, loading, refetch } = useStockAdjustmentInvoices(listQuery);
+  const { rows, total, loading, refetch } = useStockAdjustmentInvoices({
+    page,
+    limit: rowsPerPage,
+    search: search || undefined,
+    searchBy: search ? searchRule : undefined,
+    sortBy,
+    sortOrder: sortBy ? sortOrder : undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
     _event: KeyboardEvent,

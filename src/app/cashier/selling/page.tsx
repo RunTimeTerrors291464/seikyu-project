@@ -27,7 +27,7 @@ import {
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
-import { Filter, Hash, Package, Plus, RotateCcw, User as UserIcon } from "lucide-react";
+import { Filter, Hash, Plus, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
@@ -158,25 +158,21 @@ export default function CashierSellingInvoicesPage() {
                 label: dict.invoiceNumber,
                 icon: <Hash className="h-3 w-3" />,
               },
-              {
-                label: dict.confirmBy,
-                icon: <UserIcon className="h-3 w-3" />,
-              },
-              {
-                label: dict.productSkuSearchLabel,
-                icon: <Package className="h-3 w-3" />,
-              },
+              // {
+              //   label: dict.confirmBy,
+              //   icon: <UserIcon className="h-3 w-3" />,
+              // },
+              // {
+              //   label: dict.productSkuSearchLabel,
+              //   icon: <Package className="h-3 w-3" />,
+              // },
             ]}
             placeholder={dict.searchPlaceholder}
             onChange={({ rule, value }) => {
-              let normalized: "invoiceId" | "userId" | "productId" =
-                "invoiceId";
-              if (rule === dict.confirmBy) {
-                normalized = "userId";
-              } else if (rule === dict.productSkuSearchLabel) {
-                normalized = "productId";
-              }
-              setSearchRule(normalized);
+              const ruleMap: Record<string, "invoiceId"> = {
+                [dict.invoiceNumber]: "invoiceId",
+              };
+              setSearchRule(ruleMap[rule] as "invoiceId");
               setSearch(value);
               setPage(1);
             }}

@@ -1,10 +1,12 @@
+import type { DictionaryLabelKey } from "@/lib/lang/i18n";
+
 import type { StockAdjustmentReasonCategory } from "../services/stockAdjustmentInvoice.service";
 
 export type StockAdjustmentInvoiceStatusFilter = "all" | "draft" | "confirmed";
 
 export const STOCK_ADJUSTMENT_INVOICE_STATUS_OPTIONS: {
   value: StockAdjustmentInvoiceStatusFilter;
-  dictKey: "all" | "draft" | "confirmed";
+  dictKey: DictionaryLabelKey;
 }[] = [
   { value: "all", dictKey: "all" },
   { value: "draft", dictKey: "draft" },
@@ -13,7 +15,7 @@ export const STOCK_ADJUSTMENT_INVOICE_STATUS_OPTIONS: {
 
 export const STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS: {
   value: StockAdjustmentReasonCategory;
-  dictKey: string;
+  dictKey: DictionaryLabelKey;
 }[] = [
   { value: "damage", dictKey: "reasonCategoryDamage" },
   { value: "expired", dictKey: "reasonCategoryExpired" },

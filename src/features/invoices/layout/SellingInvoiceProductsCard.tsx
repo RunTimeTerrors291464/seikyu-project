@@ -6,13 +6,14 @@ import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
+import { formatShortcutChordForDisplay } from "@/lib/shortcuts/formatShortcutChordForDisplay";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState, type RefObject } from "react";
 import type { InvoiceProductLineEntryCardHandle } from "../components/InvoiceProductLineEntryCard";
 import { useInvoiceDraftTableRowNavigation } from "../hooks/useInvoiceDraftTableRowNavigation";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
-import { INVOICE_DRAFT_TABLE_SEARCH_DATA_ATTR } from "../lib/invoiceDraftTableShortcuts";
+import { INVOICE_DRAFT_TABLE_ROW_DOWN_CHORD, INVOICE_DRAFT_TABLE_ROW_UP_CHORD, INVOICE_DRAFT_TABLE_SEARCH_DATA_ATTR, INVOICE_DRAFT_TABLE_SELECT_FIRST_KEY_CHORD } from "../lib/invoiceDraftTableShortcuts";
 import { sellingInvoiceCreateProductColumns } from "../table/sellingInvoiceProductLineColumns";
 import {
   EditableSellingInvoiceCreateLine,
@@ -205,6 +206,25 @@ export default function SellingInvoiceProductsCard({
     [excludedProductIdsProp, products],
   );
 
+  const tableEntryShortcutsHint = useMemo(
+    function buildTableEntryShortcutsHint(): string {
+      return dict.tableEntryShortcutsHint
+        .replace(
+          "{selectKeys}",
+          formatShortcutChordForDisplay(INVOICE_DRAFT_TABLE_SELECT_FIRST_KEY_CHORD),
+        )
+        .replace(
+          "{arrowUpKeys}",
+          formatShortcutChordForDisplay(INVOICE_DRAFT_TABLE_ROW_UP_CHORD),
+        )
+        .replace(
+          "{arrowDownKeys}",
+          formatShortcutChordForDisplay(INVOICE_DRAFT_TABLE_ROW_DOWN_CHORD),
+        );
+    },
+    [dict.tableEntryShortcutsHint],
+  );
+
   return (
     <div
       className={clsx(
@@ -277,6 +297,7 @@ export default function SellingInvoiceProductsCard({
         selectedRowId={activeEditRowId}
         onRowClick={onRowClick}
       />
+      <p className="mt-3 text-center text-xs text-muted">{tableEntryShortcutsHint}</p>
 
       <AddProductPopup
         open={openAddProductPopup}

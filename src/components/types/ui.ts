@@ -79,6 +79,10 @@ export const INVOICE_DRAFT_ERRORS = {
     key: "invoiceDraftNoProductsError",
     accent: "danger" as Accent,
   },
+  taxFocusChoiceRequired: {
+    key: "taxFocusChoiceError",
+    accent: "danger" as Accent,
+  },
 } as const satisfies Record<
   string,
   {

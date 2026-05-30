@@ -1,4 +1,5 @@
 import type { ReturnImportInvoiceProductResponseDto } from "../services/returnImportInvoice.service";
+import { createStableSignature } from "../lib/stableSignature";
 import { toNumberOrZero } from "./importInvoiceDetail";
 
 export type EditableReturnInvoiceDetailLine = {
@@ -42,11 +43,14 @@ export function toEditableReturnDetailLine(
 export function toReturnLinesSignature(
   lines: EditableReturnInvoiceDetailLine[],
 ): string {
-  return JSON.stringify(
-    lines.map((line) => ({
+  return createStableSignature(
+    lines,
+    function projectReturnLine(line) {
+      return {
       productId: line.productId,
       returnQuantity: Math.floor(toNumberOrZero(line.returnQuantity)),
       notes: (line.notes || "").trim(),
-    })),
+      };
+    },
   );
 }

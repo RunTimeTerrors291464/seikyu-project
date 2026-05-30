@@ -381,7 +381,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
               {STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS.map(function renderOption(option) {
                 return (
                   <option key={option.value} value={option.value}>
-                    {(dict as Record<string, string>)[option.dictKey] ?? option.value}
+                    {dict[option.dictKey] ?? option.value}
                   </option>
                 );
               })}

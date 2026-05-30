@@ -23,6 +23,9 @@ export type InvoiceLineEntryContext<TVariantFields> =
   InvoiceLineEntrySharedState & {
     variantFields: TVariantFields;
     lineFieldValidationActive: boolean;
+    /** Set after Enter/commit when required variant fields fail validation. */
+    lineCommitAttempted: boolean;
+    clearLineCommitAttempt: () => void;
     setQuantity: (value: string) => void;
     setNotes: (value: string) => void;
     setVariantField: <K extends keyof TVariantFields>(
@@ -53,6 +56,10 @@ export type InvoiceLineEntryVariantConfig<TLine, TVariantFields> = {
   hydrateVariantFieldsFromProduct?: (product: Product) => TVariantFields;
   getSkuError?: (ctx: SkuValidationContext) => string;
   canAddLine: (ctx: InvoiceLineEntryContext<TVariantFields>) => boolean;
+  /** When true, a commit attempt should surface variant-field validation in column 3. */
+  isVariantFieldsInvalidForCommit?: (
+    ctx: InvoiceLineEntryContext<TVariantFields>,
+  ) => boolean;
   buildLine: (
     product: Product,
     ctx: InvoiceLineEntryContext<TVariantFields>,

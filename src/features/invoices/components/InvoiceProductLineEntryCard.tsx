@@ -17,8 +17,8 @@ import { normalizeIntegerStringInput } from "@/lib/numeric/integerAndMoneyInputs
 import { formatShortcutChordForDisplay } from "@/lib/shortcuts/formatShortcutChordForDisplay";
 import { isEditableKeyboardTarget } from "@/lib/shortcuts/isEditableKeyboardTarget";
 import { matchesShortcutChord } from "@/lib/shortcuts/matchesShortcutChord";
-import useShortcut from "@/lib/shortcuts/useShortcut";
 import { UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE } from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import {
   Barcode,
   Package,
@@ -66,8 +66,12 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
 ) {
   const dict = useDict();
   const cardRef = useRef<HTMLDivElement>(null);
-  const [quantityAddAttempted, setQuantityAddAttempted] = useState(false);
+  const [lineCommitAttempted, setLineCommitAttempted] = useState(false);
   const hadEditSourceLineRef = useRef<boolean>(false);
+
+  const clearLineCommitAttempt = useCallback(function clearLineCommitAttempt(): void {
+    setLineCommitAttempted(false);
+  }, []);
 
   const {
     context,
@@ -84,6 +88,8 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
   } = useInvoiceProductLineEntry(config, {
     excludedProductIds,
     lineFieldValidationActive,
+    lineCommitAttempted,
+    clearLineCommitAttempt,
     editSourceLine,
   });
 
@@ -114,7 +120,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
         if (hadEditSourceLineRef.current) {
           hadEditSourceLineRef.current = false;
           reset();
-          setQuantityAddAttempted(false);
+          setLineCommitAttempted(false);
           window.requestAnimationFrame(function focusSkuAfterClearEdit(): void {
             focusSku();
           });
@@ -123,7 +129,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
       }
 
       hadEditSourceLineRef.current = true;
-      setQuantityAddAttempted(false);
+      setLineCommitAttempted(false);
       window.requestAnimationFrame(function focusQuantityForEdit(): void {
         focusQuantity();
       });
@@ -153,7 +159,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
       const line = handleCommitLine();
       if (line) {
         onUpdateLine(line);
-        setQuantityAddAttempted(false);
+        setLineCommitAttempted(false);
       }
     },
     [handleCommitLine, onUpdateLine],
@@ -165,7 +171,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
         onClearEdit?.();
       }
       reset();
-      setQuantityAddAttempted(false);
+      setLineCommitAttempted(false);
       window.requestAnimationFrame(function focusSkuAfterReset(): void {
         focusSku();
       });
@@ -210,8 +216,13 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
         isEmptyValue(context.quantity) || isZeroValue(context.quantity);
 
       if (quantityMissing) {
-        setQuantityAddAttempted(true);
+        setLineCommitAttempted(true);
         focusQuantity();
+        return;
+      }
+
+      if (config.isVariantFieldsInvalidForCommit?.(context)) {
+        setLineCommitAttempted(true);
         return;
       }
 
@@ -219,7 +230,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
         return;
       }
 
-      setQuantityAddAttempted(false);
+      setLineCommitAttempted(false);
 
       if (isEditMode) {
         handleUpdateClick();
@@ -238,6 +249,8 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
       handleSkuBlur,
       handleUpdateClick,
       isEditMode,
+      config.isVariantFieldsInvalidForCommit,
+      context,
     ],
   );
 
@@ -276,7 +289,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
 
   const fieldsEnabled = context.skuValidated;
   const skuFieldDisabled = isEditMode;
-  const showQuantityIssues = lineFieldValidationActive || quantityAddAttempted;
+  const showQuantityIssues = lineFieldValidationActive || lineCommitAttempted;
   const quantityEmpty = isEmptyValue(context.quantity);
   const quantityInvalid =
     fieldsEnabled && (quantityEmpty || isZeroValue(context.quantity));
@@ -338,7 +351,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
               inputRef={quantityInputRef}
               value={context.quantity}
               onChange={function handleQuantityChange(value): void {
-                setQuantityAddAttempted(false);
+                clearLineCommitAttempt();
                 context.setQuantity(
                   normalizeIntegerStringInput(value, { allowEmpty: true }),
                 );
@@ -363,7 +376,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
         <div className="space-y-4">{config.renderColumn4(context)}</div>
       </div>
 
-      <p className="text-right text-xs text-muted">{shortcutsHint}</p>
+      <p className="text-center text-xs text-muted">{shortcutsHint}</p>
     </div>
   );
 }

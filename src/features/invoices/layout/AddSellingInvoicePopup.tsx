@@ -14,7 +14,9 @@ import {
   finalizePercentDiscountInput,
   normalizePercentDiscountInput,
 } from "@/features/invoices/lib/percentDiscountInput";
-import { resolveApiErrorMessage } from "@/lib/api/errors";
+import {
+  rethrowApiErrorWithMessage,
+} from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle } from "lucide-react";
@@ -81,7 +83,7 @@ export default function AddSellingInvoicePopup({
     updateRow,
     hasInvalidLines,
     draftError,
-  } = useSellingInvoiceCreateEditor(products, setProducts, createAttempted);
+  } = useSellingInvoiceCreateEditor(products, setProducts, createAttempted, taxFocusChoice);
 
   const noProductsMessage = dict.sellingCreateNoProductsError;
 
@@ -162,7 +164,7 @@ export default function AddSellingInvoicePopup({
       handleClose();
       onCreated?.(created.id);
     } catch (error) {
-      setErrorMessage(resolveApiErrorMessage(error, dict));
+      rethrowApiErrorWithMessage(error, dict, setErrorMessage);
     } finally {
       setCreating(false);
     }
@@ -191,7 +193,7 @@ export default function AddSellingInvoicePopup({
     setConfirmAction("create");
   }
 
-  const taxFocusWarning = createAttempted && taxFocusChoice === null;
+  const taxFocusError = createAttempted && taxFocusChoice === null;
   const invoiceDiscountValue = clampPercentDiscount(toNumberOrZero(invoiceDiscount));
 
   const productsCardDangerAccent =
@@ -211,11 +213,18 @@ export default function AddSellingInvoicePopup({
     [editingLineLocalId, products],
   );
 
-  const excludedProductIds = useMemo(
-    function getExcludedProductIds(): Set<string> {
+  const entryExcludedProductIds = useMemo(
+    function getEntryExcludedProductIds(): Set<string> {
       return buildDraftExcludedProductIds(products, editingLineLocalId);
     },
     [products, editingLineLocalId],
+  );
+
+  const pickerExcludedProductIds = useMemo(
+    function getPickerExcludedProductIds(): Set<string> {
+      return buildDraftExcludedProductIds(products, null);
+    },
+    [products],
   );
 
   const lineEntryConfig = useMemo(
@@ -346,7 +355,7 @@ export default function AddSellingInvoicePopup({
           <InvoiceProductLineEntryCard
             ref={entryCardRef}
             config={lineEntryConfig}
-            excludedProductIds={excludedProductIds}
+            excludedProductIds={entryExcludedProductIds}
             lineFieldValidationActive={createAttempted}
             editSourceLine={editingLine}
             onAddLine={handleAddLineFromEntry}
@@ -376,7 +385,7 @@ export default function AddSellingInvoicePopup({
             lineFieldValidationActive={createAttempted}
             activeEditRowId={editingLineLocalId}
             onRowClick={handleProductRowClick}
-            excludedProductIds={excludedProductIds}
+            excludedProductIds={pickerExcludedProductIds}
           />
 
           <div className="flex items-start gap-5">
@@ -418,7 +427,7 @@ export default function AddSellingInvoicePopup({
               <Field
                 label={dict.isTaxFocusLabel}
                 required
-                warning={taxFocusWarning ? dict.taxFocusChoiceRequired : undefined}
+                error={taxFocusError ? dict.taxFocusChoiceRequired : undefined}
               >
                 <div className="flex item-center gap-4 pt-2">
                   <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-text">
