@@ -14,21 +14,36 @@ import {
   USER_ROLE_CASHIER,
   USER_ROLE_MANAGER,
   type UserListQuery,
+  type UserListSortBy,
   type UserResponseDto,
   type UserRoleCode,
 } from "@/features/admin/services/adminUsers.service";
 import { adminUserColumns } from "@/features/admin/table/adminUsersColumns";
 import { useDict } from "@/lib/lang/DictProvider";
+import useShortcut from "@/lib/shortcuts/useShortcut";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+} from "@/lib/shortcuts/universalShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { AtSign, Filter, Plus, RotateCcw, User as UserIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
-type UserSortField = "createdAt" | "username";
 type SortOrder = "asc" | "desc";
 
 type ActiveFilter = "all" | "true" | "false";
 
-type SearchRule = "name" | "username";
+type SearchRule = "fullName" | "username";
+
+const USER_LIST_SORT_FIELDS: readonly UserListSortBy[] = [
+  "fullName",
+  "username",
+  "createdAt",
+  "updatedAt",
+  "isActive",
+];
 
 function activeFilterAccent(value: ActiveFilter): Accent {
   if (value === "true") {
@@ -54,10 +69,10 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(30);
   const [search, setSearch] = useState<string>("");
-  const [searchRule, setSearchRule] = useState<SearchRule>("name");
+  const [searchRule, setSearchRule] = useState<SearchRule>("fullName");
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<UserSortField>("createdAt");
+  const [sortBy, setSortBy] = useState<UserListSortBy>("createdAt");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [roleFilter, setRoleFilter] = useState<Set<UserRoleCode>>(new Set());
@@ -76,7 +91,7 @@ export default function AdminUsersPage() {
         // List filter only; each row still renders full `row.roles` in the table (see adminUserColumns).
         roles:
           roleFilter.size > 0 ? Array.from(roleFilter) : undefined,
-        active: activeFilter,
+        isActive: activeFilter,
         sortBy,
         sortOrder,
       };
@@ -99,6 +114,21 @@ export default function AdminUsersPage() {
     setEditUser(row);
   }, []);
 
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setCreateOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  });
+
   const columns = useMemo(
     function buildColumns() {
       return adminUserColumns(dict, { onEdit }, {
@@ -110,12 +140,12 @@ export default function AdminUsersPage() {
   );
 
   function handleSort(nextField: string): void {
-    if (nextField !== "createdAt" && nextField !== "username") {
+    if (!USER_LIST_SORT_FIELDS.includes(nextField as UserListSortBy)) {
       return;
     }
 
     if (sortBy !== nextField) {
-      setSortBy(nextField as UserSortField);
+      setSortBy(nextField as UserListSortBy);
       setSortOrder("asc");
       setPage(1);
       return;
@@ -129,7 +159,7 @@ export default function AdminUsersPage() {
 
   const isResetFilterDisabled =
     search.length === 0 &&
-    searchRule === "name" &&
+    searchRule === "fullName" &&
     activeFilter === "all" &&
     roleFilter.size === 0 &&
     sortBy === "createdAt" &&
@@ -139,7 +169,7 @@ export default function AdminUsersPage() {
 
   function handleResetFilters(): void {
     setSearch("");
-    setSearchRule("name");
+    setSearchRule("fullName");
     setActiveFilter("all");
     setRoleFilter(new Set());
     setSortBy("createdAt");
@@ -187,7 +217,7 @@ export default function AdminUsersPage() {
               if (rule === dict.userSearchByUsernameRule) {
                 setSearchRule("username");
               } else {
-                setSearchRule("name");
+                setSearchRule("fullName");
               }
               setSearch(value);
               setPage(1);

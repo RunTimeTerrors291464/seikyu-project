@@ -5,7 +5,9 @@ import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
 import { Field, Input } from "@/components/ui/Fields";
 import { StatusToggle } from "@/components/ui/StatusToggle";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
+import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import clsx from "clsx";
 import { KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -84,6 +86,10 @@ export default function EditUserPopup({
   const [attempted, setAttempted] = useState<boolean>(false);
   const [toggleConfirmOpen, setToggleConfirmOpen] = useState<boolean>(false);
   const [resetPasswordOpen, setResetPasswordOpen] = useState<boolean>(false);
+  const formFieldsRef = useFocusFirstFormControlOnOpen({
+    when: open && user != null,
+    bumpKey: user?.id,
+  });
 
   function applyFormFromUser(u: UserResponseDto): void {
     setFirstName(u.firstName ?? "");
@@ -214,8 +220,8 @@ export default function EditUserPopup({
       toast.success(dict.userSaveSuccess);
       onSaved?.();
       handleClose();
-    } catch {
-      toast.error(dict.somethingWentWrong);
+    } catch (error: unknown) {
+      toast.error(resolveApiErrorMessage(error, dict));
     } finally {
       setSubmitting(false);
     }
@@ -274,7 +280,10 @@ export default function EditUserPopup({
             </div>
           </div>
 
-          <div className="max-h-[70vh] space-y-3 overflow-y-auto px-4 py-4">
+          <div
+            ref={formFieldsRef}
+            className="max-h-[70vh] space-y-3 overflow-y-auto px-4 py-4"
+          >
             <Field
               label={dict.firstNameLabel}
               required

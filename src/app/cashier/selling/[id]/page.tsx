@@ -12,6 +12,7 @@ import {
   getSellingInvoiceById,
   type SellingInvoiceResponseDto,
 } from "@/features/invoices/services/sellingInvoice.service";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Boxes, DollarSign, Package, User } from "lucide-react";
@@ -48,9 +49,7 @@ export default function CashierSellingInvoiceDetailPage() {
           return;
         }
 
-        setErrorMessage(
-          error instanceof Error ? error.message : dict.somethingWentWrong,
-        );
+        setErrorMessage(resolveApiErrorMessage(error, dict));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -63,7 +62,7 @@ export default function CashierSellingInvoiceDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [invoiceId, dict.somethingWentWrong]);
+  }, [invoiceId, dict]);
 
   if (loading) {
     return (
@@ -92,7 +91,7 @@ export default function CashierSellingInvoiceDetailPage() {
     invoiceCode: invoice.invoiceId ?? dict.noInvoiceNo,
     status: invoice.status,
     createdBy: invoice.confirmedByUsername,
-    createdAt: invoice.confirmedAt,
+    createdAt: invoice.createdAt,
     confirmedBy: invoice.confirmedByUsername,
     confirmedAt: invoice.confirmedAt,
     notes: invoice.notes,
@@ -172,21 +171,50 @@ export default function CashierSellingInvoiceDetailPage() {
       <SellingInvoiceDetailProductsCard products={invoice.products} />
 
       <div className="flex items-start gap-5">
-        <div className="w-full max-w-xs shrink-0">
-          <Field label={dict.invoiceDiscountLabel} hint={dict.discountPercentHint}>
-            <div className="flex items-center gap-1.5">
-              <input
-                className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm text-text cursor-not-allowed"
-                value={String(invoice.invoiceDiscount ?? 0)}
-                aria-label={dict.invoiceDiscountLabel}
-                disabled={true}
-                inputMode="decimal"
-              />
-              <span className="shrink-0 text-sm text-muted" aria-hidden>
-                %
-              </span>
-            </div>
-          </Field>
+        <div className="w-full h-full max-w-xs shrink-0 flex-row gap-5">
+          <div className="flex min-h-0 flex-1 flex-col gap-5">
+            <Field fillHeight label={dict.invoiceDiscountLabel} hint={dict.discountPercentHint}>
+              <div className="flex items-center gap-1.5">
+                <input
+                  className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm text-text cursor-not-allowed"
+                  value={String(invoice.invoiceDiscount ?? 0)}
+                  aria-label={dict.invoiceDiscountLabel}
+                  disabled={true}
+                  inputMode="decimal"
+                />
+                <span className="shrink-0 text-sm text-muted" aria-hidden>
+                  %
+                </span>
+              </div>
+            </Field>
+
+            <Field label={dict.isTaxFocusLabel}>
+              <div className="flex items-center gap-4 pt-2">
+                <label className="inline-flex items-center gap-2 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={invoice.taxFocus === true}
+                    disabled={true}
+                    readOnly={true}
+                    aria-label={`${dict.isTaxFocusLabel} — ${dict.yesLabel}`}
+                    className="rounded border-border cursor-not-allowed"
+                  />
+                  <span>{dict.yesLabel}</span>
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={invoice.taxFocus === false}
+                    disabled={true}
+                    readOnly={true}
+                    aria-label={`${dict.isTaxFocusLabel} — ${dict.noLabel}`}
+                    className="rounded border-border cursor-not-allowed"
+                  />
+                  <span>{dict.noLabel}</span>
+                </label>
+              </div>
+            </Field>
+          </div>
         </div>
 
         <div className="flex h-[20vh] min-w-0 flex-1">

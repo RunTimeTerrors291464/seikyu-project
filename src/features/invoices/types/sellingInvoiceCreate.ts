@@ -1,5 +1,10 @@
 import type { Product } from "@/features/products/types/product";
-import type { SellingInvoiceProductDto } from "../services/sellingInvoice.service";
+
+const PRODUCT_STUB_TIMESTAMP = "1970-01-01T00:00:00.000Z";
+import type {
+  SellingInvoiceProductDto,
+  SellingInvoiceProductLineRequestDto,
+} from "../services/sellingInvoice.service";
 import { toNumberOrZero } from "./importInvoiceDetail";
 
 export type EditableSellingInvoiceCreateLine = {
@@ -22,6 +27,33 @@ export type EditableSellingInvoiceCreateLine = {
  * @param nameFallback - Label when the product has no primary name.
  * @returns Editable row with a fresh `localId` and zero quantity/discount.
  */
+/**
+ * Builds a minimal catalog `Product` from a draft line so the entry card can edit without SKU lookup.
+ *
+ * @param line - Existing selling draft row.
+ * @returns Product stub for {@link useInvoiceProductLineEntry} edit mode.
+ */
+export function editableSellingLineToProductStub(
+  line: EditableSellingInvoiceCreateLine,
+): Product {
+  return {
+    id: line.productId,
+    sku: line.productSku,
+    productNames: [line.productName],
+    productUnitId: "",
+    productUnitName: line.productUnit,
+    productDescription: "",
+    importPrice: 0,
+    sellingPrice: Math.max(0, toNumberOrZero(line.sellingPrice)),
+    inventoryStock: 0,
+    reorderThreshold: 0,
+    isActive: true,
+    stockStatus: 0,
+    createdAt: PRODUCT_STUB_TIMESTAMP,
+    updatedAt: PRODUCT_STUB_TIMESTAMP,
+  };
+}
+
 export function productToEditableSellingCreateLine(
   product: Product,
   nameFallback: string,
@@ -37,6 +69,25 @@ export function productToEditableSellingCreateLine(
     productDiscount: "0",
     totalSellingPrice: "0",
     notes: "",
+  };
+}
+
+/**
+ * Maps a catalog product to a selling line with default quantity 1 (catalog append flow).
+ *
+ * @param product - Product from the catalog API.
+ * @param nameFallback - Label when the product has no primary name.
+ * @returns Editable row ready for the read-only products table.
+ */
+export function catalogProductToEditableSellingCreateLine(
+  product: Product,
+  nameFallback: string,
+): EditableSellingInvoiceCreateLine {
+  const line = productToEditableSellingCreateLine(product, nameFallback);
+  return {
+    ...line,
+    quantity: "1",
+    totalSellingPrice: String(product.sellingPrice),
   };
 }
 
@@ -71,15 +122,13 @@ export function sellingLineDtoToEditableDisplay(
  */
 export function sellingCreateLinesToRequest(
   lines: EditableSellingInvoiceCreateLine[],
-): {
-  productSku: string;
-  quantity: number;
-  productDiscount: number;
-  notes?: string;
-}[] {
+): SellingInvoiceProductLineRequestDto[] {
   return lines.map((line) => ({
     productSku: line.productSku.trim(),
+    productName: line.productName.trim(),
+    productUnit: line.productUnit.trim(),
     quantity: Math.floor(toNumberOrZero(line.quantity)),
+    sellingPrice: Math.max(0, toNumberOrZero(line.sellingPrice)),
     productDiscount: toNumberOrZero(line.productDiscount),
     notes: line.notes.trim() || undefined,
   }));

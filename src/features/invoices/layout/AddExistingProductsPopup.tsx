@@ -13,6 +13,7 @@ import { PRODUCT_STATUS_OPTIONS, PRODUCT_STOCK_STATUS_OPTIONS } from "@/features
 import { useProductTable } from "@/features/products/hooks/useProductTable";
 import { ProductQuery, productService } from "@/features/products/services/product.service";
 import type { Product } from "@/features/products/types/product";
+import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { useDict } from "@/lib/lang/DictProvider";
 import { Barcode, Filter, Package, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -54,7 +55,6 @@ export default function AddExistingProductsPopup({
     searchBy: undefined,
     sortBy: "sku",
     sortOrder: "asc",
-    stockStatus: "all",
     isActive: "all",
   };
 
@@ -62,6 +62,8 @@ export default function AddExistingProductsPopup({
     fetcher: productService.getProducts,
     initialQuery: initialTableQuery,
   });
+
+  const formFieldsRef = useFocusFirstFormControlOnOpen({ when: open });
 
   useEffect(function clearSelectionOnClose(): void {
     if (!open) {
@@ -160,7 +162,10 @@ export default function AddExistingProductsPopup({
 
   return (
     <Popup open={open} onClose={onClose}>
-      <div className="flex h-[86vh] w-[90vw] max-w-[1100px] flex-col overflow-hidden bg-bg">
+      <div
+        ref={formFieldsRef}
+        className="flex h-[86vh] w-[90vw] max-w-[1100px] flex-col overflow-hidden bg-bg"
+      >
         <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-3 items-center gap-2">
             <div className="flex items-center justify-start">
@@ -229,7 +234,10 @@ export default function AddExistingProductsPopup({
                         onClick={function setStockFilter(): void {
                           setStatusFilter(option.value);
                           table.setFilters({
-                            stockStatus: String(option.value) as ProductQuery["stockStatus"],
+                            stockStatus:
+                              option.value === "all"
+                                ? undefined
+                                : option.value,
                           });
                         }}
                         className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${
@@ -264,7 +272,12 @@ export default function AddExistingProductsPopup({
                         onClick={function setActiveStatus(): void {
                           setActiveFilter(option.value);
                           table.setFilters({
-                            isActive: String(option.value) as ProductQuery["isActive"],
+                            isActive:
+                              option.value === "all"
+                                ? "all"
+                                : option.value === true
+                                  ? "true"
+                                  : "false",
                           });
                         }}
                         className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${

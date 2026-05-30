@@ -27,7 +27,7 @@ import {
 } from "@/lib/numeric/integerAndMoneyInputs";
 import { useCallback, useEffect, useState } from "react";
 import { useProductUnitActiveState } from "../hooks/useProductUnitActiveState";
-import useSkuValidation from "../hooks/useSkuValidation";
+import useSkuCheck from "../hooks/useSkuCheck";
 import { Product } from "../types/product";
 import UnitPickerPopup from "./UnitPickerPopup";
 
@@ -103,9 +103,10 @@ export default function ProductDetailsCard({
     isDebouncing: skuDebouncing,
     isDuplicate: skuDuplicate,
   } =
-    useSkuValidation({
+    useSkuCheck({
       sku: product.sku || "",
       skip: (product.sku || "") === initialSku,
+      intent: "checkDuplicate",
     });
 
   const skuValue = String(product.sku || "");
@@ -162,6 +163,7 @@ export default function ProductDetailsCard({
             ? dict.checkingSku
             : undefined
         }
+        required
       >
         <Input
           value={product.sku || ""}
@@ -184,7 +186,6 @@ export default function ProductDetailsCard({
         <StatDisplay
           value={product.inventoryStock || 0}
           status={product.stockStatus}
-          label={stock.label}
           accent={stock.accent}
         />
       </Field>
@@ -194,6 +195,7 @@ export default function ProductDetailsCard({
         label={dict.unit}
         icon={<Ruler className="h-3 w-3" />}
         error={unitFieldError}
+        required
       >
         <SelectButton
           value={product.productUnitName}
@@ -223,6 +225,7 @@ export default function ProductDetailsCard({
         label={dict.importPrice}
         icon={<DollarSign className="h-3 w-3" />}
         error={errors.importPrice}
+        required
       >
         <Input
           value={importPriceText}
@@ -245,7 +248,7 @@ export default function ProductDetailsCard({
             );
             setImportPriceText(finalized);
             const num = normalizedMoneyStringToNumber(finalized);
-            if (num !== null) {
+            if (num !== null && num !== Number(product.importPrice)) {
               update("importPrice", num);
             }
           }}
@@ -258,6 +261,7 @@ export default function ProductDetailsCard({
         label={dict.sellingPrice}
         icon={<DollarSign className="h-3 w-3" />}
         error={errors.sellingPrice}
+        required
       >
         <Input
           value={sellingPriceText}
@@ -280,7 +284,7 @@ export default function ProductDetailsCard({
             );
             setSellingPriceText(finalized);
             const num = normalizedMoneyStringToNumber(finalized);
-            if (num !== null) {
+            if (num !== null && num !== Number(product.sellingPrice)) {
               update("sellingPrice", num);
             }
           }}
@@ -293,6 +297,7 @@ export default function ProductDetailsCard({
         label={dict.reorderThreshold}
         icon={<AlertTriangle className="h-3 w-3" />}
         error={errors.reorderThreshold}
+        required
       >
         <Input
           type="number"

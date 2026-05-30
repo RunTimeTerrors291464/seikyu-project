@@ -1,11 +1,11 @@
 import { ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
-import { Dictionary } from "@/lib/lang/i18n";
+import { DictionaryLabelKey } from "@/lib/lang/i18n";
 import { booleanFilter, textFilter } from "@/lib/table/filter";
 import { Product } from "../types/product";
 
 export const PRODUCT_STOCK_STATUS_OPTIONS: {
   value: ProductStockFilter;
-  dictKey: keyof Dictionary;
+  dictKey: DictionaryLabelKey ;
 }[] = [
     {
       value: "all",
@@ -27,7 +27,7 @@ export const PRODUCT_STOCK_STATUS_OPTIONS: {
 
 export const PRODUCT_STATUS_OPTIONS: {
   value: ProductStatusFilter;
-  dictKey: keyof Dictionary;
+  dictKey: DictionaryLabelKey ;
 }[] = [
     {
       value: "all",

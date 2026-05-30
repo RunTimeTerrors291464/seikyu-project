@@ -25,6 +25,7 @@ export function useSellingInvoiceCreateEditor(
   products: EditableSellingInvoiceCreateLine[],
   onChangeProducts: (next: EditableSellingInvoiceCreateLine[]) => void,
   validationActive: boolean,
+  taxFocusChoice: boolean | null,
 ): {
   updateRow: (
     rowLocalId: string,
@@ -81,6 +82,10 @@ export function useSellingInvoiceCreateEditor(
       );
       if (hasInvalidQuantity) {
         return INVOICE_DRAFT_ERRORS.importMissingQuantity;
+      }
+      const hasEmptyTaxFocus = taxFocusChoice === null;
+      if (hasEmptyTaxFocus) {
+        return INVOICE_DRAFT_ERRORS.taxFocusChoiceRequired;
       }
 
       return null;

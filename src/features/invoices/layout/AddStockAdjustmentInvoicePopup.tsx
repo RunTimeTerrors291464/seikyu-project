@@ -7,18 +7,19 @@ import Button from "@/components/ui/Buttons";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS } from "../filters/stockAdjustmentInvoiceFilters";
+import { STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS } from "../filters/stockAdjustmentInvoiceFilters";
 import { useStockAdjustmentInvoiceProductsEditor } from "../hooks/useStockAdjustmentInvoiceProductsEditor";
 import {
   createStockAdjustmentInvoiceDraft,
-  type StockAdjustmentActionReason,
+  type StockAdjustmentReasonCategory,
 } from "../services/stockAdjustmentInvoice.service";
 import {
+  buildStockAdjustmentProductRequests,
   EditableStockAdjustmentLine,
-  toNumberOrZero,
 } from "../types/stockAdjustmentDetail";
 import StockAdjustmentProductsCard from "./StockAdjustmentProductsCard";
 
@@ -43,9 +44,8 @@ export default function AddStockAdjustmentInvoicePopup({
   const [products, setProducts] = useState<EditableStockAdjustmentLine[]>(
     createInitialProducts(),
   );
-  const [actionReason, setActionReason] = useState<StockAdjustmentActionReason>(
-    "damagedGoods",
-  );
+  const [reasonCategory, setReasonCategory] =
+    useState<StockAdjustmentReasonCategory>("damage");
   const [notes, setNotes] = useState<string>("");
   const [createAttempted, setCreateAttempted] = useState<boolean>(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
@@ -92,7 +92,7 @@ export default function AddStockAdjustmentInvoicePopup({
   function resetDraftState(): void {
     previousProductCountRef.current = 0;
     setProducts(createInitialProducts());
-    setActionReason("damagedGoods");
+    setReasonCategory("damage");
     setNotes("");
     setCreateAttempted(false);
     setConfirmAction(null);
@@ -129,25 +129,14 @@ export default function AddStockAdjustmentInvoicePopup({
 
     try {
       const created = await createStockAdjustmentInvoiceDraft({
-        products: products.map((product) => ({
-          productId: product.productId,
-          productSku: product.productSku,
-          productName: product.productName,
-          productUnit: product.productUnit,
-          action: product.action,
-          quantity: toNumberOrZero(product.quantity),
-          notes: product.notes.trim() ? product.notes.trim() : undefined,
-        })),
-        actionReason,
+        products: buildStockAdjustmentProductRequests(products, reasonCategory),
         notes: notes.trim() ? notes.trim() : undefined,
       });
 
       handleClose();
       onCreated?.(created.id);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
-      );
+      setErrorMessage(resolveApiErrorMessage(error, dict));
     } finally {
       setCreating(false);
     }
@@ -242,15 +231,15 @@ export default function AddStockAdjustmentInvoicePopup({
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
             <Field label={dict.actionReasonLabel}>
               <select
-                value={actionReason}
+                value={reasonCategory}
                 onChange={function handleReasonChange(event): void {
-                  setActionReason(event.target.value as StockAdjustmentActionReason);
+                  setReasonCategory(
+                    event.target.value as StockAdjustmentReasonCategory,
+                  );
                 }}
                 className="h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-text outline-none"
               >
-                {STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS.filter(function skipAll(option) {
-                  return option.value !== "all";
-                }).map(function renderOption(option) {
+                {STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS.map(function renderOption(option) {
                   return (
                     <option key={option.value} value={option.value}>
                       {dict[option.dictKey as keyof typeof dict] ?? option.value}

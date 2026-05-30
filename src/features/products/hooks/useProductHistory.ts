@@ -32,10 +32,10 @@ export function useProductHistory(productId: string) {
       setLoading(true);
 
       try {
-        const data = await getProductHistory(productId);
+        const data = await getProductHistory(productId, { page: 1, limit: 100 });
         if (!isMounted) return;
 
-        setHistory(data ?? []);
+        setHistory(data.history ?? []);
       } catch (err) {
         console.error("useProductHistory → fetch failed", err);
       } finally {

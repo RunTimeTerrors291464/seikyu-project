@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
@@ -19,8 +19,15 @@ import AddSellingInvoicePopup from "@/features/invoices/layout/AddSellingInvoice
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
 import { useMayCreateSellingInvoice } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+} from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
-import { Filter, Hash, Package, Plus, RotateCcw, User as UserIcon } from "lucide-react";
+import { Filter, Hash, Plus, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
@@ -80,6 +87,22 @@ export default function CashierSellingInvoicesPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setAddInvoicePopupOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+    enabled: canCreateSelling && !addInvoicePopupOpen,
+  });
+
   function handleSort(nextField: string): void {
     if (
       nextField !== "invoiceId" &&
@@ -135,25 +158,21 @@ export default function CashierSellingInvoicesPage() {
                 label: dict.invoiceNumber,
                 icon: <Hash className="h-3 w-3" />,
               },
-              {
-                label: dict.confirmBy,
-                icon: <UserIcon className="h-3 w-3" />,
-              },
-              {
-                label: dict.productIdSearchLabel,
-                icon: <Package className="h-3 w-3" />,
-              },
+              // {
+              //   label: dict.confirmBy,
+              //   icon: <UserIcon className="h-3 w-3" />,
+              // },
+              // {
+              //   label: dict.productSkuSearchLabel,
+              //   icon: <Package className="h-3 w-3" />,
+              // },
             ]}
             placeholder={dict.searchPlaceholder}
             onChange={({ rule, value }) => {
-              let normalized: "invoiceId" | "userId" | "productId" =
-                "invoiceId";
-              if (rule === dict.confirmBy) {
-                normalized = "userId";
-              } else if (rule === dict.productIdSearchLabel) {
-                normalized = "productId";
-              }
-              setSearchRule(normalized);
+              const ruleMap: Record<string, "invoiceId"> = {
+                [dict.invoiceNumber]: "invoiceId",
+              };
+              setSearchRule(ruleMap[rule] as "invoiceId");
               setSearch(value);
               setPage(1);
             }}
@@ -187,7 +206,7 @@ export default function CashierSellingInvoicesPage() {
               size="sm"
               onClick={() => setAddInvoicePopupOpen(true)}
             >
-              {dict.create}
+              {dict.createNewSellingInvoice}
             </Button>
           ) : null}
         </div>

@@ -11,6 +11,7 @@ import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader"
 import InvoicePrintPreviewPopup, {
   type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+import ImportInvoiceDraftWorkspace from "@/features/invoices/layout/ImportInvoiceDraftWorkspace";
 import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
 import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
 import {
@@ -22,9 +23,11 @@ import {
 } from "@/features/invoices/services/importInvoice.service";
 import {
   EditableImportInvoiceProduct,
+  importCreateLinesToRequest,
   importLineDtoToEditable,
   toNumberOrZero,
 } from "@/features/invoices/types/importInvoiceDetail";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
@@ -95,9 +98,7 @@ export default function ImportInvoiceDetailPage() {
           return;
         }
 
-        setErrorMessage(
-          error instanceof Error ? error.message : dict.somethingWentWrong,
-        );
+        setErrorMessage(resolveApiErrorMessage(error, dict));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -144,15 +145,7 @@ export default function ImportInvoiceDetailPage() {
       const response = await editImportInvoiceDraft({
         id: invoice.id,
         notes,
-        products: products.map((product) => ({
-          productId: product.productId,
-          productSku: product.productSku,
-          productName: product.productName,
-          productUnit: product.productUnit,
-          quantity: toNumberOrZero(product.quantity),
-          importPrice: toNumberOrZero(product.importPrice),
-          notes: product.notes || undefined,
-        })),
+        products: importCreateLinesToRequest(products),
       });
 
       setInvoice(response);
@@ -163,7 +156,7 @@ export default function ImportInvoiceDetailPage() {
       setSaveConfirmOpen(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setSaving(false);
@@ -185,7 +178,7 @@ export default function ImportInvoiceDetailPage() {
       setNotes(response.notes ?? "");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setConfirming(false);
@@ -242,7 +235,7 @@ export default function ImportInvoiceDetailPage() {
       router.push("/manager/invoices/import");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setDeleting(false);
@@ -270,7 +263,7 @@ export default function ImportInvoiceDetailPage() {
     invoiceCode: invoice.invoiceId ?? dict.noInvoiceNo,
     status: invoice.status,
     createdBy: invoice.draftByUsername,
-    createdAt: invoice.draftAt,
+    createdAt: invoice.createdAt,
     confirmedBy: invoice.confirmedByUsername,
     confirmedAt: invoice.confirmedAt,
     notes,
@@ -334,70 +327,87 @@ export default function ImportInvoiceDetailPage() {
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-5">
-        <KpiTile
-          label={dict.totalImportPriceLabel}
-          value={formatPriceNumber(totals.totalImportPrice)}
-          icon={<DollarSign className="h-4 w-4 text-muted" />}
-          accent="success"
-          helpText={dict.totalImportPriceKpiHelp}
-          sub={dict.totalImportPriceKpiSub}
-        />
-        <KpiTile
-          label={dict.totalProducts}
-          value={totals.totalProducts.toLocaleString()}
-          icon={<Package className="h-4 w-4 text-muted" />}
-          helpText={dict.totalProductsKpiHelp}
-          sub={dict.totalProductsKpiSub}
-        />
-        <KpiTile
-          label={dict.totalQuantity}
-          value={totals.totalQuantity.toLocaleString()}
-          icon={<Boxes className="h-4 w-4 text-muted" />}
-          helpText={dict.totalQuantityKpiHelp}
-          sub={dict.totalQuantityKpiSub}
-        />
-        <KpiTile
-          label={dict.draftBy}
-          value={invoice.draftByUsername ?? "—"}
-          sub={invoice.draftAt ? formatDate(invoice.draftAt) : "—"}
-          icon={<User className="h-4 w-4 text-muted" />}
-          helpText={dict.draftByKpiHelp}
-        />
-        <KpiTile
-          label={dict.confirmedBy}
-          value={invoice.confirmedByUsername ?? dict.notConfirmed}
-          sub={invoice.confirmedAt ? formatDate(invoice.confirmedAt) : "—"}
-          icon={<User className="h-4 w-4 text-muted" />}
-          helpText={dict.confirmedByKpiHelp}
-        />
-      </div>
-
-      <ImportInvoiceProductsCard
-        products={products}
-        canEditDraft={effectiveCanEditDraft}
-        onChangeProducts={setProducts}
-        updateRow={updateRow}
-      />
-
-      <div className="flex max-h-[30vh] min-h-0 shrink-0 flex-col gap-3 overflow-hidden lg:flex-row lg:items-stretch">
-        <div className="flex min-h-0 min-w-0 flex-[2] flex-col">
-          <ImportInvoiceReturnInvoicesCard importInvoiceNo={invoice.invoiceId} />
+      {!effectiveCanEditDraft ? (
+        <div className="grid gap-4 xl:grid-cols-5">
+          <KpiTile
+            label={dict.totalImportPriceLabel}
+            value={formatPriceNumber(totals.totalImportPrice)}
+            icon={<DollarSign className="h-4 w-4 text-muted" />}
+            accent="success"
+            helpText={dict.totalImportPriceKpiHelp}
+            sub={dict.totalImportPriceKpiSub}
+          />
+          <KpiTile
+            label={dict.totalProducts}
+            value={totals.totalProducts.toLocaleString()}
+            icon={<Package className="h-4 w-4 text-muted" />}
+            helpText={dict.totalProductsKpiHelp}
+            sub={dict.totalProductsKpiSub}
+          />
+          <KpiTile
+            label={dict.totalQuantity}
+            value={totals.totalQuantity.toLocaleString()}
+            icon={<Boxes className="h-4 w-4 text-muted" />}
+            helpText={dict.totalQuantityKpiHelp}
+            sub={dict.totalQuantityKpiSub}
+          />
+          <KpiTile
+            label={dict.draftBy}
+            value={invoice.draftByUsername ?? "—"}
+            sub={invoice.draftAt ? formatDate(invoice.draftAt) : "—"}
+            icon={<User className="h-4 w-4 text-muted" />}
+            helpText={dict.draftByKpiHelp}
+          />
+          <KpiTile
+            label={dict.confirmedBy}
+            value={invoice.confirmedByUsername ?? dict.notConfirmed}
+            sub={invoice.confirmedAt ? formatDate(invoice.confirmedAt) : "—"}
+            icon={<User className="h-4 w-4 text-muted" />}
+            helpText={dict.confirmedByKpiHelp}
+          />
         </div>
+      ) : null}
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <Field fillHeight label={dict.noteLabel}>
-            <Textarea
-              value={notes}
-              onChange={setNotes}
-              disabled={!effectiveCanEditDraft}
-              placeholder={dict.invoiceDescriptionPlaceholder}
-              rows={1}
-              className="min-h-0 flex-1 overflow-y-auto"
-            />
-          </Field>
-        </div>
-      </div>
+      {effectiveCanEditDraft ? (
+        <ImportInvoiceDraftWorkspace
+          products={products}
+          onChangeProducts={setProducts}
+          notes={notes}
+          onNotesChange={setNotes}
+          updateRow={updateRow}
+          totals={totals}
+          lineFieldValidationActive={true}
+        />
+      ) : (
+        <>
+          <ImportInvoiceProductsCard
+            products={products}
+            canEditDraft={false}
+            readOnlyTable={true}
+            onChangeProducts={setProducts}
+            updateRow={updateRow}
+          />
+
+          <div className="flex max-h-[30vh] min-h-0 shrink-0 flex-col gap-3 overflow-hidden lg:flex-row lg:items-stretch">
+            <div className="flex min-h-0 min-w-0 flex-[2] flex-col">
+              <ImportInvoiceReturnInvoicesCard importInvoiceNo={invoice.invoiceId} />
+            </div>
+
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <Field fillHeight label={dict.noteLabel}>
+                <Textarea
+                  value={notes}
+                  onChange={setNotes}
+                  disabled={true}
+                  placeholder={dict.invoiceDescriptionPlaceholder}
+                  rows={1}
+                  className="min-h-0 flex-1 overflow-y-auto"
+                />
+              </Field>
+            </div>
+          </div>
+        </>
+      )}
 
       <ConfirmPopup
         open={saveConfirmOpen}

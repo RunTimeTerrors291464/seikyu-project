@@ -142,7 +142,11 @@ export default function ManagerSellingInvoicesPage() {
         );
       }
 
-      return compareNullableString(left.draftAt, right.draftAt, currentSortOrder);
+      return compareNullableString(
+        left.createdAt,
+        right.createdAt,
+        currentSortOrder,
+      );
     });
 
     return sorted;
@@ -224,6 +228,38 @@ export default function ManagerSellingInvoicesPage() {
 
       const next = new Set(prev);
       next.add(id);
+      setReturnChildrenLoading(function setLoading(current) {
+        return { ...current, [id]: true };
+      });
+
+      void (async function fetchReturns(): Promise<void> {
+        try {
+          const sellingInvoiceNo = row.invoiceId?.trim() ?? "";
+
+          if (!sellingInvoiceNo) {
+            setReturnChildrenBySellingId(function setEmpty(prev) {
+              return { ...prev, [id]: [] };
+            });
+            return;
+          }
+
+          const response = await getReturnSellingInvoiceList({
+            search: sellingInvoiceNo,
+            searchBy: "sellingInvoiceId",
+            limit: RETURN_CHILDREN_LIMIT,
+            page: 1,
+          });
+
+          setReturnChildrenBySellingId(function mergeChildren(prev) {
+            return { ...prev, [id]: response.invoices };
+          });
+        } finally {
+          setReturnChildrenLoading(function finishLoading(prev) {
+            return { ...prev, [id]: false };
+          });
+        }
+      })();
+
       return next;
     });
 
@@ -302,7 +338,7 @@ export default function ManagerSellingInvoicesPage() {
                 icon: <UserIcon className="h-3 w-3" />,
               },
               {
-                label: dict.productIdSearchLabel,
+                label: dict.productSkuSearchLabel,
                 icon: <Package className="h-3 w-3" />,
               },
             ]}
@@ -312,7 +348,7 @@ export default function ManagerSellingInvoicesPage() {
                 "invoiceId";
               if (rule === dict.confirmBy) {
                 normalized = "userId";
-              } else if (rule === dict.productIdSearchLabel) {
+              } else if (rule === dict.productSkuSearchLabel) {
                 normalized = "productId";
               }
               setSearchRule(normalized);

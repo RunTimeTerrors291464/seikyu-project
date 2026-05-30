@@ -67,12 +67,20 @@ export const INVOICE_DRAFT_ERRORS = {
     key: "sellingDraftMissingSkuError",
     accent: "danger" as Accent,
   },
+  sellingMissingQuantity: {
+    key: "sellingDraftMissingQuantityError",
+    accent: "danger" as Accent,
+  },
   stockAdjustmentMissingQuantity: {
     key: "stockAdjustmentDraftMissingQuantityError",
     accent: "danger" as Accent,
   },
   draftNoProducts: {
     key: "invoiceDraftNoProductsError",
+    accent: "danger" as Accent,
+  },
+  taxFocusChoiceRequired: {
+    key: "taxFocusChoiceError",
     accent: "danger" as Accent,
   },
 } as const satisfies Record<

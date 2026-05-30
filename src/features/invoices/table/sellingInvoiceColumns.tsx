@@ -1,3 +1,8 @@
+/**
+ * Invoice-list columns for selling invoices (one row per invoice, with link to detail).
+ * Used by selling invoice list pages at `/manager/invoices/selling` and `/cashier/selling`.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";
@@ -5,6 +10,7 @@ import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import {
   Braces,
   Clock,
+  Landmark,
   MessageSquare,
   Package,
   Receipt,
@@ -127,6 +133,24 @@ export function sellingInvoiceColumns(
           {row.totalQuantity}
         </span>
       ),
+      thClassName: "w-[120px]",
+    },
+    {
+      id: "taxFocus",
+      header: dict.taxFocusLabel,
+      icon: <Landmark className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
+      accessor: function renderTaxFocus(row) {
+        return (
+          <input
+            type="checkbox"
+            checked={row.taxFocus}
+            disabled
+            readOnly
+            className="h-4 w-4 rounded border-border"
+            aria-label={dict.taxFocusLabel}
+          />
+        );
+      },
       thClassName: "w-[120px]",
     },
     {

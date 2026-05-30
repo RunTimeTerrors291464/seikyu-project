@@ -1,4 +1,5 @@
 import type { ReturnSellingInvoiceProductResponseDto } from "../services/returnSellingInvoice.service";
+import { createStableSignature } from "../lib/stableSignature";
 import { toNumberOrZero } from "./importInvoiceDetail";
 
 export type EditableReturnSellingDetailLine = {
@@ -29,7 +30,7 @@ export function toEditableReturnSellingDetailLine(
     productUnit: line.productUnit,
     sellingPrice: String(line.sellingPrice),
     returnQuantity: String(line.returnQuantity),
-    notes: line.notes ?? "",
+    notes: line.reasonNotes ?? "",
   };
 }
 
@@ -42,11 +43,14 @@ export function toEditableReturnSellingDetailLine(
 export function toReturnSellingLinesSignature(
   lines: EditableReturnSellingDetailLine[],
 ): string {
-  return JSON.stringify(
-    lines.map((line) => ({
+  return createStableSignature(
+    lines,
+    function projectReturnSellingLine(line) {
+      return {
       productId: line.productId,
       returnQuantity: Math.floor(toNumberOrZero(line.returnQuantity)),
       notes: (line.notes || "").trim(),
-    })),
+      };
+    },
   );
 }

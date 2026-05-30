@@ -72,10 +72,13 @@ export default function ProductNamesCard({
                 autoFocus
                 disabled={disabled}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAdd();
-                  if (e.key === "Escape") {
+                onChange={(v) => {
+                  const limitedValue = v.target.value.slice(0, 255);
+                  setValue(limitedValue);
+                }}
+                onKeyDown={(v) => {
+                  if (v.key === "Enter") handleAdd();
+                  if (v.key === "Escape") {
                     setAdding(false);
                     setValue("");
                   }

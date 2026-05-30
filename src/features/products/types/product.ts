@@ -18,6 +18,8 @@ export interface Product {
 
   productUnitId: string;
   productUnitName: string;
+  /** Present on list/by-unit responses when the API includes unit activation state. */
+  isUnitActive?: boolean;
   productDescription: string;
 
   importPrice: number;
@@ -57,6 +59,41 @@ export type ProductHistoryItem = {
   createdByUsername: string;
   createdAt: string;
   eventSummary: string[];
+};
+
+export type GetProductHistoryListResponse = {
+  page: number;
+  limit: number;
+  total: number;
+  history: ProductHistoryItem[];
+};
+
+export type ProductStockHistoryQuantityType = "add" | "subtract";
+
+export type ProductStockHistoryInvoiceType =
+  | "import"
+  | "selling"
+  | "returnImport"
+  | "returnSelling"
+  | "stockAdjustment";
+
+export type ProductStockHistoryItem = {
+  id: string;
+  productId: string;
+  quantityType: ProductStockHistoryQuantityType;
+  quantity: number;
+  invoiceType: ProductStockHistoryInvoiceType;
+  invoiceId: string;
+  beforeInventoryStock: number;
+  afterInventoryStock: number;
+  createdAt: string;
+};
+
+export type GetProductStockHistoryResponse = {
+  page: number;
+  limit: number;
+  total: number;
+  stockHistory: ProductStockHistoryItem[];
 };
 
 export type ProductHistoryEvent = {

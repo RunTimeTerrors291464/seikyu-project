@@ -1,6 +1,6 @@
 "use client";
 
-import type { Lang } from "@/lib/lang/i18n";
+import { PRINT_LANG_COOKIE, type Lang } from "@/lib/lang/i18n";
 import clsx from "clsx";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -81,7 +81,7 @@ const TOGGLE_ICON: Record<PreferenceChipSize, string> = {
  *
  * @returns `false` during SSR and hydration, then `true` on the client.
  */
-function useHydrated(): boolean {
+export function useHydrated(): boolean {
   return useSyncExternalStore(
     function subscribeToNothing() {
       return function cleanup() {};
@@ -168,4 +168,13 @@ export function applyLanguage(
 ): void {
   document.cookie = `lang=${lang}; path=/; SameSite=Lax`;
   routerRefresh();
+}
+
+/**
+ * Persists the default locale used for invoice print preview and PDF (client cookie, no refresh).
+ *
+ * @param lang - Target locale (`en`, `vi`, or `hu`).
+ */
+export function applyPrintLanguage(lang: Lang): void {
+  document.cookie = `${PRINT_LANG_COOKIE}=${lang}; path=/; SameSite=Lax`;
 }

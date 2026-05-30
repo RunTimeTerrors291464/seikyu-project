@@ -11,6 +11,7 @@ import InvoicePrintPreviewPopup, {
   type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import ReturnSellingInvoiceHeader from "@/features/invoices/layout/ReturnSellingInvoiceHeader";
+import { buildReturnSellingProductRequest } from "@/features/invoices/lib/returnInvoiceReason";
 import {
   confirmReturnSellingInvoice,
   deleteReturnSellingDrafts,
@@ -28,6 +29,7 @@ import {
 } from "@/features/invoices/types/returnSellingDetail";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
   formatPriceNumber,
@@ -107,7 +109,7 @@ export default function ReturnSellingInvoiceDetailPage() {
         }
 
         setErrorMessage(
-          error instanceof Error ? error.message : dict.somethingWentWrong,
+          resolveApiErrorMessage(error, dict),
         );
       } finally {
         if (isMounted) {
@@ -121,7 +123,7 @@ export default function ReturnSellingInvoiceDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [returnId, dict.somethingWentWrong]);
+  }, [returnId, dict]);
 
   const canEditDraft = invoice?.status === "draft";
 
@@ -194,11 +196,13 @@ export default function ReturnSellingInvoiceDetailPage() {
 
     const productsPayload = lines
       .filter((line) => toNumberOrZero(line.returnQuantity) > 0)
-      .map((line) => ({
-        productId: line.productId,
-        returnQuantity: Math.floor(toNumberOrZero(line.returnQuantity)),
-        notes: line.notes.trim() ? line.notes.trim() : undefined,
-      }));
+      .map((line) =>
+        buildReturnSellingProductRequest(
+          line.productId,
+          Math.floor(toNumberOrZero(line.returnQuantity)),
+          line.notes,
+        ),
+      );
 
     setSaving(true);
     setErrorMessage("");
@@ -223,7 +227,7 @@ export default function ReturnSellingInvoiceDetailPage() {
       setDraftValidationAttempted(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setSaving(false);
@@ -259,7 +263,7 @@ export default function ReturnSellingInvoiceDetailPage() {
       setDraftValidationAttempted(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setConfirming(false);
@@ -334,7 +338,7 @@ export default function ReturnSellingInvoiceDetailPage() {
       router.push(`/manager/invoices/selling/${invoice.sellingInvoiceId}`);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setDeleting(false);
@@ -398,7 +402,7 @@ export default function ReturnSellingInvoiceDetailPage() {
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setReturnAllConfirming(false);
@@ -438,7 +442,7 @@ export default function ReturnSellingInvoiceDetailPage() {
     invoiceCode: invoice.returnInvoiceId ?? dict.noInvoiceNo,
     status: invoice.status,
     createdBy: invoice.draftByUsername,
-    createdAt: invoice.draftAt,
+    createdAt: invoice.createdAt,
     confirmedBy: invoice.confirmedByUsername,
     confirmedAt: invoice.confirmedAt,
     notes,

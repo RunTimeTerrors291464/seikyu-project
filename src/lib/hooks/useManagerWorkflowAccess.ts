@@ -23,7 +23,7 @@ export function useMayUseManagerWorkflowControls(): boolean {
 /**
  * Client hook for starting a sale from the cashier selling list.
  *
- * @returns True for cashier, manager, or admin.
+ * @returns True for cashier or manager (not admin-only).
  */
 export function useMayCreateSellingInvoice(): boolean {
   const roles = useAuthStore((state) => state.user?.roles ?? EMPTY_ROLES);

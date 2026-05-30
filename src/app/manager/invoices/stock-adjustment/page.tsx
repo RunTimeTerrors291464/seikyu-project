@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
@@ -8,18 +8,23 @@ import RuleInput from "@/components/ui/RuleInput";
 import TablePagination from "@/components/ui/TablePagination";
 import { STATUS_ACCENT } from "@/features/invoices/components/StockAdjustmentStatusPill";
 import {
-  STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS,
   STOCK_ADJUSTMENT_INVOICE_STATUS_OPTIONS,
   type StockAdjustmentInvoiceStatusFilter,
 } from "@/features/invoices/filters/stockAdjustmentInvoiceFilters";
 import { useStockAdjustmentInvoices } from "@/features/invoices/hooks/useStockAdjustmentInvoices";
-import type { StockAdjustmentActionReason } from "@/features/invoices/services/stockAdjustmentInvoice.service";
+import AddStockAdjustmentInvoicePopup from "@/features/invoices/layout/AddStockAdjustmentInvoicePopup";
 import { stockAdjustmentInvoiceColumns } from "@/features/invoices/table/stockAdjustmentInvoiceColumns";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+} from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { Filter, Hash, Package, Plus, RotateCcw, User as UserIcon } from "lucide-react";
-import AddStockAdjustmentInvoicePopup from "@/features/invoices/layout/AddStockAdjustmentInvoicePopup";
 import { useRouter } from "next/navigation";
 
 type StockAdjustmentSortBy =
@@ -68,9 +73,6 @@ export default function StockAdjustmentInvoicesListPage() {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] =
     useState<StockAdjustmentInvoiceStatusFilter>("all");
-  const [actionReasonFilter, setActionReasonFilter] = useState<
-    StockAdjustmentActionReason | "all"
-  >("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
   const [sortBy, setSortBy] = useState<StockAdjustmentSortBy | undefined>(
@@ -86,8 +88,22 @@ export default function StockAdjustmentInvoicesListPage() {
     sortBy,
     sortOrder: sortBy ? sortOrder : undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
-    actionReason:
-      actionReasonFilter === "all" ? undefined : actionReasonFilter,
+  });
+
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setAddInvoicePopupOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+    enabled: canManage && !addInvoicePopupOpen,
   });
 
   function handleSort(nextField: string): void {
@@ -116,7 +132,6 @@ export default function StockAdjustmentInvoicesListPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
-    actionReasonFilter === "all" &&
     sortBy === undefined &&
     page === 1 &&
     showFilters === false;
@@ -125,7 +140,6 @@ export default function StockAdjustmentInvoicesListPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
-    setActionReasonFilter("all");
     setSortBy(undefined);
     setSortOrder("asc");
     setPage(1);
@@ -155,7 +169,7 @@ export default function StockAdjustmentInvoicesListPage() {
                 icon: <UserIcon className="h-3 w-3" />,
               },
               {
-                label: dict.productIdSearchLabel,
+                label: dict.productSkuSearchLabel,
                 icon: <Package className="h-3 w-3" />,
               },
             ]}
@@ -163,7 +177,7 @@ export default function StockAdjustmentInvoicesListPage() {
             onChange={({ rule, value }) => {
               if (rule === dict.confirmBy) {
                 setSearchRule("userId");
-              } else if (rule === dict.productIdSearchLabel) {
+              } else if (rule === dict.productSkuSearchLabel) {
                 setSearchRule("productId");
               } else {
                 setSearchRule("invoiceId");
@@ -226,35 +240,6 @@ export default function StockAdjustmentInvoicesListPage() {
                   className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
                 >
                   {dict[option.dictKey]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted">
-              {dict.actionReasonLabel}
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS.map((option) => (
-                <button
-                  key={String(option.value)}
-                  type="button"
-                  onClick={() => {
-                    setActionReasonFilter(option.value);
-                    setPage(1);
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
-                    option.value,
-                    actionReasonFilter,
-                    "all",
-                    () => "neutral",
-                  )}`}
-                >
-                  {option.value === "all"
-                    ? dict.all
-                    : (dict as Record<string, string>)[option.dictKey] ??
-                      option.value}
                 </button>
               ))}
             </div>

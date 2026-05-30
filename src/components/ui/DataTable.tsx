@@ -3,7 +3,7 @@
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight } from "lucide-react";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 export type SortDirection = "asc" | "desc";
 
@@ -73,7 +73,24 @@ export type DataTableProps<T> = {
   leadingRail?: boolean;
   /** Flattens chrome so the table reads as a continuation of the parent (no outer border/radius). */
   embedded?: boolean;
+  /** Highlights the row whose id matches `getRowId(row)`. */
+  selectedRowId?: string | number | null;
+  /** Invoked when the user clicks a body row (not on nested controls). */
+  onRowClick?: (row: T, rowIndex: number) => void;
 };
+
+/** Applied on `<td>` cells — row `<tr>` backgrounds are unreliable with `border-collapse`. */
+const DATA_TABLE_ROW_SELECTED_CLASS = "bg-primary-soft";
+
+function shouldIgnoreDataTableRowClick(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return true;
+  }
+
+  return Boolean(
+    target.closest("button, input, textarea, select, a, label"),
+  );
+}
 
 export default function DataTable<T>({
   columns,
@@ -95,11 +112,14 @@ export default function DataTable<T>({
   showHeader = true,
   leadingRail = false,
   embedded = false,
+  selectedRowId = null,
+  onRowClick,
 }: DataTableProps<T>) {
   const isFill = maxHeight === "fill";
   const isExpand = maxHeight === "expand";
   const shouldScrollInternally = Boolean(maxHeight) && (isFill || !isExpand);
   const dict = useDict();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const expansionEnabled =
     Boolean(getRowId) &&
     typeof onToggleExpandRow === "function" &&
@@ -122,6 +142,25 @@ export default function DataTable<T>({
     (expansionEnabled ? 1 : 0);
 
   const boundedHeight = Boolean(maxHeight) && !isFill && !isExpand;
+
+  useEffect(
+    function scrollSelectedRowIntoView(): void {
+      if (selectedRowId == null || !scrollContainerRef.current) {
+        return;
+      }
+
+      const rowId = String(selectedRowId);
+      const rowElement = scrollContainerRef.current.querySelector(
+        `[data-row-id="${rowId}"]`,
+      );
+
+      if (rowElement instanceof HTMLElement) {
+        rowElement.scrollIntoView({ block: "nearest" });
+        rowElement.focus({ preventScroll: true });
+      }
+    },
+    [data, selectedRowId],
+  );
 
   function renderSortableHeaderTh(
     column: Column<T>,
@@ -182,6 +221,7 @@ export default function DataTable<T>({
     columnIndex: number,
     row: T,
     rowIndex: number,
+    isRowSelected: boolean,
   ): React.ReactElement {
     const content = column.accessor
       ? column.accessor(row, rowIndex)
@@ -203,6 +243,7 @@ export default function DataTable<T>({
           "truncate whitespace-nowrap px-2 py-2 align-middle text-text",
           column.align === "right" && "text-right",
           column.align === "center" && "text-center",
+          isRowSelected && DATA_TABLE_ROW_SELECTED_CLASS,
           column.tdClassName,
         )}
       >
@@ -224,9 +265,15 @@ export default function DataTable<T>({
     rid: string | number,
     isExpanded: boolean,
     rowCanExpand: boolean,
+    isRowSelected: boolean,
   ): React.ReactElement {
     return (
-      <td className="flex justify-center items-center w-7 min-w-[1.75rem] py-2">
+      <td
+        className={clsx(
+          "flex w-7 min-w-[1.75rem] items-center justify-center py-2",
+          isRowSelected && DATA_TABLE_ROW_SELECTED_CLASS,
+        )}
+      >
         {rowCanExpand ? (
           <button
             type="button"
@@ -257,6 +304,7 @@ export default function DataTable<T>({
 
   return (
     <div
+      ref={scrollContainerRef}
       className={clsx(
         // isExpand ? "overflow-visible" : "overflow-auto",
         embedded
@@ -386,25 +434,51 @@ export default function DataTable<T>({
                 rowCanExpand &&
                 expandedRowIds?.has(rid) === true;
 
+              const isRowSelected =
+                selectedRowId != null && String(selectedRowId) === String(rid);
+              const isRowClickable = typeof onRowClick === "function";
+
               return (
                 <React.Fragment key={rid}>
                   <tr
+                    data-row-id={String(rid)}
+                    aria-selected={isRowSelected}
+                    tabIndex={isRowClickable ? -1 : undefined}
                     className={clsx(
-                      "h-10 border-b border-border transition-colors",
-                      !embedded && "hover:bg-hover",
-                      embedded && "bg-muted/20 hover:bg-muted/30",
+                      "h-10 border-b border-border transition-colors outline-none",
+                      !embedded && !isRowSelected && "hover:bg-hover",
+                      embedded &&
+                        !isRowSelected &&
+                        "bg-muted/20 hover:bg-muted/30",
+                      isRowClickable && "cursor-pointer",
                     )}
+                    onClick={
+                      isRowClickable
+                        ? function handleRowClick(event): void {
+                            if (shouldIgnoreDataTableRowClick(event.target)) {
+                              return;
+                            }
+                            onRowClick(row, rIdx);
+                            event.currentTarget.focus({ preventScroll: true });
+                          }
+                        : undefined
+                    }
                   >
                     {leadingRail && (
                       <td
-                        className="w-[28px] border-l-2 border-primary/35 bg-muted/20 align-middle"
+                        className={clsx(
+                          "w-[28px] border-l-2 border-primary/35 align-middle",
+                          isRowSelected
+                            ? DATA_TABLE_ROW_SELECTED_CLASS
+                            : "bg-muted/20",
+                        )}
                         aria-hidden
                       />
                     )}
 
                     {expansionSplit &&
                       columnsBeforeExpansion.map((c, cIdx) =>
-                        renderDataCell(c, cIdx, row, rIdx),
+                        renderDataCell(c, cIdx, row, rIdx, isRowSelected),
                       )}
 
                     {expansionEnabled &&
@@ -412,10 +486,16 @@ export default function DataTable<T>({
                         rid,
                         isExpanded,
                         rowCanExpand,
+                        isRowSelected,
                       )}
 
                     {showIndex && (
-                      <td className="w-12 py-2 pl-3 pr-2 text-muted">
+                      <td
+                        className={clsx(
+                          "w-12 py-2 pl-3 pr-2 text-muted",
+                          isRowSelected && DATA_TABLE_ROW_SELECTED_CLASS,
+                        )}
+                      >
                         {rIdx + 1}
                       </td>
                     )}
@@ -427,10 +507,11 @@ export default function DataTable<T>({
                             columnsBeforeExpansion.length + cIdx,
                             row,
                             rIdx,
+                            isRowSelected,
                           ),
                         )
                       : columns.map((c, cIdx) =>
-                          renderDataCell(c, cIdx, row, rIdx),
+                          renderDataCell(c, cIdx, row, rIdx, isRowSelected),
                         )}
 
                   </tr>

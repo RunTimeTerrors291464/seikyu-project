@@ -8,14 +8,15 @@ import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { scheduleFocusLastInvoiceLineQuantity } from "@/features/invoices/lib/focusInvoiceLineQuantityInput";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
 import { stockAdjustmentProductColumns } from "../table/stockAdjustmentProductLineColumns";
 import {
   EditableStockAdjustmentLine,
   productToEditableStockAdjustmentLine,
 } from "../types/stockAdjustmentDetail";
-import AddExistingProductsPopup from "./AddExistingProductsPopup";
+import AddProductPopup from "./AddProductPopup";
 
 type StockAdjustmentProductsCardProps = {
   products: EditableStockAdjustmentLine[];
@@ -46,7 +47,8 @@ export default function StockAdjustmentProductsCard({
     setSearchText,
     filteredRows: filteredProducts,
   } = useSkuNameRuleFilter(products);
-  const [openAddExistingPopup, setOpenAddExistingPopup] = useState<boolean>(false);
+  const [openAddProductPopup, setOpenAddProductPopup] = useState<boolean>(false);
+  const tableScopeRef = useRef<HTMLDivElement>(null);
 
   useEffect(
     function clearSelectionWhenNotDraft(): void {
@@ -110,7 +112,7 @@ export default function StockAdjustmentProductsCard({
     setSelectedIds(new Set());
   }
 
-  function handleAddExistingProducts(selectedProducts: Product[]): void {
+  function handleAddProductsFromCatalog(selectedProducts: Product[]): void {
     if (selectedProducts.length === 0) {
       return;
     }
@@ -118,6 +120,18 @@ export default function StockAdjustmentProductsCard({
       return productToEditableStockAdjustmentLine(product, dict.unnamed);
     });
     onChangeProducts([...products, ...nextProducts]);
+    scheduleFocusLastInvoiceLineQuantity(
+      nextProducts.map(function mapLocalId(line) {
+        return line.localId;
+      }),
+      tableScopeRef.current,
+    );
+  }
+
+  function handleAddSingleProduct(product: Product): void {
+    const line = productToEditableStockAdjustmentLine(product, dict.unnamed);
+    onChangeProducts([...products, line]);
+    scheduleFocusLastInvoiceLineQuantity([line.localId], tableScopeRef.current);
   }
 
   const allSelected =
@@ -152,6 +166,7 @@ export default function StockAdjustmentProductsCard({
 
   return (
     <div
+      ref={tableScopeRef}
       className={clsx(
         "flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg p-3",
         accent !== "neutral"
@@ -189,8 +204,8 @@ export default function StockAdjustmentProductsCard({
           {canEditDraft && (
             <Button
               icon={<Plus className="h-3.5 w-3.5" />}
-              onClick={function openAddExistingProductPopup(): void {
-                setOpenAddExistingPopup(true);
+              onClick={function openAddProductPopup(): void {
+                setOpenAddProductPopup(true);
               }}
             >
               {dict.addExistingProduct}
@@ -218,14 +233,19 @@ export default function StockAdjustmentProductsCard({
         maxHeight="fill"
       />
 
-      <AddExistingProductsPopup
-        open={openAddExistingPopup}
-        onClose={function closeAddExistingPopup(): void {
-          setOpenAddExistingPopup(false);
+      <AddProductPopup
+        open={openAddProductPopup}
+        onClose={function closeAddProductPopup(): void {
+          setOpenAddProductPopup(false);
         }}
+        onOpenRequest={function openAddProductPopupFromShortcut(): void {
+          setOpenAddProductPopup(true);
+        }}
+        newShortcutEnabled={canEditDraft}
         excludedProductIds={excludedProductIds}
-        onConfirmSelect={handleAddExistingProducts}
-        dialogTitle={dict.addProducts}
+        onConfirmAdd={handleAddSingleProduct}
+        onConfirmAddMultiple={handleAddProductsFromCatalog}
+        addExistingDialogTitle={dict.addProducts}
       />
     </div>
   );

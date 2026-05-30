@@ -3,6 +3,7 @@ import { parseMoneyLikeString } from "@/lib/numeric/integerAndMoneyInputs";
 import type {
   StockAdjustmentAction,
   StockAdjustmentInvoiceProductDto,
+  StockAdjustmentReasonCategory,
 } from "../services/stockAdjustmentInvoice.service";
 
 export type EditableStockAdjustmentLine = {
@@ -58,6 +59,41 @@ export function stockAdjustmentLineDtoToEditable(
     quantity: String(product.quantity),
     notes: product.notes ?? "",
   };
+}
+
+/**
+ * Maps editable lines to API product payloads with a shared reason category.
+ *
+ * @param products - Editable stock adjustment lines.
+ * @param reasonCategory - Reason applied to every line on create/edit.
+ * @returns Request DTO lines for stock adjustment draft endpoints.
+ */
+export function buildStockAdjustmentProductRequests(
+  products: EditableStockAdjustmentLine[],
+  reasonCategory: StockAdjustmentReasonCategory,
+) {
+  return products.map((product) => ({
+    productId: product.productId,
+    productSku: product.productSku,
+    productName: product.productName,
+    productUnit: product.productUnit,
+    action: product.action,
+    quantity: toNumberOrZero(product.quantity),
+    reasonCategory,
+    notes: product.notes.trim() ? product.notes.trim() : undefined,
+  }));
+}
+
+/**
+ * Resolves the invoice-level reason category from loaded product lines.
+ *
+ * @param products - Lines from a stock adjustment invoice response.
+ * @returns The first line's category, or `damage` when no lines exist.
+ */
+export function resolveStockAdjustmentReasonCategory(
+  products: StockAdjustmentInvoiceProductDto[],
+): StockAdjustmentReasonCategory {
+  return products[0]?.reasonCategory ?? "damage";
 }
 
 /**

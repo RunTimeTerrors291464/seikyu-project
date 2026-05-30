@@ -3,6 +3,7 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import { Field, Input } from "@/components/ui/Fields";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
@@ -83,8 +84,8 @@ export default function ResetPasswordPopup({
       toast.success(dict.passwordResetSuccess);
       onSaved?.();
       handleClose();
-    } catch {
-      toast.error(dict.somethingWentWrong);
+    } catch (error: unknown) {
+      toast.error(resolveApiErrorMessage(error, dict));
     } finally {
       setSubmitting(false);
     }

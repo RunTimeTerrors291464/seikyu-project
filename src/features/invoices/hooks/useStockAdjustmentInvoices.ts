@@ -17,7 +17,6 @@ export type StockAdjustmentInvoiceRow = {
   confirmedAt: string | null;
   totalProducts: number;
   totalQuantity: number;
-  actionReason: StockAdjustmentInvoiceWithoutProductsDto["actionReason"];
   notes: string | null;
 };
 
@@ -53,7 +52,6 @@ function mapToRow(
     confirmedAt: dto.confirmedAt,
     totalProducts: dto.totalProducts,
     totalQuantity: dto.totalQuantity,
-    actionReason: dto.actionReason,
     notes: dto.notes,
   };
 }
@@ -125,7 +123,6 @@ export function useStockAdjustmentInvoices(
     query.sortBy,
     query.sortOrder,
     query.status,
-    query.actionReason,
     query.fromDate,
     query.toDate,
     refreshKey,

@@ -1,11 +1,39 @@
 "use client";
 import Sidebar from "@/components/layout/Sidebar";
+import { useDict } from "@/lib/lang/DictProvider";
+import ShortcutProvider from "@/lib/shortcuts/ShortcutProvider";
+import useShortcut from "@/lib/shortcuts/useShortcut";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const SIDEBAR_TOGGLE_CHORD = { code: "Backslash", mod: true } as const;
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <ShortcutProvider>
+      <AppShellWithShortcuts>{children}</AppShellWithShortcuts>
+    </ShortcutProvider>
+  );
+}
+
+function AppShellWithShortcuts({ children }: { children: React.ReactNode }) {
+  const dict = useDict();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
+
+  const handleToggleSidebarShortcut = useCallback(function handleToggleSidebarShortcut(): void {
+    setIsSidebarOpen(function toggleSidebar(previous) {
+      return !previous;
+    });
+  }, []);
+
+  useShortcut({
+    id: "app-shell.toggle-sidebar",
+    chord: SIDEBAR_TOGGLE_CHORD,
+    label: dict.shortcutLabelToggleSidebar,
+    handler: handleToggleSidebarShortcut,
+    allowInEditable: false,
+  });
 
   useEffect(() => {
     setHasMounted(true);

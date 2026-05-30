@@ -6,12 +6,12 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useStockAdjustmentInvoiceProductsEditor } from "@/features/invoices/hooks/useStockAdjustmentInvoiceProductsEditor";
-import { STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS } from "@/features/invoices/filters/stockAdjustmentInvoiceFilters";
+import { STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS } from "@/features/invoices/filters/stockAdjustmentInvoiceFilters";
 import StockAdjustmentInvoiceHeader from "@/features/invoices/layout/StockAdjustmentInvoiceHeader";
 import StockAdjustmentProductsCard from "@/features/invoices/layout/StockAdjustmentProductsCard";
 import {
-  type StockAdjustmentActionReason,
   type StockAdjustmentInvoiceResponseDto,
+  type StockAdjustmentReasonCategory,
   confirmStockAdjustmentInvoice,
   deleteStockAdjustmentInvoiceDrafts,
   editStockAdjustmentInvoiceDraft,
@@ -19,12 +19,15 @@ import {
 } from "@/features/invoices/services/stockAdjustmentInvoice.service";
 import {
   EditableStockAdjustmentLine,
+  buildStockAdjustmentProductRequests,
+  resolveStockAdjustmentReasonCategory,
   stockAdjustmentLineDtoToEditable,
   toNumberOrZero,
 } from "@/features/invoices/types/stockAdjustmentDetail";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -39,9 +42,8 @@ export default function StockAdjustmentInvoiceDetailPage() {
 
   const [invoice, setInvoice] = useState<StockAdjustmentInvoiceResponseDto | null>(null);
   const [products, setProducts] = useState<EditableStockAdjustmentLine[]>([]);
-  const [actionReason, setActionReason] = useState<StockAdjustmentActionReason>(
-    "damagedGoods",
-  );
+  const [reasonCategory, setReasonCategory] =
+    useState<StockAdjustmentReasonCategory>("damage");
   const [notes, setNotes] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -52,8 +54,8 @@ export default function StockAdjustmentInvoiceDetailPage() {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState<boolean>(false);
   const [confirmDraftPopupOpen, setConfirmDraftPopupOpen] = useState<boolean>(false);
   const [initialNotes, setInitialNotes] = useState<string>("");
-  const [initialActionReason, setInitialActionReason] =
-    useState<StockAdjustmentActionReason>("damagedGoods");
+  const [initialReasonCategory, setInitialReasonCategory] =
+    useState<StockAdjustmentReasonCategory>("damage");
   const [initialProductsSignature, setInitialProductsSignature] = useState<string>("[]");
 
   function toProductsSignature(
@@ -88,10 +90,13 @@ export default function StockAdjustmentInvoiceDetailPage() {
 
         setInvoice(response);
         setProducts(response.products.map(stockAdjustmentLineDtoToEditable));
-        setActionReason(response.actionReason);
+        const loadedReasonCategory = resolveStockAdjustmentReasonCategory(
+          response.products,
+        );
+        setReasonCategory(loadedReasonCategory);
         setNotes(response.notes ?? "");
         setInitialNotes(response.notes ?? "");
-        setInitialActionReason(response.actionReason);
+        setInitialReasonCategory(loadedReasonCategory);
         setInitialProductsSignature(
           toProductsSignature(response.products.map(stockAdjustmentLineDtoToEditable)),
         );
@@ -101,7 +106,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
         }
 
         setErrorMessage(
-          error instanceof Error ? error.message : dict.somethingWentWrong,
+          resolveApiErrorMessage(error, dict),
         );
       } finally {
         if (isMounted) {
@@ -115,7 +120,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [invoiceId, dict.somethingWentWrong]);
+  }, [invoiceId, dict]);
 
   const canEditDraft = invoice?.status === "draft";
   const effectiveCanEditDraft = Boolean(canEditDraft && canManage);
@@ -146,32 +151,26 @@ export default function StockAdjustmentInvoiceDetailPage() {
     try {
       const response = await editStockAdjustmentInvoiceDraft({
         id: invoice.id,
-        actionReason,
         notes: notes.trim() ? notes.trim() : undefined,
-        products: products.map((product) => ({
-          productId: product.productId,
-          productSku: product.productSku,
-          productName: product.productName,
-          productUnit: product.productUnit,
-          action: product.action,
-          quantity: toNumberOrZero(product.quantity),
-          notes: product.notes.trim() ? product.notes.trim() : undefined,
-        })),
+        products: buildStockAdjustmentProductRequests(products, reasonCategory),
       });
 
       setInvoice(response);
       setProducts(response.products.map(stockAdjustmentLineDtoToEditable));
-      setActionReason(response.actionReason);
+      const savedReasonCategory = resolveStockAdjustmentReasonCategory(
+        response.products,
+      );
+      setReasonCategory(savedReasonCategory);
       setNotes(response.notes ?? "");
       setInitialNotes(response.notes ?? "");
-      setInitialActionReason(response.actionReason);
+      setInitialReasonCategory(savedReasonCategory);
       setInitialProductsSignature(
         toProductsSignature(response.products.map(stockAdjustmentLineDtoToEditable)),
       );
       setSaveConfirmOpen(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setSaving(false);
@@ -190,16 +189,19 @@ export default function StockAdjustmentInvoiceDetailPage() {
       const response = await confirmStockAdjustmentInvoice(invoice.id);
       setInvoice(response);
       setProducts(response.products.map(stockAdjustmentLineDtoToEditable));
-      setActionReason(response.actionReason);
+      const confirmedReasonCategory = resolveStockAdjustmentReasonCategory(
+        response.products,
+      );
+      setReasonCategory(confirmedReasonCategory);
       setNotes(response.notes ?? "");
       setInitialNotes(response.notes ?? "");
-      setInitialActionReason(response.actionReason);
+      setInitialReasonCategory(confirmedReasonCategory);
       setInitialProductsSignature(
         toProductsSignature(response.products.map(stockAdjustmentLineDtoToEditable)),
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setConfirming(false);
@@ -209,17 +211,17 @@ export default function StockAdjustmentInvoiceDetailPage() {
 
   const isDirty = useIsDirty<{
     notes: string;
-    actionReason: StockAdjustmentActionReason;
+    reasonCategory: StockAdjustmentReasonCategory;
     productsSignature: string;
   }>()(
     {
       notes: initialNotes,
-      actionReason: initialActionReason,
+      reasonCategory: initialReasonCategory,
       productsSignature: initialProductsSignature,
     },
     {
       notes,
-      actionReason,
+      reasonCategory,
       productsSignature: toProductsSignature(products),
     },
   );
@@ -262,7 +264,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
       router.push("/manager/invoices/stock-adjustment");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
+        resolveApiErrorMessage(error, dict),
       );
     } finally {
       setDeleting(false);
@@ -367,19 +369,19 @@ export default function StockAdjustmentInvoiceDetailPage() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <Field label={dict.actionReasonLabel}>
             <select
-              value={actionReason}
+              value={reasonCategory}
               onChange={function handleReasonChange(event): void {
-                setActionReason(event.target.value as StockAdjustmentActionReason);
+                setReasonCategory(
+                  event.target.value as StockAdjustmentReasonCategory,
+                );
               }}
               disabled={!effectiveCanEditDraft}
               className="h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-text outline-none disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {STOCK_ADJUSTMENT_ACTION_REASON_OPTIONS.filter(function skipAll(option) {
-                return option.value !== "all";
-              }).map(function renderOption(option) {
+              {STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS.map(function renderOption(option) {
                 return (
                   <option key={option.value} value={option.value}>
-                    {(dict as Record<string, string>)[option.dictKey] ?? option.value}
+                    {dict[option.dictKey] ?? option.value}
                   </option>
                 );
               })}

@@ -1,3 +1,7 @@
+"use client";
+
+import { parseApiError, resolveApiErrorMessage } from "@/lib/api/errors";
+import { useDict } from "@/lib/lang/DictProvider";
 import { useEffect, useState } from "react";
 
 import {
@@ -5,6 +9,7 @@ import {
   ImportInvoiceListQuery,
   ImportInvoiceStatus,
   ImportInvoiceWithoutProductsDto,
+  parseImportInvoiceMoney,
 } from "../services/importInvoice.service";
 
 export type ImportInvoiceRow = {
@@ -12,6 +17,7 @@ export type ImportInvoiceRow = {
   invoiceId: string | null;
   status: ImportInvoiceStatus;
   draftAt: string | null;
+  createdAt: string;
   confirmedByUsername: string | null;
   confirmedAt: string | null;
   totalImportPrice: number;
@@ -46,9 +52,10 @@ function mapToRow(dto: ImportInvoiceWithoutProductsDto): ImportInvoiceRow {
     invoiceId: dto.invoiceId,
     status: dto.status,
     draftAt: dto.draftAt,
+    createdAt: dto.createdAt,
     confirmedByUsername: dto.confirmedByUsername,
     confirmedAt: dto.confirmedAt,
-    totalImportPrice: dto.totalImportPrice,
+    totalImportPrice: parseImportInvoiceMoney(dto.totalImportPrice),
     totalProducts: dto.totalProducts,
     totalQuantity: dto.totalQuantity,
     returnCount: dto.returnCount,
@@ -59,6 +66,7 @@ function mapToRow(dto: ImportInvoiceWithoutProductsDto): ImportInvoiceRow {
 export function useImportInvoices(
   query: UseImportInvoicesQuery,
 ): UseImportInvoicesResult {
+  const dict = useDict();
   const [state, setState] = useState<InvoiceListState>({
     rows: [],
     total: 0,
@@ -97,12 +105,11 @@ export function useImportInvoices(
           return;
         }
 
-        const error =
-          unknownError instanceof Error
-            ? unknownError
-            : new Error("Failed to load import invoices");
+        const message = parseApiError(unknownError)
+          ? resolveApiErrorMessage(unknownError, dict)
+          : dict.somethingWentWrong;
 
-        setError(error);
+        setError(new Error(message));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -115,7 +122,7 @@ export function useImportInvoices(
     return () => {
       isMounted = false;
     };
-  }, [query.page, query.limit, query.search, query.searchBy, query.sortBy, query.sortOrder, query.status, query.fromDate, query.toDate, refreshKey]);
+  }, [dict, query.page, query.limit, query.search, query.searchBy, query.sortBy, query.sortOrder, query.status, query.fromDate, query.toDate, refreshKey]);
 
   function refetch(): void {
     setRefreshKey((current) => current + 1);

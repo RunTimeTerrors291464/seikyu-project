@@ -4,10 +4,48 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
+const DEFAULT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+const DEFAULT_API_VERSION_PATH_SEGMENT = "v2";
+
+/**
+ * Returns the public API origin (scheme + host + optional port), without `/api/...`.
+ *
+ * @returns Value of `NEXT_PUBLIC_API_URL` when set, otherwise the local default.
+ */
+function getPublicApiBaseUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim();
+  return fromEnv && fromEnv.length > 0
+    ? fromEnv
+    : DEFAULT_PUBLIC_API_BASE_URL;
+}
+
+/**
+ * Resolves the version segment used after `/api/` (for example `v1` or `v2`).
+ * Reads `NEXT_PUBLIC_API_VERSION`: numeric (`2` → `v2`) or already prefixed (`v2`).
+ *
+ * @returns Path segment such as `v1` or `v2`.
+ */
+function resolveApiVersionPathSegment(): string {
+  const raw = process.env.NEXT_PUBLIC_API_VERSION?.trim();
+  if (!raw) {
+    return DEFAULT_API_VERSION_PATH_SEGMENT;
+  }
+  const lower = raw.toLowerCase();
+  if (/^v\d+$/.test(lower)) {
+    return lower;
+  }
+  if (/^\d+$/.test(raw)) {
+    return `v${raw}`;
+  }
+  return lower;
+}
+
+const publicApiBaseUrl = getPublicApiBaseUrl();
+const apiVersionPathSegment = resolveApiVersionPathSegment();
+const publicApiBasePath = `/api/${apiVersionPathSegment}`;
+
 const apiClient = axios.create({
-  baseURL:
-    (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-    "/api/v1",
+  baseURL: `${publicApiBaseUrl}${publicApiBasePath}`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -230,7 +268,7 @@ apiClient.interceptors.response.use(
         console.log("📡 Calling refresh API...");
 
         const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh-token`,
+          `${publicApiBaseUrl}${publicApiBasePath}/auth/refresh-token`,
           { refreshToken }
         );
 

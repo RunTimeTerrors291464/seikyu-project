@@ -31,12 +31,64 @@ function getComparable(p: Product | null) {
     // Order matters: index 0 is the primary/display name; do not sort.
     productNames: JSON.stringify(p.productNames),
     productUnitId: p.productUnitId,
-    productDescription: p.productDescription,
-    importPrice: p.importPrice,
-    sellingPrice: p.sellingPrice,
-    reorderThreshold: p.reorderThreshold,
+    productDescription: String(p.productDescription ?? "").trim(),
+    importPrice: Number(p.importPrice),
+    sellingPrice: Number(p.sellingPrice),
+    reorderThreshold: Number(p.reorderThreshold),
     isActive: p.isActive,
   };
+}
+
+/**
+ * Builds a PATCH body with only fields that differ from the last saved product.
+ *
+ * @param product - Current draft product state.
+ * @param original - Last saved product from the server.
+ * @returns Payload for `PATCH /products` (always includes `id`).
+ */
+function buildProductUpdatePatch(
+  product: Product,
+  original: Product,
+): Partial<Product> & { id: string } {
+  const payload: Partial<Product> & { id: string } = {
+    id: product.id,
+  };
+
+  if (product.sku !== original.sku) {
+    payload.sku = product.sku;
+  }
+
+  if (
+    JSON.stringify(product.productNames) !==
+    JSON.stringify(original.productNames)
+  ) {
+    payload.productNames = product.productNames;
+  }
+
+  if (product.productUnitId !== original.productUnitId) {
+    payload.productUnitId = product.productUnitId;
+  }
+
+  const descriptionChanged =
+    String(product.productDescription ?? "").trim() !==
+    String(original.productDescription ?? "").trim();
+  if (descriptionChanged) {
+    payload.productDescription = product.productDescription;
+  }
+
+  if (Number(product.importPrice) !== Number(original.importPrice)) {
+    payload.importPrice = Number(product.importPrice);
+  }
+
+  if (Number(product.sellingPrice) !== Number(original.sellingPrice)) {
+    payload.sellingPrice = Number(product.sellingPrice);
+  }
+
+  if (Number(product.reorderThreshold) !== Number(original.reorderThreshold)) {
+    payload.reorderThreshold = Number(product.reorderThreshold);
+  }
+
+  return payload;
 }
 
 /**
@@ -101,14 +153,14 @@ export function useProductDetail(id: string) {
       try {
         const [productData, historyData] = await Promise.all([
           getProductById(id),
-          getProductHistory(id),
+          getProductHistory(id, { page: 1, limit: 100 }),
         ]);
 
         if (!isMounted) return;
 
         setProduct(productData);
         setOriginal(productData);
-        setHistory(historyData ?? []);
+        setHistory(historyData.history ?? []);
       } catch (err) {
         console.error("[useProductDetail] fetch → error", err);
         toast.error("Failed to load product");
@@ -124,10 +176,10 @@ export function useProductDetail(id: string) {
       setHistoryLoading(true);
 
       try {
-        const data = await getProductHistory(id);
+        const data = await getProductHistory(id, { page: 1, limit: 100 });
         if (!isMounted) return;
 
-        setHistory(data ?? []);
+        setHistory(data.history ?? []);
       } catch (err) {
         console.error("fetchHistory failed", err);
       } finally {
@@ -356,6 +408,11 @@ export function useProductDetail(id: string) {
 
         if (!res) return false;
 
+        // HISTORY UPDATE
+        if (res.history) {
+          addHistory(res.history);
+        }
+
         setOriginal((prev) =>
           prev ? { ...prev, isActive: product.isActive } : prev
         );
@@ -370,18 +427,10 @@ export function useProductDetail(id: string) {
 
       /* FIELDS */
       if (hasFieldChanges) {
-        const payload: Partial<Product> & { id: string } = {
-          id: product.id,
-          productNames: product.productNames,
-          productUnitId: product.productUnitId,
-          productDescription: product.productDescription,
-          importPrice: Number(product.importPrice),
-          sellingPrice: Number(product.sellingPrice),
-          reorderThreshold: Number(product.reorderThreshold),
-        };
+        const payload = buildProductUpdatePatch(product, original);
 
-        if (product.sku !== original.sku) {
-          payload.sku = product.sku;
+        if (Object.keys(payload).length <= 1) {
+          return true;
         }
 
         const res = await updateProduct(payload);

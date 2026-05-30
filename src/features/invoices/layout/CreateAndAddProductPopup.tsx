@@ -6,6 +6,7 @@ import Button from "@/components/ui/Buttons";
 import AddProductForm from "@/features/products/form/addProductForm";
 import { createProduct } from "@/features/products/services/product.service";
 import type { CreateProductPayload, Product } from "@/features/products/types/product";
+import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { useDict } from "@/lib/lang/DictProvider";
 import { useState } from "react";
 import {
@@ -41,6 +42,7 @@ export default function CreateAndAddProductPopup({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const formFieldsRef = useFocusFirstFormControlOnOpen({ when: open });
 
   async function handleCreateAndAdd(): Promise<void> {
     if (!formData) {
@@ -101,7 +103,7 @@ export default function CreateAndAddProductPopup({
           {dict.createAndAddProduct}
         </div>
 
-        <div className="max-h-[72vh] overflow-auto p-4">
+        <div ref={formFieldsRef} className="max-h-[72vh] overflow-auto p-4">
           <AddProductForm
             dict={dict}
             onDirtyChange={setIsDirty}

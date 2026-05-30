@@ -6,6 +6,7 @@ import Button from "@/components/ui/Buttons";
 import DataTable from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import TablePagination from "@/components/ui/TablePagination";
+import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { useDict } from "@/lib/lang/DictProvider";
 import { CircleOff, Plus, PowerCircle, Ruler } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -69,6 +70,10 @@ export default function UnitPickerPopup({
   } = useProductUnit(search);
 
   const isDirty = useIsDirty<ProductUnit>();
+  const formFieldsRef = useFocusFirstFormControlOnOpen({
+    when: open,
+    bumpKey: adding ? 1 : 0,
+  });
 
   /* ───────── Pagination ───────── */
 
@@ -114,7 +119,7 @@ export default function UnitPickerPopup({
 
   return (
     <Popup open={open} onClose={onClose}>
-      <div className="flex bg-bg flex-col max-w-[50vw] max-h-[70vh]">
+      <div ref={formFieldsRef} className="flex bg-bg flex-col max-w-[50vw] max-h-[70vh]">
 
         {/* HEADER */}
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -127,7 +132,7 @@ export default function UnitPickerPopup({
 
           {/* CENTER: SEARCH */}
           {!adding && (
-            <div className="w-xl">
+            <div className="w-xl" data-universal-search-root="">
               <Input
                 value={search}
                 onChange={setSearch}
@@ -139,7 +144,7 @@ export default function UnitPickerPopup({
           {/* RIGHT: Add / Adding */}
           {adding ? (
             <div className="flex flex-end items-center gap-2 animate-shoot">
-              <div className="flex gap-2">
+              <div className="flex gap-2" data-universal-search-root="">
                 <Input
                   value={name}
                   onChange={setName}

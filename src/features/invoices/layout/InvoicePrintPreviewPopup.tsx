@@ -1,12 +1,16 @@
 "use client";
 
 import Popup from "@/components/layout/BlurPopupWrapper";
-import { formatDate } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
-import { useDict } from "@/lib/lang/DictProvider";
+import Select from "@/components/ui/Select";
+import registerInvoicePdfFonts, { INVOICE_PDF_FONT_FAMILY } from "@/features/invoices/types/registerInvoicePdfFonts";
+import { useDict, useUiLang } from "@/lib/lang/DictProvider";
+import type { Dictionary } from "@/lib/lang/i18n";
+import { getDictionary, getPrintLangCookie, type Lang } from "@/lib/lang/i18n";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
-import { Download, Printer, X } from "lucide-react";
+import { Download, Languages, Printer, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 export type InvoicePrintLine = {
   sku: string;
@@ -39,12 +43,14 @@ type InvoicePrintPreviewPopupProps = {
   onClose: () => void;
 };
 
+registerInvoicePdfFonts();
+
 const sharedPdfStyles = {
   page: {
     padding: 34,
     fontSize: 10,
     color: "#000",
-    fontFamily: "Helvetica",
+    fontFamily: INVOICE_PDF_FONT_FAMILY,
   },
   headerRow: {
     flexDirection: "row",
@@ -116,8 +122,8 @@ const pdfStylesWithNotes = StyleSheet.create({
   ...sharedPdfStyles,
   colIndex: { width: "6%" },
   colSku: { width: "16%" },
-  colName: { width: "31%" },
-  colUnit: { width: "10%" },
+  colName: { width: "26%" },
+  colUnit: { width: "15%" },
   colQty: { width: "12%" },
   colTotal: { width: "15%" },
   colNote: { width: "20%" },
@@ -127,40 +133,109 @@ const pdfStylesWithoutNotes = StyleSheet.create({
   ...sharedPdfStyles,
   colIndex: { width: "6%" },
   colSku: { width: "16%" },
-  colName: { width: "41%" },
-  colUnit: { width: "10%" },
+  colName: { width: "36%" },
+  colUnit: { width: "15%" },
   colQty: { width: "12%" },
   colTotal: { width: "15%" },
 });
 
+/** Fixed widths for the first two HTML preview columns (`#`, SKU); other columns use automatic layout. */
+const PRINT_PREVIEW_INDEX_COL_WIDTH = "2.5rem";
+const PRINT_PREVIEW_SKU_COL_WIDTH = "7.5rem";
+
 type InvoicePdfLabels = {
   invoiceNumber: string;
   status: string;
+  statusValue: string;
   by: string;
   date: string;
+  confirmedAtFormatted: string;
   sku: string;
   productName: string;
   unit: string;
   quantityLabel: string;
   totalPriceLabel: string;
   noteLabel: string;
-  totalProducts: string;
-  totalQuantity: string;
   noNote: string;
 };
+
+const PRINT_LOCALE: Record<Lang, string> = {
+  en: "en-GB",
+  vi: "vi-VN",
+  hu: "hu-HU",
+};
+
+/**
+ * BCP 47 locale tag used for dates and number grouping on printed output.
+ *
+ * @param lang - App language (`en`, `vi`, or `hu`).
+ * @returns Locale string for `Intl` formatters.
+ */
+function getPrintLocaleTag(lang: Lang): string {
+  return PRINT_LOCALE[lang];
+}
+
+/**
+ * Formats an ISO date string for display using a fixed print locale.
+ *
+ * @param iso - ISO date string from the API, or null when missing.
+ * @param localeTag - Locale passed to `toLocaleDateString`.
+ * @returns A short local date, the original string if unparsable, or an em dash when null.
+ */
+function formatDateForPrintLocale(iso: string | null, localeTag: string): string {
+  if (!iso) {
+    return "—";
+  }
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return iso;
+  }
+  return parsed.toLocaleDateString(localeTag);
+}
+
+/**
+ * Builds localized strings for the invoice PDF from a chosen dictionary and locale.
+ *
+ * @param printDictionary - Dictionary for the selected print language.
+ * @param invoice - Invoice payload shown on the PDF.
+ * @param localeTag - Locale for date formatting.
+ * @returns Label bundle consumed by `InvoicePdfDocument`.
+ */
+function buildInvoicePdfLabels(
+  printDictionary: Dictionary,
+  invoice: InvoicePrintData,
+  localeTag: string,
+): InvoicePdfLabels {
+  return {
+    invoiceNumber: printDictionary.invoiceNumber,
+    status: printDictionary.status,
+    statusValue: printDictionary[invoice.status],
+    by: printDictionary.by,
+    date: printDictionary.date,
+    confirmedAtFormatted: formatDateForPrintLocale(invoice.confirmedAt, localeTag),
+    sku: printDictionary.sku,
+    productName: printDictionary.productName,
+    unit: printDictionary.unit,
+    quantityLabel: printDictionary.quantityLabel,
+    totalPriceLabel: printDictionary.totalPriceLabel,
+    noteLabel: printDictionary.noteLabel,
+    noNote: printDictionary.noLineNote,
+  };
+}
 
 function InvoicePdfDocument({
   title,
   data,
   labels,
+  quantityLocaleTag,
 }: {
   title: string;
   data: InvoicePrintData;
   labels: InvoicePdfLabels;
+  quantityLocaleTag: string;
 }) {
   const hasNotes = Boolean(data.showLineNotes);
   const styles = hasNotes ? pdfStylesWithNotes : pdfStylesWithoutNotes;
-  const statusText = data.status;
 
   return (
     <Document title={data.invoiceCode}>
@@ -169,11 +244,11 @@ function InvoicePdfDocument({
           <View>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.textSm}>{labels.invoiceNumber}: {data.invoiceCode}</Text>
-            <Text style={styles.textSm}>{labels.status}: {statusText}</Text>
+            <Text style={styles.textSm}>{labels.status}: {labels.statusValue}</Text>
           </View>
           <View>
             <Text style={styles.rightText}>{labels.by}: {data.confirmedBy ?? "—"}</Text>
-            <Text style={styles.rightText}>{labels.date}: {data.confirmedAt ? formatDate(data.confirmedAt) : "—"}</Text>
+            <Text style={styles.rightText}>{labels.date}: {labels.confirmedAtFormatted}</Text>
           </View>
         </View>
 
@@ -182,8 +257,8 @@ function InvoicePdfDocument({
             <Text style={[styles.cellHeader, styles.colIndex]}>#</Text>
             <Text style={[styles.cellHeader, styles.colSku]}>{labels.sku}</Text>
             <Text style={[styles.cellHeader, styles.colName]}>{labels.productName}</Text>
+            <Text style={[styles.cellHeader, styles.colQty]}>{labels.quantityLabel}</Text>
             <Text style={[styles.cellHeader, styles.colUnit]}>{labels.unit}</Text>
-            <Text style={[styles.cellHeader, styles.colQty, styles.alignRight]}>{labels.quantityLabel}</Text>
             <Text
               style={[
                 styles.cellHeader,
@@ -205,8 +280,10 @@ function InvoicePdfDocument({
                 <Text style={[styles.cell, styles.colIndex]}>{index + 1}</Text>
                 <Text style={[styles.cell, styles.colSku]}>{line.sku}</Text>
                 <Text style={[styles.cell, styles.colName]}>{line.name}</Text>
+                <Text style={[styles.cell, styles.colQty]}>
+                  {line.quantity.toLocaleString(quantityLocaleTag)}
+                </Text>
                 <Text style={[styles.cell, styles.colUnit]}>{line.unit}</Text>
-                <Text style={[styles.cell, styles.colQty, styles.alignRight]}>{line.quantity.toLocaleString()}</Text>
                 <Text
                   style={[
                     styles.cell,
@@ -228,14 +305,7 @@ function InvoicePdfDocument({
         </View>
 
         <View style={styles.totals}>
-          <Text>{labels.totalProducts}: {data.totalProducts.toLocaleString()}</Text>
-          <Text>{labels.totalQuantity}: {data.totalQuantity.toLocaleString()}</Text>
           <Text style={styles.totalStrong}>{labels.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}</Text>
-        </View>
-
-        <View style={styles.notes}>
-          <Text style={styles.noteLabel}>{labels.noteLabel}:</Text>
-          <Text>{data.notes?.trim() ? data.notes : labels.noNote}</Text>
         </View>
       </Page>
     </Document>
@@ -249,28 +319,36 @@ export default function InvoicePrintPreviewPopup({
   onClose,
 }: InvoicePrintPreviewPopupProps) {
   const dict = useDict();
+  const uiLang = useUiLang();
+  const [printLang, setPrintLang] = useState<Lang>(uiLang);
 
-  function buildPdfLabels(): InvoicePdfLabels {
-    return {
-      invoiceNumber: dict.invoiceNumber,
-      status: dict.status,
-      by: dict.by,
-      date: dict.date,
-      sku: dict.sku,
-      productName: dict.productName,
-      unit: dict.unit,
-      quantityLabel: dict.quantityLabel,
-      totalPriceLabel: dict.totalPriceLabel,
-      noteLabel: dict.noteLabel,
-      totalProducts: dict.totalProducts,
-      totalQuantity: dict.totalQuantity,
-      noNote: "No note",
-    };
-  }
+  useEffect(
+    function syncPrintLangWhenPopupOpens(): void {
+      if (open) {
+        setPrintLang(getPrintLangCookie() ?? uiLang);
+      }
+    },
+    [open, uiLang],
+  );
+
+  const printLocaleTag = getPrintLocaleTag(printLang);
+  const printDictionary = useMemo(
+    function resolvePrintDictionary(): Dictionary {
+      return getDictionary(printLang);
+    },
+    [printLang],
+  );
 
   async function createInvoicePdfBlob(): Promise<Blob> {
-    const labels = buildPdfLabels();
-    return pdf(<InvoicePdfDocument title={title} data={data} labels={labels} />).toBlob();
+    const labels = buildInvoicePdfLabels(printDictionary, data, printLocaleTag);
+    return pdf(
+      <InvoicePdfDocument
+        title={title}
+        data={data}
+        labels={labels}
+        quantityLocaleTag={printLocaleTag}
+      />,
+    ).toBlob();
   }
 
   async function handlePrint(): Promise<void> {
@@ -298,9 +376,29 @@ export default function InvoicePrintPreviewPopup({
   return (
     <Popup open={open} onClose={onClose}>
       <div className="flex w-[92vw] max-w-[980px] h-[90vh] flex-col overflow-auto">
-        <div className="no-print flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold text-text">{dict.printPreview}</h2>
-          <div className="flex items-center gap-2">
+        <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <h2 className="text-sm font-semibold text-text">{dict.printPreview}</h2>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Select<Lang>
+              ariaLabel={dict.printLanguageLabel}
+              icon={
+                <Languages
+                  aria-hidden
+                  strokeWidth={2.25}
+                  className="h-3.5 w-3.5 shrink-0"
+                />
+              }
+              value={printLang}
+              onChange={setPrintLang}
+              className="min-w-[5rem] shrink-0"
+              options={[
+                { value: "hu", label: dict.langHungarian },
+                { value: "en", label: dict.langEnglish },
+                { value: "vi", label: dict.langVietnamese },
+              ]}
+            />
             <Button icon={<Download className="h-3.5 w-3.5" />} accent="neutral" onClick={handleSavePdf}>
               {dict.saveAsPdf}
             </Button>
@@ -318,26 +416,32 @@ export default function InvoicePrintPreviewPopup({
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold">{title}</h3>
-                <p className="text-sm">{dict.invoiceNumber}: {data.invoiceCode}</p>
-                <p className="text-sm">{dict.status}: {dict[data.status]}</p>
+                <p className="text-sm">{printDictionary.invoiceNumber}: {data.invoiceCode}</p>
+                <p className="text-sm">{printDictionary.status}: {printDictionary[data.status]}</p>
               </div>
               <div className="text-right text-sm">
-                <p>{dict.by}: {data.confirmedBy ?? "—"}</p>
-                <p>{dict.date}: {data.confirmedAt ? formatDate(data.confirmedAt) : "—"}</p>
+                <p>{printDictionary.by}: {data.confirmedBy ?? "—"}</p>
+                <p>
+                  {printDictionary.date}: {formatDateForPrintLocale(data.confirmedAt, printLocaleTag)}
+                </p>
               </div>
             </div>
 
-            <table className="w-full border border-border text-sm">
+            <table className="w-full table-auto border border-border text-sm">
+              <colgroup>
+                <col style={{ width: PRINT_PREVIEW_INDEX_COL_WIDTH }} />
+                <col style={{ width: PRINT_PREVIEW_SKU_COL_WIDTH }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th className="border border-border px-2 py-1 text-left">#</th>
-                  <th className="border border-border px-2 py-1 text-left">{dict.sku}</th>
-                  <th className="border border-border px-2 py-1 text-left">{dict.productName}</th>
-                  <th className="border border-border px-2 py-1 text-left">{dict.unit}</th>
-                  <th className="border border-border px-2 py-1 text-right">{dict.quantityLabel}</th>
-                  <th className="border border-border px-2 py-1 text-right">{dict.totalPriceLabel}</th>
+                  <th className="border border-border px-2 py-1 text-left whitespace-nowrap">#</th>
+                  <th className="border border-border px-2 py-1 text-left">{printDictionary.sku}</th>
+                  <th className="border border-border px-2 py-1 text-left">{printDictionary.productName}</th>
+                  <th className="border border-border px-2 py-1 text-left">{printDictionary.quantityLabel}</th>
+                  <th className="border border-border px-2 py-1 text-left">{printDictionary.unit}</th>
+                  <th className="border border-border px-2 py-1 text-right">{printDictionary.totalPriceLabel}</th>
                   {data.showLineNotes && (
-                    <th className="border border-border px-2 py-1 text-left">{dict.noteLabel}</th>
+                    <th className="border border-border px-2 py-1 text-left">{printDictionary.noteLabel}</th>
                   )}
                 </tr>
               </thead>
@@ -345,15 +449,17 @@ export default function InvoicePrintPreviewPopup({
                 {data.lines.map(function renderLine(line, index) {
                   return (
                     <tr key={`${line.sku}-${index}`}>
-                      <td className="border border-border px-2 py-1">{index + 1}</td>
-                      <td className="border border-border px-2 py-1">{line.sku}</td>
+                      <td className="border border-border px-2 py-1 whitespace-nowrap">{index + 1}</td>
+                      <td className="border border-border px-2 py-1 break-all">{line.sku}</td>
                       <td className="border border-border px-2 py-1">{line.name}</td>
+                      <td className="border border-border px-2 py-1">
+                        {line.quantity.toLocaleString(printLocaleTag)}
+                      </td>
                       <td className="border border-border px-2 py-1">{line.unit}</td>
-                      <td className="border border-border px-2 py-1 text-right">{line.quantity.toLocaleString()}</td>
                       <td className="border border-border px-2 py-1 text-right">{formatPriceNumber(line.lineTotal)}</td>
                       {data.showLineNotes && (
                         <td className="border border-border px-2 py-1 break-all">
-                          {line.notes?.trim() ? line.notes : "No note"}
+                          {line.notes?.trim() ? line.notes : printDictionary.noLineNote}
                         </td>
                       )}
                     </tr>
@@ -363,16 +469,9 @@ export default function InvoicePrintPreviewPopup({
             </table>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-              <p>{dict.totalProducts}: {data.totalProducts.toLocaleString()}</p>
-              <p>{dict.totalQuantity}: {data.totalQuantity.toLocaleString()}</p>
               <p className="col-span-2 font-semibold">
-                {dict.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}
+                {printDictionary.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}
               </p>
-            </div>
-
-            <div className="mt-4 text-sm">
-              <p className="font-semibold">{dict.noteLabel}:</p>
-              <p>{data.notes?.trim() ? data.notes : "No note"}</p>
             </div>
           </div>
         </div>

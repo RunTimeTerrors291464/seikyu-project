@@ -8,20 +8,174 @@ import { Accent, ACCENT_STYLES } from "../types/ui";
 
 /* ───────────────── LABELED Field Wrapper ───────────────── */
 
-type FieldProps = {
+export type FieldLabelProps = {
   label: string;
   icon?: React.ReactNode;
+  /** When true, shows a red asterisk beside the label. */
   required?: boolean;
   hint?: string;
   error?: string;
   warning?: string;
-  children: React.ReactNode;
   /**
    * When true, the field is a flex column that grows with its parent (`flex-1 min-h-0`),
    * and the control slot expands so inputs like `Textarea` can fill remaining height.
    */
   fillHeight?: boolean;
+  /**
+   * When true, error, warning, or hint render to the right of the label instead of below the input.
+   */
+  messageBesideLabel?: boolean;
 };
+
+type FieldProps = FieldLabelProps & {
+  children: React.ReactNode;
+};
+
+type FieldValidationState = {
+  hasError: boolean;
+  hasWarning: boolean;
+};
+
+function resolveFieldValidationState(
+  error: string | undefined,
+  warning: string | undefined,
+): FieldValidationState {
+  const hasError = !!error;
+  return {
+    hasError,
+    hasWarning: !hasError && !!warning,
+  };
+}
+
+function renderFieldMessage(
+  hasError: boolean,
+  error: string | undefined,
+  hasWarning: boolean,
+  warning: string | undefined,
+  hint: string | undefined,
+): React.ReactNode {
+  if (hasError) {
+    return <p className="shrink-0 text-xs text-danger">{error}</p>;
+  }
+
+  if (hasWarning) {
+    return <p className="shrink-0 text-xs text-warning">{warning}</p>;
+  }
+
+  if (hint) {
+    return <p className="shrink-0 text-xs text-muted">{hint}</p>;
+  }
+
+  return null;
+}
+
+type FieldChromeProps = FieldLabelProps & {
+  control: React.ReactNode;
+};
+
+function renderFieldLabelRow(
+  label: string,
+  icon: React.ReactNode | undefined,
+  required: boolean | undefined,
+): React.ReactNode {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+      {icon && <span className="flex items-center text-muted">{icon}</span>}
+      <span>{label}</span>
+      {required ? (
+        <span className="font-semibold text-danger" aria-hidden="true">
+          *
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function FieldChrome({
+  label,
+  icon,
+  required,
+  hint,
+  error,
+  warning,
+  fillHeight = false,
+  messageBesideLabel = false,
+  control,
+}: FieldChromeProps) {
+  const { hasError, hasWarning } = resolveFieldValidationState(error, warning);
+  const message = renderFieldMessage(hasError, error, hasWarning, warning, hint);
+
+  const labelContent = renderFieldLabelRow(label, icon, required);
+
+  return (
+    <div
+      className={clsx(
+        "space-y-1",
+        fillHeight && "flex min-h-0 flex-1 flex-col",
+      )}
+    >
+      {messageBesideLabel ? (
+        <div className="flex shrink-0 items-center justify-between gap-2">
+          {labelContent}
+          {message}
+        </div>
+      ) : (
+        labelContent
+      )}
+
+      <div className={clsx(fillHeight && "flex min-h-0 flex-1 flex-col")}>
+        {control}
+      </div>
+
+      {!messageBesideLabel ? message : null}
+    </div>
+  );
+}
+
+function cloneControlWithValidation(
+  control: React.ReactNode,
+  validation: FieldValidationState,
+  isRequired: boolean,
+): React.ReactNode {
+  if (
+    !React.isValidElement(control) ||
+    typeof control.type === "string" ||
+    control.type === React.Fragment
+  ) {
+    return control;
+  }
+
+  return React.cloneElement(
+    control as React.ReactElement<{
+      error?: boolean;
+      warning?: boolean;
+      "aria-required"?: boolean;
+    }>,
+    {
+      error: validation.hasError || undefined,
+      warning: validation.hasWarning || undefined,
+      "aria-required": isRequired || undefined,
+    },
+  );
+}
+
+function wrapControlWithFieldChrome(
+  fieldProps: FieldLabelProps,
+  control: React.ReactElement,
+): React.ReactElement {
+  const validation = resolveFieldValidationState(
+    fieldProps.error,
+    fieldProps.warning,
+  );
+  const isRequired = fieldProps.required === true;
+
+  return (
+    <FieldChrome
+      {...fieldProps}
+      control={cloneControlWithValidation(control, validation, isRequired)}
+    />
+  );
+}
 
 export function Field({
   label,
@@ -32,54 +186,23 @@ export function Field({
   warning,
   children,
   fillHeight = false,
+  messageBesideLabel = false,
 }: FieldProps) {
-  const hasError = !!error;
-  const hasWarning = !error && !!warning;
+  const validation = resolveFieldValidationState(error, warning);
+  const isRequired = required === true;
 
   return (
-    <div
-      className={clsx(
-        "space-y-1",
-        fillHeight && "flex min-h-0 flex-1 flex-col",
-      )}
-    >
-      {/* LABEL */}
-      <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
-        {icon && <span className="flex items-center text-muted">{icon}</span>}
-        <span>{label}</span>
-        {required && <span className="text-danger">*</span>}
-      </div>
-
-      {/* INPUT */}
-      <div className={clsx(fillHeight && "flex min-h-0 flex-1 flex-col")}>
-        {React.isValidElement(children) &&
-        typeof children.type !== "string" &&
-        children.type !== React.Fragment
-          ? React.cloneElement(
-              children as React.ReactElement<{
-                error?: boolean;
-                warning?: boolean;
-              }>,
-              {
-                // Avoid passing explicit false values down to DOM elements.
-                // React warns when non-boolean attributes receive `false`, so
-                // only provide these props when they are actually active.
-                error: hasError || undefined,
-                warning: hasWarning || undefined,
-              }
-            )
-          : children}
-      </div>
-
-      {/* MESSAGE */}
-      {hasError ? (
-        <p className="shrink-0 text-xs text-danger">{error}</p>
-      ) : hasWarning ? (
-        <p className="shrink-0 text-xs text-warning">{warning}</p>
-      ) : hint ? (
-        <p className="shrink-0 text-xs text-muted">{hint}</p>
-      ) : null}
-    </div>
+    <FieldChrome
+      label={label}
+      icon={icon}
+      required={required}
+      hint={hint}
+      error={error}
+      warning={warning}
+      fillHeight={fillHeight}
+      messageBesideLabel={messageBesideLabel}
+      control={cloneControlWithValidation(children, validation, isRequired)}
+    />
   );
 }
 
@@ -94,10 +217,14 @@ type InputProps = {
   warning?: boolean;
   disabled?: boolean;
   onBlur?: () => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   maxLength?: number;
   className?: string;
+  /** When set, tags the input for `focusInvoiceLineQuantityInput` after adding a line. */
+  invoiceLineQuantityRowId?: string;
+  inputRef?: React.Ref<HTMLInputElement>;
 };
 
 export function Input({
@@ -109,13 +236,17 @@ export function Input({
   warning = false,
   disabled,
   onBlur,
+  onKeyDown,
   onPaste,
   inputMode,
   maxLength,
   className,
+  invoiceLineQuantityRowId,
+  inputRef,
 }: InputProps) {
   return (
     <input
+      ref={inputRef}
       type={type}
       value={value}
       placeholder={placeholder}
@@ -123,7 +254,11 @@ export function Input({
       inputMode={inputMode}
       maxLength={maxLength}
       onBlur={onBlur}
+      onKeyDown={onKeyDown}
       onPaste={onPaste}
+      {...(invoiceLineQuantityRowId
+        ? { "data-invoice-line-quantity": invoiceLineQuantityRowId }
+        : {})}
       onChange={(e) => onChange(e.target.value)}
       className={clsx(
         "h-9 w-full min-w-0 rounded-md border bg-card px-3 text-sm text-text",
@@ -152,19 +287,58 @@ export function Input({
   );
 }
 
+export type InputFieldProps = FieldLabelProps &
+  Omit<InputProps, "error" | "warning">;
+
+export function InputField({
+  label,
+  icon,
+  required,
+  hint,
+  error,
+  warning,
+  fillHeight,
+  messageBesideLabel,
+  ...inputProps
+}: InputFieldProps) {
+  return wrapControlWithFieldChrome(
+    {
+      label,
+      icon,
+      required,
+      hint,
+      error,
+      warning,
+      fillHeight,
+      messageBesideLabel,
+    },
+    <Input {...inputProps} />,
+  );
+}
+
 /* ───────────────── Readonly ───────────────── */
 
 type ReadonlyProps = {
   value: string | number;
+  error?: boolean;
+  warning?: boolean;
 };
 
-export function Readonly({ value }: ReadonlyProps) {
+export function Readonly({
+  value,
+  error = false,
+  warning = false,
+}: ReadonlyProps) {
   return (
     <div
       className={clsx(
         "flex h-9 items-center rounded-md px-3 text-sm",
-        "border border-border bg-hover text-muted",
-        "transition-colors duration-150"
+        "border bg-hover text-muted transition-colors duration-150",
+        error
+          ? "border-danger"
+          : warning
+            ? "border-warning"
+            : "border-border",
       )}
     >
       {value}
@@ -172,33 +346,98 @@ export function Readonly({ value }: ReadonlyProps) {
   );
 }
 
+export type ReadonlyFieldProps = FieldLabelProps & ReadonlyProps;
+
+export function ReadonlyField({
+  label,
+  icon,
+  required,
+  hint,
+  error,
+  warning,
+  fillHeight,
+  messageBesideLabel,
+  value,
+}: ReadonlyFieldProps) {
+  return wrapControlWithFieldChrome(
+    {
+      label,
+      icon,
+      required,
+      hint,
+      error,
+      warning,
+      fillHeight,
+      messageBesideLabel,
+    },
+    <Readonly value={value} />,
+  );
+}
+
 /* ───────────────── Stat Display ───────────────── */
 
-type StatDisplayProps = {
+type StatDisplayControlProps = {
   value: string | number;
   status: ProductStockStatus;
-  label?: string;
   accent?: Accent;
+  error?: boolean;
+  warning?: boolean;
 };
 
 export function StatDisplay({
   value,
   status,
   accent = "neutral" as Accent,
-}: StatDisplayProps) {
+  error = false,
+  warning = false,
+}: StatDisplayControlProps) {
   return (
     <div
       className={clsx(
         "flex h-9 items-center justify-between rounded-md px-3 text-sm",
         "bg-card border transition-colors duration-150",
         "hover:bg-hover",
-        ACCENT_STYLES[accent]
+        error
+          ? "border-danger text-danger"
+          : warning
+            ? "border-warning text-warning"
+            : ACCENT_STYLES[accent],
       )}
     >
       <span className="font-medium">{value}</span>
 
       <StatusPill status={Number(status) as ProductStockStatus} />
     </div>
+  );
+}
+
+export type StatDisplayFieldProps = FieldLabelProps & StatDisplayControlProps;
+
+export function StatDisplayField({
+  label,
+  icon,
+  required,
+  hint,
+  error,
+  warning,
+  fillHeight,
+  messageBesideLabel,
+  value,
+  status,
+  accent,
+}: StatDisplayFieldProps) {
+  return wrapControlWithFieldChrome(
+    {
+      label,
+      icon,
+      required,
+      hint,
+      error,
+      warning,
+      fillHeight,
+      messageBesideLabel,
+    },
+    <StatDisplay value={value} status={status} accent={accent} />,
   );
 }
 
@@ -269,6 +508,35 @@ export function Textarea({
   );
 }
 
+export type TextareaFieldProps = FieldLabelProps &
+  Omit<TextareaProps, "error" | "warning">;
+
+export function TextareaField({
+  label,
+  icon,
+  required,
+  hint,
+  error,
+  warning,
+  fillHeight,
+  messageBesideLabel,
+  ...textareaProps
+}: TextareaFieldProps) {
+  return wrapControlWithFieldChrome(
+    {
+      label,
+      icon,
+      required,
+      hint,
+      error,
+      warning,
+      fillHeight,
+      messageBesideLabel,
+    },
+    <Textarea {...textareaProps} />,
+  );
+}
+
 /* ───────────────── Select Button ───────────────── */
 
 type SelectButtonProps = {
@@ -277,6 +545,7 @@ type SelectButtonProps = {
   onClick?: () => void;
   disabled?: boolean;
   error?: boolean;
+  warning?: boolean;
 };
 
 export function SelectButton({
@@ -284,7 +553,8 @@ export function SelectButton({
   placeholder,
   onClick,
   disabled,
-  error,
+  error = false,
+  warning = false,
 }: SelectButtonProps) {
   return (
     <button
@@ -300,13 +570,21 @@ export function SelectButton({
         "bg-card text-text",
 
         /* border */
-        error ? "border-danger" : "border-border",
+        error
+          ? "border-danger"
+          : warning
+            ? "border-warning"
+            : "border-border",
 
         /* hover */
         !disabled && "hover:bg-hover cursor-pointer",
 
         /* focus */
-        error ? "focus:border-danger" : "focus:border-primary",
+        error
+          ? "focus:border-danger"
+          : warning
+            ? "focus:border-warning"
+            : "focus:border-primary",
 
         "outline-none",
 
@@ -320,5 +598,34 @@ export function SelectButton({
 
       <span className="ml-auto text-muted text-xs">▼</span>
     </button>
+  );
+}
+
+export type SelectButtonFieldProps = FieldLabelProps &
+  Omit<SelectButtonProps, "error" | "warning">;
+
+export function SelectButtonField({
+  label,
+  icon,
+  required,
+  hint,
+  error,
+  warning,
+  fillHeight,
+  messageBesideLabel,
+  ...selectButtonProps
+}: SelectButtonFieldProps) {
+  return wrapControlWithFieldChrome(
+    {
+      label,
+      icon,
+      required,
+      hint,
+      error,
+      warning,
+      fillHeight,
+      messageBesideLabel,
+    },
+    <SelectButton {...selectButtonProps} />,
   );
 }

@@ -4,9 +4,9 @@ import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
 
-import { useState } from "react";
-
+import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { Dictionary } from "@/lib/lang/i18n";
+import { useState } from "react";
 import AddProductForm from "../form/addProductForm";
 import { createProduct } from "../services/product.service";
 import type { CreateProductPayload } from "../types/product";
@@ -38,6 +38,7 @@ export default function AddProductPopup({
   const [formData, setFormData] = useState<AddProductFormData | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const formFieldsRef = useFocusFirstFormControlOnOpen({ when: open });
 
   /* ============================= */
   /* CREATE */
@@ -84,7 +85,7 @@ export default function AddProductPopup({
         </div>
 
         {/* BODY */}
-        <div className="p-4 overflow-auto">
+        <div ref={formFieldsRef} className="p-4 overflow-auto">
           <AddProductForm
             dict={dict}
             onSubmit={(data) => {

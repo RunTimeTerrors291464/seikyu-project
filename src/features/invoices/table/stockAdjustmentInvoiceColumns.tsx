@@ -1,3 +1,8 @@
+/**
+ * Invoice-list columns for stock-adjustment invoices (one row per adjustment invoice).
+ * Used by the stock-adjustment list page at `/manager/invoices/stock-adjustment`.
+ */
+
 import { formatDate } from "@/components/types/ui";
 import type { Column } from "@/components/ui/DataTable";
 import type { Dictionary } from "@/lib/lang/i18n";
@@ -16,24 +21,6 @@ import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayInd
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import StockAdjustmentStatusPill from "../components/StockAdjustmentStatusPill";
 import type { StockAdjustmentInvoiceRow } from "../hooks/useStockAdjustmentInvoices";
-import type { StockAdjustmentActionReason } from "../services/stockAdjustmentInvoice.service";
-
-const ACTION_REASON_TO_DICT_KEY: Record<
-  StockAdjustmentActionReason,
-  keyof Dictionary
-> = {
-  damagedGoods: "actionReasonDamagedGoods",
-  expiredGoods: "actionReasonExpiredGoods",
-  lostGoods: "actionReasonLostGoods",
-  theft: "actionReasonTheft",
-  sampleUsage: "actionReasonSampleUsage",
-  internalUse: "actionReasonInternalUse",
-  foundGoods: "actionReasonFoundGoods",
-  supplierBonus: "actionReasonSupplierBonus",
-  returnedGoods: "actionReasonReturnedGoods",
-  periodicInventoryCheck: "actionReasonPeriodicInventoryCheck",
-  other: "actionReasonOther",
-};
 
 function formatInvoiceNumber(
   invoiceId: string | null,
@@ -43,14 +30,6 @@ function formatInvoiceNumber(
     return invoiceId;
   }
   return dict.noInvoiceNo;
-}
-
-function actionReasonLabel(
-  dict: Dictionary,
-  reason: StockAdjustmentInvoiceRow["actionReason"],
-): string {
-  const key = ACTION_REASON_TO_DICT_KEY[reason];
-  return dict[key] ?? reason;
 }
 
 export function stockAdjustmentInvoiceColumns(
@@ -83,14 +62,6 @@ export function stockAdjustmentInvoiceColumns(
       icon: <Braces className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: (row) => <StockAdjustmentStatusPill status={row.status} />,
       thClassName: "w-[120px]",
-    },
-    {
-      id: "actionReason",
-      header: dict.actionReasonLabel,
-      accessor: (row) => (
-        <span className="text-text">{actionReasonLabel(dict, row.actionReason)}</span>
-      ),
-      thClassName: "w-[160px]",
     },
     {
       id: "userId",

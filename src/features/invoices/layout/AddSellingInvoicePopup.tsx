@@ -3,18 +3,29 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import { ConfirmPopup } from "@/components/layout/Popup";
 import Button from "@/components/ui/Buttons";
-import { Field, Textarea } from "@/components/ui/Fields";
+import { Field, Input } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
-import KpiTile from "@/components/ui/KpiTile";
-import { useDict } from "@/lib/lang/DictProvider";
+import ImportDraftSummaryCard, {
+  type ImportDraftSummaryRow,
+} from "@/features/invoices/components/ImportDraftSummaryCard";
+import { buildDraftExcludedProductIds } from "@/features/invoices/lib/buildDraftExcludedProductIds";
 import {
-  finalizeMoneyStringTwoDecimalPlaces,
-  formatPriceNumber,
-  normalizeMoneyStringInput,
-} from "@/lib/numeric/integerAndMoneyInputs";
-import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+  clampPercentDiscount,
+  finalizePercentDiscountInput,
+  normalizePercentDiscountInput,
+} from "@/features/invoices/lib/percentDiscountInput";
+import {
+  rethrowApiErrorWithMessage,
+} from "@/lib/api/errors";
+import { useDict } from "@/lib/lang/DictProvider";
+import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
+import { AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import InvoiceProductLineEntryCard, {
+  type InvoiceProductLineEntryCardHandle,
+} from "../components/InvoiceProductLineEntryCard";
 import { useSellingInvoiceCreateEditor } from "../hooks/useSellingInvoiceCreateEditor";
+import { createSellingLineEntryConfig } from "../lib/sellingLineEntryConfig";
 import { createSellingInvoice } from "../services/sellingInvoice.service";
 import { toNumberOrZero } from "../types/importInvoiceDetail";
 import {
@@ -30,25 +41,6 @@ type AddSellingInvoicePopupProps = {
 };
 
 type ConfirmAction = "cancel" | "create" | null;
-const MAX_PERCENT_DISCOUNT = 100;
-
-function clampPercentDiscount(value: number): number {
-  return Math.min(Math.max(value, 0), MAX_PERCENT_DISCOUNT);
-}
-
-function normalizePercentDiscountInput(raw: string): string {
-  const normalized = normalizeMoneyStringInput(raw, { allowEmpty: true });
-  if (normalized === "") {
-    return "";
-  }
-  const numeric = clampPercentDiscount(toNumberOrZero(normalized));
-  return normalized.endsWith(".") ? `${numeric}.` : String(numeric);
-}
-
-function finalizePercentDiscountInput(raw: string): string {
-  const finalized = finalizeMoneyStringTwoDecimalPlaces(raw, { allowEmpty: false });
-  return clampPercentDiscount(toNumberOrZero(finalized)).toFixed(2);
-}
 
 function createInitialProducts(): EditableSellingInvoiceCreateLine[] {
   return [];
@@ -63,7 +55,8 @@ export default function AddSellingInvoicePopup({
   const [products, setProducts] = useState<EditableSellingInvoiceCreateLine[]>(
     createInitialProducts(),
   );
-  const [invoiceDiscount, setInvoiceDiscount] = useState<string>("0");
+  const [invoiceDiscount, setInvoiceDiscount] = useState<string>("");
+  const [taxFocusChoice, setTaxFocusChoice] = useState<boolean | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [createAttempted, setCreateAttempted] = useState<boolean>(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
@@ -71,24 +64,26 @@ export default function AddSellingInvoicePopup({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const nowText = useMemo(() => new Date().toISOString(), []);
   const previousProductCountRef = useRef<number>(0);
+  const entryCardRef = useRef<InvoiceProductLineEntryCardHandle>(null);
+  const [editingLineLocalId, setEditingLineLocalId] = useState<string | null>(null);
 
   const isDraftDirty = useMemo(
     function computeDraftDirty(): boolean {
       return (
         products.length > 0 ||
         notes.trim().length > 0 ||
-        toNumberOrZero(invoiceDiscount) !== 0
+        toNumberOrZero(invoiceDiscount) !== 0 ||
+        taxFocusChoice !== null
       );
     },
-    [products, notes, invoiceDiscount],
+    [products, notes, invoiceDiscount, taxFocusChoice],
   );
 
   const {
     updateRow,
-    totals,
     hasInvalidLines,
     draftError,
-  } = useSellingInvoiceCreateEditor(products, setProducts, createAttempted);
+  } = useSellingInvoiceCreateEditor(products, setProducts, createAttempted, taxFocusChoice);
 
   const noProductsMessage = dict.sellingCreateNoProductsError;
 
@@ -110,12 +105,14 @@ export default function AddSellingInvoicePopup({
   function resetDraftState(): void {
     previousProductCountRef.current = 0;
     setProducts(createInitialProducts());
-    setInvoiceDiscount("0");
+    setInvoiceDiscount("");
+    setTaxFocusChoice(null);
     setNotes("");
     setCreateAttempted(false);
     setConfirmAction(null);
     setCreating(false);
     setErrorMessage("");
+    setEditingLineLocalId(null);
   }
 
   function handleClose(): void {
@@ -146,6 +143,10 @@ export default function AddSellingInvoicePopup({
       return;
     }
 
+    if (taxFocusChoice === null) {
+      return;
+    }
+
     setCreating(true);
     setErrorMessage("");
 
@@ -157,14 +158,13 @@ export default function AddSellingInvoicePopup({
             ? toNumberOrZero(invoiceDiscount)
             : undefined,
         notes: notes.trim() ? notes.trim() : undefined,
+        taxFocus: taxFocusChoice,
       });
 
       handleClose();
       onCreated?.(created.id);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : dict.somethingWentWrong,
-      );
+      rethrowApiErrorWithMessage(error, dict, setErrorMessage);
     } finally {
       setCreating(false);
     }
@@ -184,18 +184,88 @@ export default function AddSellingInvoicePopup({
       return;
     }
 
+    if (taxFocusChoice === null) {
+      setConfirmAction(null);
+      return;
+    }
+
     setErrorMessage("");
     setConfirmAction("create");
   }
 
-  const noteWarning = createAttempted && !notes.trim();
+  const taxFocusError = createAttempted && taxFocusChoice === null;
   const invoiceDiscountValue = clampPercentDiscount(toNumberOrZero(invoiceDiscount));
 
   const productsCardDangerAccent =
     createAttempted && products.length === 0;
 
+  const editingLine = useMemo(
+    function findEditingLine(): EditableSellingInvoiceCreateLine | null {
+      if (editingLineLocalId == null) {
+        return null;
+      }
+      return (
+        products.find(function matchEditingLine(product): boolean {
+          return product.localId === editingLineLocalId;
+        }) ?? null
+      );
+    },
+    [editingLineLocalId, products],
+  );
+
+  const entryExcludedProductIds = useMemo(
+    function getEntryExcludedProductIds(): Set<string> {
+      return buildDraftExcludedProductIds(products, editingLineLocalId);
+    },
+    [products, editingLineLocalId],
+  );
+
+  const pickerExcludedProductIds = useMemo(
+    function getPickerExcludedProductIds(): Set<string> {
+      return buildDraftExcludedProductIds(products, null);
+    },
+    [products],
+  );
+
+  const lineEntryConfig = useMemo(
+    function buildLineEntryConfig() {
+      return createSellingLineEntryConfig(dict, dict.unnamed);
+    },
+    [dict],
+  );
+
+  function handleAddLineFromEntry(line: EditableSellingInvoiceCreateLine): void {
+    setEditingLineLocalId(null);
+    setProducts(function appendLine(previous): EditableSellingInvoiceCreateLine[] {
+      return [...previous, line];
+    });
+  }
+
+  function handleUpdateLineFromEntry(line: EditableSellingInvoiceCreateLine): void {
+    setProducts(function replaceLine(previous): EditableSellingInvoiceCreateLine[] {
+      return previous.map(function mapLine(product): EditableSellingInvoiceCreateLine {
+        return product.localId === line.localId ? line : product;
+      });
+    });
+  }
+
+  const handleProductRowClick = useCallback(
+    function handleProductRowClick(row: EditableSellingInvoiceCreateLine): void {
+      setEditingLineLocalId(row.localId);
+    },
+    [],
+  );
+
+  function handleClearLineEdit(): void {
+    setEditingLineLocalId(null);
+  }
+
   const sellingPreview = useMemo(
-    function computeSellingPreview(): { totalAfterDiscount: number; totalDiscount: number } {
+    function computeSellingPreview(): {
+      totalBeforeDiscount: number;
+      totalAfterDiscount: number;
+      totalDiscount: number;
+    } {
       let totalBeforeDiscount = 0;
       let totalAfterDiscount = 0;
 
@@ -215,11 +285,35 @@ export default function AddSellingInvoicePopup({
       });
 
       return {
+        totalBeforeDiscount,
         totalAfterDiscount,
         totalDiscount: totalBeforeDiscount - totalAfterDiscount,
       };
     },
     [products, invoiceDiscountValue],
+  );
+
+  const sellingSummaryRows = useMemo(
+    function buildSellingSummaryRows(): ImportDraftSummaryRow[] {
+      return [
+        {
+          label: dict.totalSellingPriceLabel,
+          value: formatPriceNumber(sellingPreview.totalBeforeDiscount),
+          accent: "neutral",
+        },
+        {
+          label: dict.totalDiscountLabel,
+          value: formatPriceNumber(sellingPreview.totalDiscount),
+          accent: sellingPreview.totalDiscount > 0 ? "warning" : "neutral",
+        },
+        {
+          label: dict.totalAfterDiscountLabel,
+          value: formatPriceNumber(sellingPreview.totalAfterDiscount),
+          accent: sellingPreview.totalAfterDiscount > 0 ? "primary" : "neutral",
+        },
+      ];
+    },
+    [dict, sellingPreview],
   );
 
   if (!open) {
@@ -229,10 +323,10 @@ export default function AddSellingInvoicePopup({
   return (
     <Popup open={open} onClose={requestCancel}>
       <div className="flex h-[90vh] w-[90vw] max-w-[1500px] bg-bg flex-col overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <h1 className="shrink-0 text-sm font-semibold text-text">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <p className="text-xl shrink-0 font-semibold text-text">
             {dict.sellingDraft}
-          </h1>
+          </p>
           <div className="flex min-w-0 flex-1 justify-center px-2">
             {draftError != null ? (
               <HeaderMeta
@@ -257,92 +351,118 @@ export default function AddSellingInvoicePopup({
           </div>
         </div>
 
-        <div className="flex flex-1 gap-4 flex-col overflow-auto p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <KpiTile
-              label={dict.totalSellingPriceLabel}
-              value={formatPriceNumber(sellingPreview.totalAfterDiscount)}
-              icon={<DollarSign className="h-4 w-4 text-muted" />}
-              accent={sellingPreview.totalAfterDiscount > 0 ? "primary" : "neutral"}
-              helpText={dict.totalSellingPriceKpiHelp}
-              sub={dict.totalSellingPriceKpiSub}
-            />
-            <KpiTile
-              label={dict.totalDiscountLabel}
-              value={formatPriceNumber(sellingPreview.totalDiscount)}
-              icon={<DollarSign className="h-4 w-4 text-muted" />}
-              accent={sellingPreview.totalDiscount > 0 ? "warning" : "neutral"}
-              helpText={dict.totalDiscountKpiHelp}
-              sub={dict.totalDiscountKpiSub}
-            />
-            <KpiTile
-              label={dict.totalProducts}
-              value={totals.totalProducts.toLocaleString()}
-              icon={<Package className="h-4 w-4 text-muted" />}
-              accent={totals.totalProducts === 0 ? "warning" : "neutral"}
-              helpText={dict.totalProductsKpiHelp}
-              sub={dict.totalProductsKpiSub}
-            />
-            <KpiTile
-              label={dict.totalQuantity}
-              value={totals.totalQuantity.toLocaleString()}
-              icon={<Boxes className="h-4 w-4 text-muted" />}
-              accent={totals.totalQuantity === 0 ? "warning" : "neutral"}
-              helpText={dict.totalQuantityKpiHelp}
-              sub={dict.totalQuantityKpiSub}
-            />
-          </div>
+        <div className="flex flex-1 gap-4 flex-col overflow-auto px-4 py-3">
+          <InvoiceProductLineEntryCard
+            ref={entryCardRef}
+            config={lineEntryConfig}
+            excludedProductIds={entryExcludedProductIds}
+            lineFieldValidationActive={createAttempted}
+            editSourceLine={editingLine}
+            onAddLine={handleAddLineFromEntry}
+            onUpdateLine={handleUpdateLineFromEntry}
+            onClearEdit={handleClearLineEdit}
+          />
 
           <SellingInvoiceProductsCard
             products={products}
             canEditDraft={true}
-            onChangeProducts={setProducts}
+            onChangeProducts={function handleProductsChange(
+              nextProducts: EditableSellingInvoiceCreateLine[],
+            ): void {
+              setProducts(nextProducts);
+              if (
+                editingLineLocalId != null &&
+                !nextProducts.some(function stillHasEditingLine(product): boolean {
+                  return product.localId === editingLineLocalId;
+                })
+              ) {
+                setEditingLineLocalId(null);
+              }
+            }}
             updateRow={updateRow}
+            entryCardRef={entryCardRef}
             accent={productsCardDangerAccent ? "danger" : "neutral"}
             lineFieldValidationActive={createAttempted}
+            activeEditRowId={editingLineLocalId}
+            onRowClick={handleProductRowClick}
+            excludedProductIds={pickerExcludedProductIds}
           />
 
           <div className="flex items-start gap-5">
-            <div className="w-full max-w-xs shrink-0">
-              <Field label={dict.invoiceDiscountLabel} hint={dict.discountPercentHint}>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm text-text"
-                    value={invoiceDiscount}
-                    aria-label={dict.invoiceDiscountLabel}
-                    onChange={function handleInvoiceDiscount(event): void {
-                      setInvoiceDiscount(
-                        normalizePercentDiscountInput(event.target.value),
-                      );
-                    }}
-                    onBlur={function handleInvoiceDiscountBlur(): void {
-                      setInvoiceDiscount(finalizePercentDiscountInput(invoiceDiscount));
-                    }}
-                    inputMode="decimal"
+            <div className="flex min-w-0 flex-1 items-start gap-5">
+              <div className="flex w-[30rem] flex-col gap-2">
+                <Field label={dict.invoiceDiscountLabel}>
+                  <div className="flex w-full items-center gap-1.5">
+                    <Input
+                      value={invoiceDiscount}
+                      placeholder={dict.discountPercentHint}
+                      onChange={function handleInvoiceDiscount(value): void {
+                        setInvoiceDiscount(normalizePercentDiscountInput(value));
+                      }}
+                      onBlur={function handleInvoiceDiscountBlur(): void {
+                        if (invoiceDiscount.trim() === "") {
+                          setInvoiceDiscount("");
+                          return;
+                        }
+                        setInvoiceDiscount(finalizePercentDiscountInput(invoiceDiscount));
+                      }}
+                      inputMode="decimal"
+                      className="min-w-0 flex-1"
+                    />
+                    <span className="shrink-0 text-sm text-muted" aria-hidden>
+                      %
+                    </span>
+                  </div>
+                </Field>
+
+                <Field label={dict.noteLabel}>
+                  <Input
+                    value={notes}
+                    onChange={setNotes}
+                    placeholder={dict.invoiceDescriptionPlaceholder}
                   />
-                  <span className="shrink-0 text-sm text-muted" aria-hidden>
-                    %
-                  </span>
+                </Field>
+              </div>
+
+              <Field
+                label={dict.isTaxFocusLabel}
+                required
+                error={taxFocusError ? dict.taxFocusChoiceRequired : undefined}
+              >
+                <div className="flex item-center gap-4 pt-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-text">
+                    <input
+                      type="checkbox"
+                      checked={taxFocusChoice === true}
+                      aria-label={`${dict.isTaxFocusLabel} — ${dict.yesLabel}`}
+                      onChange={function handleTaxFocusYes(): void {
+                        setTaxFocusChoice(true);
+                      }}
+                      className="rounded border-border"
+                    />
+                    <span>{dict.yesLabel}</span>
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-text">
+                    <input
+                      type="checkbox"
+                      checked={taxFocusChoice === false}
+                      aria-label={`${dict.isTaxFocusLabel} — ${dict.noLabel}`}
+                      onChange={function handleTaxFocusNo(): void {
+                        setTaxFocusChoice(false);
+                      }}
+                      className="rounded border-border"
+                    />
+                    <span>{dict.noLabel}</span>
+                  </label>
                 </div>
               </Field>
             </div>
 
-            <div className="min-w-0 flex-1">
-              <Field
-                label={dict.noteLabel}
-                warning={noteWarning ? dict.emptyDescription : undefined}
-              >
-                <Textarea
-                  value={notes}
-                  onChange={setNotes}
-                  placeholder={dict.invoiceDescriptionPlaceholder}
-                />
-              </Field>
-            </div>
+            <ImportDraftSummaryCard rows={sellingSummaryRows} />
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
           <Button accent="neutral" onClick={requestCancel}>
             {dict.cancel}
           </Button>
