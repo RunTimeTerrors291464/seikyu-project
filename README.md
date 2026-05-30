@@ -1,415 +1,706 @@
-# Seikyu Project v2
+# Seikyu Project v2 — Warehouse Management Backend
 
-> A NestJS backend for **warehouse-style operations**: inventory, invoices (import, returns, selling, stock adjustments), user and role management, and a **dashboard** with product ranking and price trends backed by PostgreSQL, Redis, and scheduled aggregation jobs.
+> A monolithic inventory and invoice management backend built with NestJS 11.
+> Manages import / selling invoices, returns, stock adjustments, products, user roles, and dashboard analytics — backed by PostgreSQL, Redis, and scheduled aggregation jobs.
 
-NestJS · TypeScript · PostgreSQL · TypeORM · Redis · JWT · Swagger
+![NestJS](https://img.shields.io/badge/NestJS-v11-E0234E?style=flat&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=flat&logo=postgresql&logoColor=white)
+![TypeORM](https://img.shields.io/badge/TypeORM-0.3-FE0803?style=flat)
+![Redis](https://img.shields.io/badge/Redis-ioredis-DC382D?style=flat&logo=redis&logoColor=white)
+![PM2](https://img.shields.io/badge/PM2-cluster-2B037A?style=flat&logo=pm2&logoColor=white)
+![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey?style=flat)
 
 ---
 
 ## Overview
 
-**Seikyu Project v2** is an API-first application for teams that need to record stock movements and sales in one place, with traceability and reporting suitable for managers and cashiers.
+**Seikyu v2** is an **internal warehouse management system** consolidated into a single deployable NestJS service.
+It streamlines the tracking and management of inventory operations, including:
 
-Core capabilities:
+- **Import Invoices** — Record goods received from vendors into the warehouse
+- **Return Import Invoices** — Handle returns of defective or incorrect goods back to vendors
+- **Selling Invoices** — Record goods sold to customers (cashier flow)
+- **Return Selling Invoices** — Handle customer returns of sold goods
+- **Stock Adjustment Invoices** — Adjust inventory levels manually for corrections or audits
+- **Product & Unit Management** — Manage product catalog, SKUs, multi-language names, and inventory stock levels
+- **User & Role Management** — Control access with role-based permissions (Admin, Manager, Cashier)
+- **Dashboard Analytics** — Product ranking (daily / monthly / yearly) and price trend buckets for charts
 
-- **Import invoices** — Draft, edit, delete, confirm; stock updates on confirm.
-- **Return import invoices** — Return goods to vendors against import flows.
-- **Selling invoices** — Create sales (cashier flow); list and view details.
-- **Return selling invoices** — Customer returns linked to selling invoices.
-- **Stock adjustment invoices** — Manual corrections with draft/confirm workflow.
-- **Products & product units** — Catalog, SKU lookup, activation, versioned history (admin), stock history.
-- **Users & roles** — **Admin**, **Manager**, **Cashier** with JWT access/refresh tokens and Redis-backed rate limiting on authenticated routes.
-- **Dashboard** — Product ranking (daily / monthly / yearly and custom ranges) and **price trend** data for charts, with scheduled rollups and Redis caching.
+> This is a private, internal project. Not intended for public use or redistribution.
 
-Interactive API documentation is served at **`/api/docs`** (OpenAPI / Swagger).
+### Compared to v1
+
+The [legacy v1 backend](https://github.com/RunTimeTerrors291464/seikyu-project/tree/backend) used a **microservices monorepo** (API gateway + Platform + Invoices services) with **TCP transport** and **three separate PostgreSQL databases**.
+**v2 consolidates** these into **one deployable service** with **one PostgreSQL database**, and **adds a Dashboard module** (product ranking, price trend) with scheduled rollups and Redis caching.
 
 ---
 
 ## Architecture
 
-This repository is a **single NestJS application** (monolith). All domains share **one PostgreSQL database** and optional **Redis** for sessions/rate limits, refresh-token related usage, and dashboard caches.
+This repository is a **single NestJS application** (monolith). All domains share **one PostgreSQL database** and **one Redis instance** for refresh tokens, rate limiting, and dashboard caches.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    HTTP clients / frontend                  │
-└────────────────────────────┬────────────────────────────────┘
-                             │ REST (JSON)
-                             ▼
+│                    Client / Frontend                        │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTP (REST)
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              NestJS API (APP_HOST : APP_PORT)                 │
-│   Swagger /api/docs · JWT · RBAC · ValidationPipe · CORS    │
-│   Modules: Auth, Users, Products, ProductUnits, Invoices,     │
-│            Dashboard (+ @nestjs/schedule cron jobs)           │
-└──────────────┬──────────────────────────────┬───────────────┘
-               │                              │
-               ▼                              ▼
-┌──────────────────────────┐    ┌─────────────────────────────┐
-│      PostgreSQL          │    │           Redis             │
-│  (single DB, TypeORM)      │    │  rate limit, app prefix     │
-└──────────────────────────┘    │  dashboard caches, etc.     │
-                                └─────────────────────────────┘
+│              NestJS API   (APP_HOST : APP_PORT)             │
+│   Swagger /api/docs · JWT Auth · RBAC Guards · CORS         │
+│   Global ValidationPipe · Custom Exception Filter           │
+│                                                             │
+│   Modules: Auth · Users · Products · ProductUnits           │
+│            Invoices · Dashboard (+ @nestjs/schedule)        │
+└──────────────┬───────────────────────────┬──────────────────┘
+               │                           │
+               ▼                           ▼
+┌──────────────────────────┐    ┌──────────────────────────┐
+│      PostgreSQL          │    │           Redis          │
+│  (single DB, TypeORM)    │    │  Rate limit · App cache  │
+│                          │    │  Dashboard top-N cache   │
+└──────────────────────────┘    └──────────────────────────┘
 ```
 
-### Compared to the older microservices layout
+### Application Modules
 
-The [legacy backend branch](https://github.com/RunTimeTerrors291464/seikyu-project/tree/backend) used an API gateway plus **TCP microservices** and **three PostgreSQL databases**. **v2 consolidates** those concerns into **one deployable service** and **one database**, and adds the **dashboard** ranking/trend stack.
+| Module | Path | Description |
+|--------|------|-------------|
+| **Auth** | `src/auth` | JWT access / refresh tokens, guards, Redis rate-limit |
+| **Users** | `src/users` | User CRUD, admin management, first-admin bootstrap |
+| **Products** | `src/products` | Product catalog, history versioning, stock history, overview |
+| **Product Units** | `src/productUnits` | Units of measure with versioned history |
+| **Invoices** | `src/invoices` | Import, return-import, selling, return-selling, stock-adjustment |
+| **Dashboard** | `src/dashboard` | Product ranking, price trend, scheduled aggregation |
+| **Logging** | `src/logging` | Logging utilities |
+
+### Shared Libraries
+
+| Library | Path | Purpose |
+|---------|------|---------|
+| **common** | `libs/common` | DTOs, enums (`ErrorCode`, `Role`, `InvoiceStatus`, ...), decorators, error exceptions, mappers, validators, utils |
+| **services** | `libs/services` | PostgreSQL and Redis module configurations |
+| **migrations** | `libs/migrations` | TypeORM migration scripts and data source helpers |
+| **scripts** | `libs/scripts` | `start:dev` preflight script (Redis/DB/migrations check) |
 
 ---
 
-## Tech stack
+## Tech Stack
 
 | Category | Technology |
-| -------- | ---------- |
-| Runtime | Node.js |
-| Framework | NestJS 11 |
-| Language | TypeScript 5.7 |
-| Database | PostgreSQL (single database) |
-| ORM | TypeORM 0.3 |
-| Cache / limits | Redis (`ioredis`, `@nestjs-modules/ioredis`) |
-| Auth | JWT + Passport; refresh tokens (PostgreSQL) |
-| Authorization | RBAC (roles + guards) |
-| API docs | Swagger / OpenAPI |
-| Validation | `class-validator`, `class-transformer` |
-| Scheduling | `@nestjs/schedule` (dashboard aggregation & cache warmup) |
-| Testing | Jest |
+|----------|------------|
+| **Runtime** | Node.js (>= 18.x) |
+| **Framework** | NestJS v11 |
+| **Language** | TypeScript 5.7 |
+| **Database** | PostgreSQL 15 (single database) |
+| **ORM** | TypeORM 0.3 |
+| **Caching** | Redis (via `ioredis` + `@nestjs-modules/ioredis`) |
+| **Authentication** | JWT (Access + Refresh tokens) with Passport.js |
+| **Authorization** | Role-Based Access Control (RBAC) with custom Guards & Decorators |
+| **API Documentation** | Swagger / OpenAPI 3.0 |
+| **Validation** | class-validator + class-transformer |
+| **Password Hashing** | bcrypt |
+| **Scheduling** | `@nestjs/schedule` (dashboard aggregation & cache warmup) |
+| **Process Manager** | PM2 (cluster mode) |
+| **Testing** | Jest 30 + Supertest |
 
 ---
 
-## Features (summary)
+## Features
 
-### Authentication and authorization
+### Authentication & Authorization
+- JWT-based authentication with **access tokens** and **refresh tokens**
+- Refresh token storage and revocation in PostgreSQL
+- Role-Based Access Control (RBAC) with 3 roles: **Admin**, **Manager**, **Cashier**
+- Custom decorators: `@Roles()`, `@Public()`, `@CurrentUser()`
+- Custom guards: `JwtAuthGuard`, `RolesGuard`, `RateLimitGuard`
+- **Redis-backed per-user rate limiting** on guarded routes (burst protection + temporary ban window)
 
-- Access and refresh tokens; logout revokes refresh token usage as implemented in auth services.
-- Roles: **Admin**, **Manager**, **Cashier** — combined with `JwtAuthGuard`, `RolesGuard`, and `@Roles()`.
-- Per-user **rate limiting** on guarded routes via Redis (burst protection and temporary ban window when exceeded).
+### Product Management
+- Full CRUD for products and product units
+- SKU-based product identification
+- Multi-name support for products (e.g., Vietnamese + English names)
+- Inventory stock tracking with stock status (`in_stock`, `low_stock`, `out_of_stock`)
+- Reorder threshold system for low-stock alerts
+- Product activation/deactivation
+- **History versioning** — Every product/unit edit creates a versioned history snapshot with auto-cleanup
+- **Stock history** — Audit trail for every stock change with action type, user reference, and invoice reference
+- **Product overview** — Aggregated counts for dashboards
+- **Bulk inventory stock lookup** — Multi-product stock query
 
-### Products and units
+### Invoice Management
 
-- CRUD-style flows for products and units, activation toggles, list/filter patterns.
-- **Admin**: product and product-unit **version history**.
-- **Admin / Manager**: stock history and product overview helpers as exposed in the products API.
+5 invoice types covering the full warehouse lifecycle:
 
-### Invoices
+- **Import Invoices** — Draft → Confirm workflow with auto-ID generation
+  - Products linked with quantity, price, and discount
+  - On confirmation: inventory stock automatically updated
+  - Tracks return count and status (`draft`, `confirmed`, `partially_returned`, `returned`)
+  - Bulk delete of drafts
 
-- Import and return-import: **draft** lifecycle, **confirm** posts stock effects, bulk **delete** of drafts where implemented.
-- Selling: **create** (role-gated), list, get by id.
-- Return selling and stock adjustment: same draft / confirm patterns as other invoice families.
+- **Return Import Invoices** — Return goods back to vendors against an existing import invoice
+  - Validates returned quantity against original import quantities
+  - Updates import invoice return count and status
+  - Adjusts inventory stock on confirmation
 
-### Dashboard
+- **Selling Invoices** — Record goods sold with product-level and invoice-level discounts
+  - Cashier flow (no draft state by default in v2)
+  - Supports percentage / fixed-amount discounts
+  - Tax focus support
+  - Auto-updates inventory stock (allows negative stock per business rule)
 
-- **Product ranking** across invoice types, with daily/monthly/yearly storage and Redis top-N caching (see `ScheduleProductRankingService`).
-- **Price trend** endpoint for aggregated time buckets (chart-oriented responses).
-- Cron jobs maintain aggregates and caches (e.g. periodic refresh and midnight rollups).
+- **Return Selling Invoices** — Handle customer returns of sold goods
+  - Draft → Confirm workflow linked to original selling invoice
+  - Validates returned quantity against original selling quantities
+  - Updates selling invoice return count and status
 
-### Errors
+- **Stock Adjustment Invoices** — Manual inventory corrections and audit adjustments
+  - Draft → Confirm workflow
+  - Tracks action reason for audit purposes
+  - Adjusts inventory stock on confirmation
 
-- Structured **`ErrorCode`** enum and a global exception filter for consistent JSON error shapes.
+### Dashboard Analytics
+- **Product Ranking** — Daily / Monthly / Yearly aggregations with custom date range
+- **Price Trend** — Aggregated time-bucket data for chart-oriented responses
+- **Scheduled rollups** via `@nestjs/schedule` cron jobs
+- **Redis top-N caching** for hot ranking queries
+- Product search by SKU with case-insensitive indexes
+
+### User Management
+- Admin-managed user accounts with role assignment
+- First admin account bootstrap endpoint (only available when no admin exists)
+- User activation/deactivation
+- Password management (change password, admin reset)
+- User search by username with filtering and pagination
+
+### Error Handling
+- **Centralized error code system** organized by domain
+  - `1xxx` — User errors
+  - `2xxx` — Authentication errors
+  - `3xxx` — Product unit errors
+  - `4xxx` — Product errors
+  - `5xxx` — Invoice errors
+  - `9xxx` — System errors
+- **Custom exception filter** — Consistent JSON error response format across all endpoints
+- **`@HandleServiceError` decorator** — Auto-wraps service methods with try/catch and contextual error codes
+- **Validation error formatter** — Friendly nested-error responses from `class-validator`
+
+### API Documentation
+- Auto-generated **Swagger/OpenAPI** documentation at `/api/docs`
+- Bearer token authentication support in Swagger UI
+- Persistent authorization across page refreshes
 
 ---
 
-## Project structure (high level)
+## Project Structure
 
 ```
 seikyu-project-v2/
 ├── src/
-│   ├── main.ts                 # Bootstrap, CORS, Swagger, global pipes/filters
-│   ├── app.module.ts           # Root module wiring
-│   ├── auth/                   # JWT, refresh tokens, guards, rate limit
-│   ├── users/                  # Users, admin, first-admin bootstrap
-│   ├── products/               # Products, history, stock history, overview
-│   ├── productUnits/           # Units and history
-│   ├── invoices/               # Import, return import, selling, return selling, stock adjustment
-│   └── dashboard/              # Product ranking, price trend, schedules, repositories
+│   ├── main.ts                          # Bootstrap, CORS, Swagger, global pipes/filters
+│   ├── app.module.ts                    # Root module wiring
+│   │
+│   ├── auth/                            # Authentication & authorization
+│   │   ├── controllers/                 # Auth endpoints (login, logout, refresh)
+│   │   ├── entities/                    # RefreshToken entity
+│   │   ├── guards/                      # JwtAuthGuard, RolesGuard, RateLimitGuard
+│   │   ├── decorators/                  # @Roles, @Public
+│   │   ├── repositories/                # Refresh token repository
+│   │   └── services/                    # Auth service, access token service
+│   │
+│   ├── users/                           # Users & admin management
+│   │   ├── controllers/                 # Users, Admin, First-admin controllers
+│   │   ├── entities/                    # UserEntity
+│   │   ├── repositories/
+│   │   └── services/
+│   │
+│   ├── products/                        # Product catalog
+│   │   ├── controllers/
+│   │   ├── entities/                    # Products, ProductNames, History, StockHistory, Overview
+│   │   ├── repositories/
+│   │   └── services/
+│   │
+│   ├── productUnits/                    # Units of measure
+│   │   ├── controllers/
+│   │   ├── entities/                    # ProductUnits, ProductUnitsHistory
+│   │   ├── repositories/
+│   │   └── services/
+│   │
+│   ├── invoices/                        # Invoice domain
+│   │   ├── importInvoices/              # Import + Return-import sub-modules
+│   │   ├── sellingInvoices/             # Selling + Return-selling sub-modules
+│   │   └── stockAdjustmentInvoice/      # Stock adjustment sub-module
+│   │
+│   ├── dashboard/                       # Product ranking + Price trend
+│   │   ├── controllers/
+│   │   ├── entities/                    # Daily / Monthly / Yearly ranking entities
+│   │   ├── repositories/
+│   │   └── services/                    # Aggregation + Schedule services
+│   │
+│   └── logging/                         # Logging utilities
+│
 ├── libs/
-│   ├── common/                 # DTOs, enums (incl. ErrorCode), mappers, exceptions
-│   ├── services/               # PostgresModule, RedisModule
-│   ├── migrations/             # TypeORM migrations + data source helpers
-│   └── scripts/                # start:dev preflight (Redis/DB/migrations)
-├── .env.example
-├── package.json
-└── nest-cli.json
+│   ├── common/                          # Shared library
+│   │   ├── decorators/                  # @HandleServiceError, @CurrentUser
+│   │   ├── dtos/                        # Request / Response DTOs per domain
+│   │   ├── enums/                       # ErrorCode, Role, InvoiceStatus, InvoiceType, StockActionType, StockStatus, ReturnReasons
+│   │   ├── error-exceptions/            # Custom exception classes & global filter
+│   │   ├── mappers/                     # Entity → DTO mappers
+│   │   ├── utils/
+│   │   └── validators/
+│   │
+│   ├── services/                        # Service configurations
+│   │   ├── postgres.module.ts           # TypeORM / PostgreSQL module
+│   │   └── redis.module.ts              # Redis module (ioredis)
+│   │
+│   ├── migrations/                      # TypeORM migrations
+│   │   ├── src/                         # Migration files (USERS, AUTH, PRODUCTS, INVOICES, DASHBOARD)
+│   │   └── scripts/                     # dataSource, runMigrations, createMigration
+│   │
+│   └── scripts/
+│       └── startDev.script.ts           # Preflight (Redis + DB + pending migrations)
+│
+├── ecosystem.config.js                  # PM2 cluster configuration
+├── nest-cli.json                        # NestJS configuration
+├── package.json                         # Dependencies & scripts
+├── tsconfig.json                        # TypeScript configuration
+└── tsconfig.build.json
 ```
 
 ---
 
-## Getting started
+## Database Schema
+
+v2 uses **one** PostgreSQL database managed by TypeORM migrations under `libs/migrations/src`.
+
+### Auth tables
+
+| Entity | Table | Description |
+|--------|-------|-------------|
+| `RefreshTokenEntity` | `refresh_tokens` | JWT refresh tokens for session management |
+
+### User tables
+
+| Entity | Table | Description |
+|--------|-------|-------------|
+| `UserEntity` | `users` | User accounts with credentials, roles, and active status |
+
+### Product tables
+
+| Entity | Table | Description |
+|--------|-------|-------------|
+| `ProductsEntity` | `products` | Product catalog with SKU, stock levels, pricing |
+| `ProductNamesEntity` | `product_names` | Multi-language product names |
+| `ProductUnitsEntity` | `product_units` | Units of measure (kg, box, piece, ...) |
+| `ProductsHistoryEntity` | `products_history` | Versioned product edit history |
+| `ProductUnitsHistoryEntity` | `product_units_history` | Versioned unit edit history |
+| `ProductStockHistoryEntity` | `product_stock_history` | Audit trail for all stock changes |
+| `ProductOverviewEntity` | `product_overview` | Aggregated counts for dashboard |
+
+### Invoice tables
+
+| Entity | Table | Description |
+|--------|-------|-------------|
+| `ImportInvoiceEntity` | `import_invoice` | Import invoices (draft → confirmed) |
+| `ImportInvoiceProductsEntity` | `import_invoice_products` | Line items for import invoices |
+| `ReturnImportInvoiceEntity` | `return_import_invoice` | Return invoices against imports |
+| `ReturnImportInvoiceProductsEntity` | `return_import_invoice_products` | Line items for return import invoices |
+| `SellingInvoiceEntity` | `selling_invoice` | Sales invoices |
+| `SellingInvoiceProductsEntity` | `selling_invoice_products` | Line items for selling invoices |
+| `ReturnSellingInvoiceEntity` | `return_selling_invoice` | Customer return invoices |
+| `ReturnSellingInvoiceProductsEntity` | `return_selling_invoice_products` | Line items for return selling invoices |
+| `StockAdjustmentInvoiceEntity` | `stock_adjustment_invoice` | Manual stock adjustments |
+| `StockAdjustmentInvoiceProductsEntity` | `stock_adjustment_invoice_products` | Line items for stock adjustments |
+
+### Dashboard tables
+
+| Entity | Table | Description |
+|--------|-------|-------------|
+| `ProductRankingDailyEntity` | `product_ranking_daily` | Daily product ranking aggregates |
+| `ProductRankingMonthlyEntity` | `product_ranking_monthly` | Monthly product ranking aggregates |
+| `ProductRankingYearlyEntity` | `product_ranking_yearly` | Yearly product ranking aggregates |
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js** ≥ 18 (align with your team standard; lockfile targets current Nest 11 stack)
-- **PostgreSQL** (project tested around 15+; use a version your ORM/drivers support)
-- **Redis**
-- **npm**
+- **Node.js** >= 18.x
+- **PostgreSQL** >= 15
+- **Redis** server
+- **npm** >= 9.x
+- **PM2** (optional, for production deployment)
 
-### 1. Clone and install
+### 1. Clone the Repository
 
 ```bash
-git clone <your-fork-or-origin-url>
+git clone https://github.com/RunTimeTerrors291464/seikyu-project.git
 cd seikyu-project-v2
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-### 2. Environment variables
+### 3. Configure Environment Variables
 
-Copy the example file:
+Copy the example file and update values:
 
 ```bash
 cp .env.example .env
 ```
 
-Important keys (see `.env.example` for the full template):
-
-| Variable | Purpose |
-| -------- | ------- |
-| `DB_*` | PostgreSQL host, port, user, password, database name, pool options |
-| `DB_SSL`, `DB_SSL_CERT` | Set `DB_SSL=true` for TLS (e.g. RDS); provide CA bundle path |
-| `REDIS_*` | Redis connection |
-| `APP_HOST`, `APP_PORT` | Bind address and port (**default port in example: 3000**) |
-| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | **Change in production** |
-
-**CORS:** `main.ts` reads `ACCEPTED_ORIGINS` as a comma-separated list. If unset or empty, it allows `*`. For production, set explicit origins in `.env`, for example:
+Key variables to configure:
 
 ```env
+# Application
+APP_HOST=0.0.0.0
+APP_PORT=3000
 ACCEPTED_ORIGINS=https://app.example.com,https://admin.example.com
+
+# PostgreSQL (single database)
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
+DB_DATABASE=seikyu_project_v2
+DB_SSL=false
+DB_SSL_CERT=
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# JWT secrets (MUST change in production)
+JWT_ACCESS_SECRET=your-access-token-secret
+JWT_REFRESH_SECRET=your-refresh-token-secret
 ```
 
-### 3. Create the database
+**CORS:** `main.ts` reads `ACCEPTED_ORIGINS` as a comma-separated list. If unset or empty, it allows `*`. For production, set explicit origins.
 
-Create a single database (name must match `DB_DATABASE`), e.g.:
+### 4. Create the Database
 
 ```sql
 CREATE DATABASE seikyu_project_v2;
 ```
 
-### 4. Run migrations
+### 5. Run Migrations
 
 ```bash
 npm run migration:run
 ```
 
-### 5. Run in development
+### 6. Start in Development
 
-`start:dev` checks **Redis**, **PostgreSQL**, and that **no pending migrations** exist, then starts Nest in watch mode:
+The `start:dev` script runs a preflight check (Redis, PostgreSQL, pending migrations) before starting Nest in watch mode:
 
 ```bash
 npm run start:dev
 ```
 
-### 6. Run in production
+### 7. Start in Production
 
-Build and start the compiled app:
+#### Option A — Plain Node
 
 ```bash
 npm run build
 npm run start:prod
 ```
 
-The process listens on `APP_HOST`:`APP_PORT` (defaults from env example: `localhost:3000`).
-
-### 7. Open Swagger
-
-- Base URL: `http://<APP_HOST>:<APP_PORT>`
-- Swagger UI: `http://<APP_HOST>:<APP_PORT>/api/docs`
-
-### 8. First admin account
-
-When no admin exists yet, create the first admin (see Swagger for the exact body schema):
+#### Option B — PM2 (cluster mode, recommended)
 
 ```bash
-curl -X POST "http://localhost:3000/api/v1/admin/first-admin-account" \
-  -H "Content-Type: application/json" \
-  -d "{\"firstName\":\"Admin\",\"username\":\"admin\",\"password\":\"your_secure_password\"}"
+npm run start:prod-pm2
 ```
 
-On Windows **cmd**, replace line-ending `\` with `^`. In **PowerShell**, prefer `Invoke-RestMethod` or pass the JSON as a single line.
+This builds the project and starts it under PM2 using `ecosystem.config.js` (cluster mode, instances = `max`, auto-restart at 512MB RAM).
 
-Then use **`POST /api/v1/auth/login`** to obtain tokens and authorize requests in Swagger (**Authorize** button).
+### 8. Access the API
+
+- **API Base**: `http://localhost:3000`
+- **Swagger Docs**: `http://localhost:3000/api/docs`
+
+### 9. First-Time Setup
+
+Create the first admin account (this endpoint is only available when no admin exists):
+
+```bash
+curl -X POST http://localhost:3000/api/v2/admin/first-admin-account \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "Admin",
+    "last_name": "User",
+    "username": "admin",
+    "password": "your_secure_password"
+  }'
+```
+
+Then call `POST /api/v2/auth/login` to obtain access + refresh tokens, and click **Authorize** in Swagger UI to authorize subsequent requests.
 
 ---
 
-## Deployment
+## API Endpoints
 
-There is **no checked-in PM2 or Docker file** in this repo; deploy the built Node app like any Nest service.
+All endpoints are prefixed with **`/api/v2`**.
 
-### Recommended checklist
+### Auth (`/api/v2/auth`)
 
-1. **Provision** PostgreSQL and Redis reachable from the app host.
-2. **Set environment variables** on the host (secrets manager, systemd `EnvironmentFile`, Kubernetes secrets, etc.). Never commit real `.env` files.
-3. **TLS to PostgreSQL** when required (`DB_SSL=true` and valid `DB_SSL_CERT`).
-4. **Run migrations** as a release step before or on startup (same `npm run migration:run` against production env).
-5. **Build** with `npm ci` (in CI) or `npm install`, then `npm run build`.
-6. **Start** with `node dist/main` or `npm run start:prod` under a supervisor:
-   - **systemd**, **PM2**, **Kubernetes Deployment**, or a PaaS process type.
-7. **Reverse proxy** (nginx, Caddy, AWS ALB, etc.) for HTTPS termination, gzip, and upstream to `APP_PORT`.
-8. **CORS**: set `ACCEPTED_ORIGINS` to real front-end origins.
-9. **Observability**: capture stdout/stderr, add health checks (you can extend Nest with a health module if needed).
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/v2/auth/login` | Login with credentials | Public |
+| POST | `/api/v2/auth/refresh-token` | Refresh access token | Public |
+| POST | `/api/v2/auth/logout` | Logout and revoke refresh token | Required |
+
+### Admin (`/api/v2/admin`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/admin/first-admin-account` | Create first admin account | Public (only when no admin exists) |
+| POST | `/api/v2/admin/users` | Create a new user | Admin |
+| PATCH | `/api/v2/admin/users` | Edit user information | Admin |
+| GET | `/api/v2/admin/users` | List/search users | Admin |
+| GET | `/api/v2/admin/users/:id` | Get user by ID | Admin |
+| PATCH | `/api/v2/admin/users/activation/:id/:action` | Activate or deactivate (`activate` / `deactivate`) | Admin |
+| POST | `/api/v2/admin/users/reset-password` | Admin reset user password | Admin |
+
+### Users (`/api/v2/users`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| GET | `/api/v2/users` | Get own user info | Authenticated |
+| PATCH | `/api/v2/users/change-password` | Change own password | Authenticated |
+| GET | `/api/v2/users/search` | Search users by username | Admin, Manager |
+
+### Products (`/api/v2/products`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/products` | Create a product | Manager |
+| PATCH | `/api/v2/products` | Edit a product | Manager |
+| GET | `/api/v2/products/overview` | Product overview totals | Admin, Manager |
+| GET | `/api/v2/products/inventory-stock` | Bulk inventory by product IDs (query `productIds`) | Admin, Manager |
+| GET | `/api/v2/products` | List products | Manager, Admin |
+| GET | `/api/v2/products/by-unit/:productUnitId` | List products by unit | Manager, Admin |
+| GET | `/api/v2/products/:id` | Get product by ID | Manager, Admin |
+| GET | `/api/v2/products/sku/:sku` | Get product by SKU (full / cashier view) | Manager, Cashier |
+| GET | `/api/v2/products/history/:id` | Get product edit history list | Admin |
+| GET | `/api/v2/products/history/:id/:version` | Get specific history version | Admin |
+| GET | `/api/v2/products/stock-history/:id` | Get stock change history | Admin, Manager |
+| PATCH | `/api/v2/products/activation/:id/:action` | Activate or deactivate | Manager |
+
+### Product Units (`/api/v2/product-units`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/product-units` | Create a unit | Manager |
+| PATCH | `/api/v2/product-units` | Edit a unit | Manager |
+| PATCH | `/api/v2/product-units/activation/:id/:action` | Activate or deactivate | Manager |
+| GET | `/api/v2/product-units` | List units | Manager, Admin |
+| GET | `/api/v2/product-units/:id` | Get unit by ID | Manager, Admin |
+| GET | `/api/v2/product-units/history/:id` | Get unit history list | Admin |
+| GET | `/api/v2/product-units/history/:id/:version` | Get specific history version | Admin |
+
+### Import Invoices (`/api/v2/invoices/import`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/invoices/import` | Create draft import invoice | Manager |
+| PATCH | `/api/v2/invoices/import` | Edit draft import invoice | Manager |
+| DELETE | `/api/v2/invoices/import` | Bulk delete draft import invoices (body with `ids`) | Manager |
+| POST | `/api/v2/invoices/import/:id/confirm` | Confirm import invoice | Manager |
+| GET | `/api/v2/invoices/import` | List import invoices | Manager, Admin |
+| GET | `/api/v2/invoices/import/:id` | Get import invoice detail | Manager, Admin |
+
+### Return Import Invoices (`/api/v2/invoices/return-import`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/invoices/return-import` | Create draft return invoice | Manager |
+| PATCH | `/api/v2/invoices/return-import` | Edit draft return invoice | Manager |
+| DELETE | `/api/v2/invoices/return-import` | Bulk delete drafts | Manager |
+| POST | `/api/v2/invoices/return-import/:id/confirm` | Confirm return invoice | Manager |
+| GET | `/api/v2/invoices/return-import` | List return invoices | Manager, Admin |
+| GET | `/api/v2/invoices/return-import/:id` | Get return invoice detail | Manager, Admin |
+
+### Selling Invoices (`/api/v2/invoices/selling`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/invoices/selling` | Create selling invoice | Cashier |
+| GET | `/api/v2/invoices/selling` | List selling invoices | Manager, Cashier, Admin |
+| GET | `/api/v2/invoices/selling/:id` | Get selling invoice detail | Manager, Cashier, Admin |
+
+### Return Selling Invoices (`/api/v2/invoices/return-selling`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/invoices/return-selling` | Create draft return invoice | Manager |
+| PATCH | `/api/v2/invoices/return-selling` | Edit draft return invoice | Manager |
+| DELETE | `/api/v2/invoices/return-selling` | Bulk delete drafts | Manager |
+| POST | `/api/v2/invoices/return-selling/:id/confirm` | Confirm return invoice | Manager |
+| GET | `/api/v2/invoices/return-selling` | List return invoices | Manager, Admin |
+| GET | `/api/v2/invoices/return-selling/:id` | Get return invoice detail | Manager, Admin |
+
+### Stock Adjustment Invoices (`/api/v2/invoices/stock-adjustment`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| POST | `/api/v2/invoices/stock-adjustment` | Create draft adjustment | Manager |
+| PATCH | `/api/v2/invoices/stock-adjustment` | Edit draft adjustment | Manager |
+| DELETE | `/api/v2/invoices/stock-adjustment` | Bulk delete drafts | Manager |
+| POST | `/api/v2/invoices/stock-adjustment/:id/confirm` | Confirm adjustment | Manager |
+| GET | `/api/v2/invoices/stock-adjustment` | List adjustments | Manager, Admin |
+| GET | `/api/v2/invoices/stock-adjustment/:id` | Get adjustment detail | Manager, Admin |
+
+### Dashboard (`/api/v2/dashboard`)
+
+| Method | Endpoint | Description | Roles |
+|--------|----------|-------------|-------|
+| GET | `/api/v2/dashboard/product-ranking` | Paginated product ranking (daily / monthly / yearly / custom range) | Manager |
+| GET | `/api/v2/dashboard/price-trend` | Aggregated price trend buckets for line chart | Manager |
+
+---
+
+## Available Scripts
+
+### Development
+
+| Script | Description |
+|--------|-------------|
+| `npm run start:dev` | Preflight (Redis + DB + pending migrations) then `nest start --watch` |
+| `npm run start:debug` | Start with Node debugger and watch mode |
+| `npm run start` | Start Nest without watch (compiled on the fly) |
+
+### Build & Production
+
+| Script | Description |
+|--------|-------------|
+| `npm run build` | Compile to `dist/` |
+| `npm run start:prod` | Run `node dist/main` (compiled app) |
+| `npm run start:prod-pm2` | Build + start PM2 cluster (`ecosystem.config.js`) |
+
+### Testing
+
+| Script | Description |
+|--------|-------------|
+| `npm run test` | Run unit tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:cov` | Run tests with coverage report |
+| `npm run test:e2e` | Run end-to-end tests |
+| `npm run test:debug` | Run tests with Node inspector |
+
+### Code Quality
+
+| Script | Description |
+|--------|-------------|
+| `npm run lint` | Run ESLint with auto-fix |
+| `npm run format` | Run Prettier formatter |
+
+### Database Migrations
+
+| Script | Description |
+|--------|-------------|
+| `npm run migration:run` | Run all pending TypeORM migrations |
+| `npm run migration:revert` | Revert the last migration |
+| `npm run migration:show` | Show migration status |
+| `npm run migration:create` | Create an empty migration file |
+| `npm run typeorm` | Generic TypeORM CLI passthrough |
+
+---
+
+## PM2 Production Deployment
+
+The project ships with a PM2 ecosystem configuration for cluster-mode production deployment:
+
+```javascript
+// ecosystem.config.js
+module.exports = {
+  apps: [
+    {
+      name: 'seikyu-v2',
+      script: 'dist/src/main.js',
+      instances: 'max',             // Use all available CPU cores
+      exec_mode: 'cluster',
+      max_memory_restart: '512M',   // Auto-restart on memory leak
+      env_production: {
+        NODE_ENV: 'production',
+      },
+    },
+  ],
+};
+```
+
+### Quick Start
+
+```bash
+# Build + start under PM2 (one command)
+npm run start:prod-pm2
+```
+
+### Useful PM2 commands
+
+```bash
+pm2 list                     # List running processes
+pm2 logs seikyu-v2           # Tail logs
+pm2 restart seikyu-v2        # Restart all instances
+pm2 reload seikyu-v2         # Zero-downtime reload (cluster mode)
+pm2 stop seikyu-v2           # Stop the app
+pm2 delete seikyu-v2         # Remove from PM2
+pm2 save                     # Persist process list across reboots
+pm2 startup                  # Generate boot startup script
+```
+
+### Tuning the instance count
+
+To pin the instance count instead of using `'max'`, edit `ecosystem.config.js`:
+
+```js
+instances: 8,   // exactly 8 workers
+```
 
 ### Horizontal scaling note
 
-Because **rate limiting** and some **dashboard caching** use Redis, multiple instances can share the same Redis for consistent behavior. Ensure **database connection pool** settings (`DB_POOL_*`) suit your total instance count.
+Because **rate limiting** and **dashboard top-N caching** use Redis, multiple PM2 instances (or multiple hosts) can share the same Redis for consistent behavior. Ensure the PostgreSQL connection pool fits the total worker count.
 
 ---
 
-## API endpoints
+## Deployment Checklist
 
-All routes below are prefixed by **`/api/v1`** as implemented in controllers. **Auth** column: **Public** = no bearer token; **Bearer** = JWT required; roles are enforced where noted.
-
-### Auth — `/api/v1/auth`
-
-| Method | Path | Description | Auth |
-| ------ | ---- | ----------- | ---- |
-| POST | `/api/v1/auth/login` | Login | Public |
-| POST | `/api/v1/auth/refresh-token` | New access token from refresh token | Public |
-| POST | `/api/v1/auth/logout` | Logout | Bearer |
-
-### Admin — `/api/v1/admin`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/admin/first-admin-account` | Bootstrap first admin | Public (only when no admin exists) |
-| POST | `/api/v1/admin/users` | Create user | Admin |
-| PATCH | `/api/v1/admin/users` | Edit user | Admin |
-| GET | `/api/v1/admin/users` | List users (query filters) | Admin |
-| GET | `/api/v1/admin/users/:id` | Get user by id | Admin |
-| PATCH | `/api/v1/admin/users/activation/:id/:action` | `activate` or `deactivate` | Admin |
-| POST | `/api/v1/admin/users/reset-password` | Admin password reset | Admin |
-
-### Users — `/api/v1/users`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| GET | `/api/v1/users` | Current user profile | Authenticated |
-| PATCH | `/api/v1/users/change-password` | Change own password | Authenticated |
-| GET | `/api/v1/users/search` | Search users by username | Admin, Manager |
-
-### Products — `/api/v1/products`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/products` | Create product | Manager |
-| PATCH | `/api/v1/products` | Edit product | Manager |
-| GET | `/api/v1/products/overview` | Product overview | Admin, Manager |
-| GET | `/api/v1/products/inventory-stock` | Bulk inventory by product ids (query) | Admin, Manager |
-| GET | `/api/v1/products` | List products | Manager, Admin |
-| GET | `/api/v1/products/by-unit/:productUnitId` | Products by unit | Manager, Admin |
-| GET | `/api/v1/products/:id` | Product by id | Manager, Admin |
-| GET | `/api/v1/products/sku/:sku` | Product by SKU | Manager (full) / Cashier (cashier view) |
-| GET | `/api/v1/products/history/:id` | Product history list | Admin |
-| GET | `/api/v1/products/history/:id/:version` | Product history version | Admin |
-| GET | `/api/v1/products/stock-history/:id` | Stock history | Admin, Manager |
-| PATCH | `/api/v1/products/activation/:id/:action` | `activate` / `deactivate` | Manager |
-
-### Product units — `/api/v1/product-units`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/product-units` | Create unit | Manager |
-| PATCH | `/api/v1/product-units` | Edit unit | Manager |
-| PATCH | `/api/v1/product-units/activation/:id/:action` | `activate` / `deactivate` | Manager |
-| GET | `/api/v1/product-units` | List units | Manager |
-| GET | `/api/v1/product-units/:id` | Unit by id | Manager, Admin |
-| GET | `/api/v1/product-units/history/:id` | Unit history list | Admin |
-| GET | `/api/v1/product-units/history/:id/:version` | Unit history version | Admin |
-
-### Import invoices — `/api/v1/import-invoices`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/import-invoices` | Create draft | Manager |
-| PATCH | `/api/v1/import-invoices` | Edit draft | Manager |
-| DELETE | `/api/v1/import-invoices` | Delete drafts (body with ids) | Manager |
-| POST | `/api/v1/import-invoices/:id/confirm` | Confirm | Manager |
-| GET | `/api/v1/import-invoices` | List | Manager, Admin |
-| GET | `/api/v1/import-invoices/:id` | Detail | Manager, Admin |
-
-### Return import invoices — `/api/v1/return-import-invoices`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/return-import-invoices` | Create draft | Manager |
-| PATCH | `/api/v1/return-import-invoices` | Edit draft | Manager |
-| DELETE | `/api/v1/return-import-invoices` | Delete drafts | Manager |
-| POST | `/api/v1/return-import-invoices/:id/confirm` | Confirm | Manager |
-| GET | `/api/v1/return-import-invoices` | List | Manager, Admin |
-| GET | `/api/v1/return-import-invoices/:id` | Detail | Manager, Admin |
-
-### Selling invoices — `/api/v1/invoices/selling`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/invoices/selling` | Create selling invoice | Cashier |
-| GET | `/api/v1/invoices/selling` | List | Manager, Cashier, Admin |
-| GET | `/api/v1/invoices/selling/:id` | Detail | Manager, Cashier, Admin |
-
-### Return selling invoices — `/api/v1/return-selling-invoices`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/return-selling-invoices` | Create draft | Manager |
-| PATCH | `/api/v1/return-selling-invoices` | Edit draft | Manager |
-| DELETE | `/api/v1/return-selling-invoices` | Delete drafts | Manager |
-| POST | `/api/v1/return-selling-invoices/:id/confirm` | Confirm | Manager |
-| GET | `/api/v1/return-selling-invoices` | List | Manager, Admin |
-| GET | `/api/v1/return-selling-invoices/:id` | Detail | Manager, Admin |
-
-### Stock adjustment invoices — `/api/v1/stock-adjustment-invoices`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| POST | `/api/v1/stock-adjustment-invoices` | Create draft | Manager |
-| PATCH | `/api/v1/stock-adjustment-invoices` | Edit draft | Manager |
-| DELETE | `/api/v1/stock-adjustment-invoices` | Delete drafts | Manager |
-| POST | `/api/v1/stock-adjustment-invoices/:id/confirm` | Confirm | Manager |
-| GET | `/api/v1/stock-adjustment-invoices` | List | Manager, Admin |
-| GET | `/api/v1/stock-adjustment-invoices/:id` | Detail | Manager, Admin |
-
-### Dashboard — `/api/v1/dashboard`
-
-| Method | Path | Description | Roles |
-| ------ | ---- | ----------- | ----- |
-| GET | `/api/v1/dashboard/product-ranking` | Product ranking (query params for period / type) | Manager |
-| GET | `/api/v1/dashboard/price-trend` | Price trend buckets for charts | Manager |
+1. **Provision** PostgreSQL and Redis reachable from the app host.
+2. **Set environment variables** on the host (secrets manager, systemd `EnvironmentFile`, Kubernetes secrets, ...). Never commit real `.env` files.
+3. **TLS to PostgreSQL** when required (`DB_SSL=true` and valid `DB_SSL_CERT`).
+4. **Run migrations** as a release step before traffic switch: `npm run migration:run`.
+5. **Build** with `npm ci` (CI) or `npm install`, then `npm run build`.
+6. **Start** with `npm run start:prod-pm2` (PM2 cluster) or `node dist/src/main` under systemd / Kubernetes.
+7. **Reverse proxy** (nginx, Caddy, AWS ALB, ...) for HTTPS termination, gzip, and upstream to `APP_PORT`.
+8. **CORS**: set `ACCEPTED_ORIGINS` to real frontend origins (never `*` in production).
+9. **Observability**: capture stdout/stderr, configure log rotation, add health probes if needed.
 
 ---
 
-## Scripts
+## Error Code Reference
 
-| Script | Description |
-| ------ | ----------- |
-| `npm run start:dev` | Preflight Redis + DB + migrations, then `nest start --watch` |
-| `npm run start:prod` | Run `node dist/main` |
-| `npm run build` | Compile Nest project |
-| `npm run migration:run` | Apply pending TypeORM migrations |
-| `npm run migration:revert` | Revert last migration |
-| `npm run migration:show` | Show migration status |
-| `npm run migration:create` | Create empty migration (see script in `libs/migrations`) |
-| `npm run lint` / `npm run format` | ESLint / Prettier |
-| `npm run test` | Unit tests |
+All errors follow a structured error code system for consistent API responses. Defined in `libs/common/enums/errorCode.enum.ts`.
 
----
+| Range | Domain | Examples |
+|-------|--------|----------|
+| `1xxx` | Users | `1001` user already exists · `1002` user not found |
+| `2xxx` | Authentication | `2001` invalid credentials · `2007` rate limit exceeded |
+| `3xxx` | Product Units | `3001` unit not found · `3002` unit already exists |
+| `4xxx` | Products | `4001` SKU already exists · `4002` product not found |
+| `5xxx` | Invoices | `5001+` import / return / selling / adjustment invoice errors |
+| `9xxx` | System | `9999` unknown error |
 
-## Database notes
-
-v2 uses **one** PostgreSQL schema set managed by TypeORM migrations under `libs/migrations`. Entities live under `src/**/entities` (users, refresh tokens, products, units, invoice tables, product ranking tables, etc.).
-
----
-
-## Error codes (high level)
-
-`ErrorCode` in `libs/common/enums/errorCode.enum.ts` groups problems by domain, for example:
-
-| Range / area | Examples |
-| ------------ | -------- |
-| Users | `1001` user already exists, `1002` not found, … |
-| Auth | `2001` bad credentials, `2007` rate limit exceeded, … |
-| Product units | `3001` not found, … |
-| Products | `4001` SKU exists, `4002` not found, … |
-| Invoices | `5001+` import and related invoice errors, … |
-
-Use Swagger responses and the filter’s JSON body for precise codes in clients.
+Refer to Swagger responses and the global exception filter's JSON body for precise codes in clients.
 
 ---
 
 ## License
 
-**UNLICENSED** — private project; see `package.json`.
+This project is **UNLICENSED** — private and internal use only. Not intended for public use or redistribution.
