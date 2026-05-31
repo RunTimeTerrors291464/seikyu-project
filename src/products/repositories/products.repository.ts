@@ -640,6 +640,14 @@ export class ProductsRepository {
     // --- Product overview methods ---
     // Get the product overview.
     async getProductOverview(): Promise<ProductOverviewEntity> {
+        await this.productOverviewRepository
+            .createQueryBuilder()
+            .insert()
+            .into(ProductOverviewEntity)
+            .values({ id: ProductsRepository.PRODUCT_OVERVIEW_ID })
+            .orIgnore()
+            .execute();
+
         return await this.productOverviewRepository.findOneOrFail({
             where: { id: ProductsRepository.PRODUCT_OVERVIEW_ID },
         });

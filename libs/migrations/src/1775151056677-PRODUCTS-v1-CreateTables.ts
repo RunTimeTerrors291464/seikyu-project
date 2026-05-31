@@ -102,6 +102,11 @@ export class PRODUCTSv1CreateTables1775151056677 implements MigrationInterface {
                 CONSTRAINT "PK_product_overview_id" PRIMARY KEY ("id")
             )
         `);
+
+        await queryRunner.query(`
+            INSERT INTO "product_overview" ("id")
+            VALUES ('00000000-0000-0000-0000-000000000001'::uuid)
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
