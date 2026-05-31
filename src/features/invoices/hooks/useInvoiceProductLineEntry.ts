@@ -111,9 +111,12 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
     intent: "lookupExisting",
   });
 
+  const currentSkuLookupProduct =
+    skuLookupProduct?.sku === sku ? skuLookupProduct : null;
+
   const resolvedProduct = isEditMode
     ? parsedEditState.product
-    : skuLookupProduct;
+    : currentSkuLookupProduct;
 
   useEffect(
     function syncEditSourceLine(): void {
@@ -142,22 +145,22 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
         return;
       }
 
-      if (!skuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
+      if (!currentSkuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
         lastHydratedProductIdRef.current = null;
         return;
       }
 
-      if (lastHydratedProductIdRef.current === skuLookupProduct.id) {
+      if (lastHydratedProductIdRef.current === currentSkuLookupProduct.id) {
         return;
       }
 
-      lastHydratedProductIdRef.current = skuLookupProduct.id;
+      lastHydratedProductIdRef.current = currentSkuLookupProduct.id;
       setVariantFields({
         ...config.getDefaultVariantFields(),
-        ...config.hydrateVariantFieldsFromProduct(skuLookupProduct),
+        ...config.hydrateVariantFieldsFromProduct(currentSkuLookupProduct),
       });
     },
-    [config, isEditMode, skuLookupProduct],
+    [config, currentSkuLookupProduct, isEditMode],
   );
 
   const skuLookupState = useMemo(

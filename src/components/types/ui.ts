@@ -1,5 +1,5 @@
-import { ProductStockStatus } from "@/features/products/types/product";
-import { Dictionary } from "@/lib/lang/i18n";
+import type { ProductStockStatus } from "@/features/products/types/product";
+import type { DictionaryLabelKey } from "@/lib/lang/i18n";
 
 export const STOCK_STATUS = {
   0: {
@@ -34,7 +34,7 @@ export const ACCENT_STYLES = {
   gold: "border text-gold border-gold bg-gold-soft"
 };
 
-export const FIELD_KEYS: Record<string, keyof Dictionary> = {
+export const FIELD_KEYS: Record<string, DictionaryLabelKey> = {
   sku: "sku",
   isActive: "active",
   productDescription: "description",
@@ -86,7 +86,7 @@ export const INVOICE_DRAFT_ERRORS = {
 } as const satisfies Record<
   string,
   {
-    key: keyof Dictionary;
+    key: DictionaryLabelKey;
     accent: Accent;
   }
 >;

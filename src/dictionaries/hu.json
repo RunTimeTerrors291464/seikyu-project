@@ -378,6 +378,7 @@
     "FIRST_ADMIN_ACCOUNT_ALREADY_EXISTS": "Az elso admin fiok mar letezik.",
     "USER_CANNOT_DEACTIVATE_SELF": "Nem deaktivalhatod vagy aktiválhatod onmagad.",
     "USER_ALREADY_DEACTIVATED": "A felhasznalo mar deaktivalva van.",
+    "USER_ALREADY_ACTIVATED": "A felhasznalo mar aktivalva van.",
     "OLD_PASSWORD_INCORRECT": "A jelenlegi jelszo helytelen.",
     "USERNAME_OR_PASSWORD_INCORRECT": "Ervenytelen felhasznalonev vagy jelszo.",
     "INVALID_JWT_PAYLOAD": "Ervenytelen JWT struktura.",

@@ -38,7 +38,7 @@ import {
   formatPriceNumber,
   lineTotalFromQuantityAndMoneyStrings,
 } from "@/lib/numeric/integerAndMoneyInputs";
-import { Boxes, DollarSign, Package, User } from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -464,6 +464,13 @@ export default function ReturnImportInvoiceDetailPage() {
     }),
   };
 
+  const draftError =
+    canEditDraft && draftValidationAttempted && !hasPositiveReturnLine
+      ? INVOICE_DRAFT_ERRORS.returnAtLeastOneLine
+      : canEditDraft && draftValidationAttempted && hasMissingNotesForPositiveLines
+        ? INVOICE_DRAFT_ERRORS.returnMissingNote
+        : null;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col w-full gap-4 ">
       <ReturnImportInvoiceHeader
@@ -485,36 +492,26 @@ export default function ReturnImportInvoiceDetailPage() {
         onBack={function handleBack(): void {
           requestNavigate(`/manager/invoices/import/${invoice.importInvoiceId}`);
         }}
-        centerSlot={
-          canEditDraft && draftValidationAttempted ? (
-            <>
-              {!hasPositiveReturnLine && (
-                <HeaderMeta
-                  label={dict.error}
-                  value={dict[INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.key]}
-                  accent={INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.accent}
-                  format="text"
-                />
-              )}
-              {hasPositiveReturnLine &&
-                hasMissingNotesForPositiveLines && (
-                  <HeaderMeta
-                    label={dict.error}
-                    value={dict[INVOICE_DRAFT_ERRORS.returnMissingNote.key]}
-                    accent={INVOICE_DRAFT_ERRORS.returnMissingNote.accent}
-                    format="text"
-                  />
-                )}
-            </>
+        middle={
+          draftError ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label={dict.error}
+              value={dict[draftError.key]}
+              accent={draftError.accent}
+              format="text"
+            />
+          ) : errorMessage ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label={dict.error}
+              value={errorMessage}
+              accent="danger"
+              format="text"
+            />
           ) : null
         }
       />
-
-      {errorMessage && (
-        <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
-          {errorMessage}
-        </div>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile

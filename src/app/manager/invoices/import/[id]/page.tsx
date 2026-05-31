@@ -317,15 +317,17 @@ export default function ImportInvoiceDetailPage() {
               accent={draftError.accent}
               format="text"
             />
+          ) : errorMessage ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label={dict.error}
+              value={errorMessage}
+              accent="danger"
+              format="text"
+            />
           ) : null
         }
       />
-
-      {errorMessage && (
-        <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
-          {errorMessage}
-        </div>
-      )}
 
       {!effectiveCanEditDraft ? (
         <div className="grid gap-4 xl:grid-cols-5">

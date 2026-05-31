@@ -24,7 +24,7 @@ type ReturnImportInvoiceHeaderProps = {
   onPrint?: () => void;
   onBack?: () => void;
   /** Optional centered content (e.g. inline validation messages). */
-  centerSlot?: ReactNode;
+  middle?: ReactNode;
 };
 
 export default function ReturnImportInvoiceHeader({
@@ -42,7 +42,7 @@ export default function ReturnImportInvoiceHeader({
   canPrint = false,
   onPrint,
   onBack,
-  centerSlot,
+  middle,
 }: ReturnImportInvoiceHeaderProps) {
   const dict = useDict();
 
@@ -72,7 +72,7 @@ export default function ReturnImportInvoiceHeader({
       </div>
 
       <div className="flex min-w-0 flex-1 items-center justify-center px-2">
-        {centerSlot}
+        {middle}
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-2">

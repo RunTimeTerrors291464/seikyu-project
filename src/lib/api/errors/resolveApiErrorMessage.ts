@@ -17,7 +17,7 @@ function getDictMessageForErrorCodeName(
   dict: Dictionary,
   errorCodeName: ErrorCodeName,
 ): string | undefined {
-  const apiErrors = dict.apiErrors;
+  const apiErrors: Partial<Record<ErrorCodeName, string>> = dict.apiErrors;
   if (!apiErrors) {
     return undefined;
   }

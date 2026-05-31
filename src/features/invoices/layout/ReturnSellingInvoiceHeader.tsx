@@ -23,7 +23,7 @@ type ReturnSellingInvoiceHeaderProps = {
   canPrint?: boolean;
   onPrint?: () => void;
   onBack?: () => void;
-  centerSlot?: ReactNode;
+  middle?: ReactNode;
 };
 
 export default function ReturnSellingInvoiceHeader({
@@ -41,7 +41,7 @@ export default function ReturnSellingInvoiceHeader({
   canPrint = false,
   onPrint,
   onBack,
-  centerSlot,
+  middle,
 }: ReturnSellingInvoiceHeaderProps) {
   const dict = useDict();
 
@@ -71,7 +71,7 @@ export default function ReturnSellingInvoiceHeader({
       </div>
 
       <div className="flex min-w-0 flex-1 items-center justify-center px-2">
-        {centerSlot}
+        {middle}
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-2">

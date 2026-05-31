@@ -5,17 +5,17 @@ import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
-import { useStockAdjustmentInvoiceProductsEditor } from "@/features/invoices/hooks/useStockAdjustmentInvoiceProductsEditor";
 import { STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS } from "@/features/invoices/filters/stockAdjustmentInvoiceFilters";
+import { useStockAdjustmentInvoiceProductsEditor } from "@/features/invoices/hooks/useStockAdjustmentInvoiceProductsEditor";
 import StockAdjustmentInvoiceHeader from "@/features/invoices/layout/StockAdjustmentInvoiceHeader";
 import StockAdjustmentProductsCard from "@/features/invoices/layout/StockAdjustmentProductsCard";
 import {
-  type StockAdjustmentInvoiceResponseDto,
-  type StockAdjustmentReasonCategory,
   confirmStockAdjustmentInvoice,
   deleteStockAdjustmentInvoiceDrafts,
   editStockAdjustmentInvoiceDraft,
   getStockAdjustmentInvoiceById,
+  type StockAdjustmentInvoiceResponseDto,
+  type StockAdjustmentReasonCategory,
 } from "@/features/invoices/services/stockAdjustmentInvoice.service";
 import {
   EditableStockAdjustmentLine,
@@ -24,10 +24,10 @@ import {
   stockAdjustmentLineDtoToEditable,
   toNumberOrZero,
 } from "@/features/invoices/types/stockAdjustmentDetail";
-import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
-import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
-import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { resolveApiErrorMessage } from "@/lib/api/errors";
+import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
+import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { AlertTriangle, Boxes, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -315,15 +315,17 @@ export default function StockAdjustmentInvoiceDetailPage() {
               accent={draftError.accent}
               format="text"
             />
+          ) : errorMessage ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label={dict.error}
+              value={errorMessage}
+              accent="danger"
+              format="text"
+            />
           ) : null
         }
       />
-
-      {errorMessage && (
-        <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
-          {errorMessage}
-        </div>
-      )}
 
       <div className="grid gap-4 xl:grid-cols-4">
         <KpiTile

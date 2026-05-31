@@ -10,6 +10,7 @@ import InvoicePrintPreviewPopup, {
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
 import SellingInvoiceReturnInvoicesCard from "@/features/invoices/layout/SellingInvoiceReturnInvoicesCard";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import {
   getSellingInvoiceById,
   type SellingInvoiceResponseDto,
@@ -17,7 +18,7 @@ import {
 import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
-import { Boxes, DollarSign, Package, User } from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -130,13 +131,18 @@ export default function ManagerSellingInvoiceDetailPage() {
         onPrint={function handleOpenPrintPopup(): void {
           setPrintPopupOpen(true);
         }}
+        middle={
+          errorMessage ? (
+            <HeaderMeta
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label={dict.error}
+              value={errorMessage}
+              accent="danger"
+              format="text"
+            />
+          ) : null
+        }
       />
-
-      {errorMessage && (
-        <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
-          {errorMessage}
-        </div>
-      )}
 
       <div className="grid gap-4 xl:grid-cols-5">
         <KpiTile
@@ -233,7 +239,6 @@ export default function ManagerSellingInvoiceDetailPage() {
 
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
-        title={dict.salesInvoices}
         data={printData}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);

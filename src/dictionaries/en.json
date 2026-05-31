@@ -378,6 +378,7 @@
     "FIRST_ADMIN_ACCOUNT_ALREADY_EXISTS": "The first admin account already exists.",
     "USER_CANNOT_DEACTIVATE_SELF": "You cannot deactivate or activate yourself.",
     "USER_ALREADY_DEACTIVATED": "The user is already deactivated.",
+    "USER_ALREADY_ACTIVATED": "The user is already activated.",
     "OLD_PASSWORD_INCORRECT": "The current password is incorrect.",
     "USERNAME_OR_PASSWORD_INCORRECT": "The username or password is incorrect.",
     "INVALID_JWT_PAYLOAD": "Invalid JWT payload structure.",

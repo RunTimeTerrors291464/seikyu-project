@@ -2,10 +2,10 @@
 
 import { useDict } from "@/lib/lang/DictProvider";
 import { useMemo } from "react";
-import RelatedReturnInvoicesCard from "./RelatedReturnInvoicesCard";
-import { getReturnImportInvoiceList } from "../services/returnImportInvoice.service";
 import type { ReturnImportInvoiceWithoutProductsDto } from "../services/returnImportInvoice.service";
+import { getReturnImportInvoiceList } from "../services/returnImportInvoice.service";
 import { returnImportInvoiceListColumns } from "../table/returnImportInvoiceListColumns";
+import RelatedReturnInvoicesCard from "./RelatedReturnInvoicesCard";
 
 type ImportInvoiceReturnInvoicesCardProps = {
   /** Display import invoice number (e.g. I26-0000001) for `searchBy: importInvoiceId`. */
