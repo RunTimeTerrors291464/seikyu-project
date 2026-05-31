@@ -131,6 +131,9 @@ export class ReturnSellingInvoiceRepository {
         });
         const savedInvoice = await manager.save(ReturnSellingInvoiceEntity, returnSellingInvoice);
 
+        // Count draft return invoices on the original selling invoice immediately.
+        await manager.increment(SellingInvoiceEntity, { id: sellingInvoice.id }, 'returnCount', 1);
+
         // Create return selling invoice products - ReturnSellingInvoiceProductsEntity.
         const products: ReturnSellingInvoiceProductsEntity[] = resolvedProducts.map((item) =>
             this.returnSellingInvoiceProductsRepository.create({
@@ -205,8 +208,35 @@ export class ReturnSellingInvoiceRepository {
     async deleteDraftReturnSellingInvoice(ids: string[], manager: EntityManager): Promise<boolean> {
         if (ids.length === 0) return true;
 
-        await manager.delete(ReturnSellingInvoiceProductsEntity, { returnSellingInvoice: { id: In(ids) } });
-        await manager.delete(ReturnSellingInvoiceEntity, { id: In(ids) });
+        const draftInvoices = await manager
+            .createQueryBuilder(ReturnSellingInvoiceEntity, 'invoice')
+            .where('invoice.id IN (:...ids)', { ids })
+            .andWhere('invoice.status = :status', { status: ReturnSellingInvoiceStatus.DRAFT })
+            .setLock('pessimistic_write')
+            .getMany();
+
+        if (draftInvoices.length === 0) return true;
+
+        const decrementBySellingInvoiceId = new Map<string, number>();
+        const draftInvoiceIds = draftInvoices.map((invoice) => invoice.id);
+        for (const invoice of draftInvoices) {
+            decrementBySellingInvoiceId.set(
+                invoice.sellingInvoiceId,
+                (decrementBySellingInvoiceId.get(invoice.sellingInvoiceId) ?? 0) + 1,
+            );
+        }
+
+        await manager.delete(ReturnSellingInvoiceProductsEntity, { returnSellingInvoice: { id: In(draftInvoiceIds) } });
+        await manager.delete(ReturnSellingInvoiceEntity, { id: In(draftInvoiceIds) });
+
+        for (const [sellingInvoiceId, decrementBy] of decrementBySellingInvoiceId) {
+            await manager
+                .createQueryBuilder()
+                .update(SellingInvoiceEntity)
+                .set({ returnCount: () => `GREATEST(return_count - ${decrementBy}, 0)` })
+                .where('id = :id', { id: sellingInvoiceId })
+                .execute();
+        }
 
         return true;
     }
@@ -294,9 +324,8 @@ export class ReturnSellingInvoiceRepository {
             await manager.save(SellingInvoiceProductsEntity, productsToUpdate);
         }
 
-        // Update selling invoice status and return count - SellingInvoiceEntity.
+        // Update selling invoice status - SellingInvoiceEntity.
         lockedSelling.status = isFullyReturned ? SellingInvoiceStatus.RETURNED : SellingInvoiceStatus.PARTIALLY_RETURNED;
-        lockedSelling.returnCount += 1;
         await manager.save(SellingInvoiceEntity, lockedSelling);
 
         // Add inventory for each returned line - ProductsEntity.

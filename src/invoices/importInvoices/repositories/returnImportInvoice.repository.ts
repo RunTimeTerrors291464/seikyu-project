@@ -130,6 +130,9 @@ export class ReturnImportInvoiceRepository {
         });
         const savedInvoice = await manager.save(ReturnImportInvoiceEntity, returnImportInvoice);
 
+        // Count draft return invoices on the original import invoice immediately.
+        await manager.increment(ImportInvoiceEntity, { id: importInvoice.id }, 'returnCount', 1);
+
         // Create return import invoice products - ReturnImportInvoiceProductsEntity.
         const products: ReturnImportInvoiceProductsEntity[] = resolvedProducts.map((item) =>
             this.returnImportInvoiceProductsRepository.create({
@@ -204,8 +207,35 @@ export class ReturnImportInvoiceRepository {
     async deleteDraftReturnImportInvoice(ids: string[], manager: EntityManager): Promise<boolean> {
         if (ids.length === 0) return true;
 
-        await manager.delete(ReturnImportInvoiceProductsEntity, { returnImportInvoice: { id: In(ids) } });
-        await manager.delete(ReturnImportInvoiceEntity, { id: In(ids) });
+        const draftInvoices = await manager
+            .createQueryBuilder(ReturnImportInvoiceEntity, 'invoice')
+            .where('invoice.id IN (:...ids)', { ids })
+            .andWhere('invoice.status = :status', { status: ReturnImportInvoiceStatus.DRAFT })
+            .setLock('pessimistic_write')
+            .getMany();
+
+        if (draftInvoices.length === 0) return true;
+
+        const decrementByImportInvoiceId = new Map<string, number>();
+        const draftInvoiceIds = draftInvoices.map((invoice) => invoice.id);
+        for (const invoice of draftInvoices) {
+            decrementByImportInvoiceId.set(
+                invoice.importInvoiceId,
+                (decrementByImportInvoiceId.get(invoice.importInvoiceId) ?? 0) + 1,
+            );
+        }
+
+        await manager.delete(ReturnImportInvoiceProductsEntity, { returnImportInvoice: { id: In(draftInvoiceIds) } });
+        await manager.delete(ReturnImportInvoiceEntity, { id: In(draftInvoiceIds) });
+
+        for (const [importInvoiceId, decrementBy] of decrementByImportInvoiceId) {
+            await manager
+                .createQueryBuilder()
+                .update(ImportInvoiceEntity)
+                .set({ returnCount: () => `GREATEST(return_count - ${decrementBy}, 0)` })
+                .where('id = :id', { id: importInvoiceId })
+                .execute();
+        }
 
         return true;
     }
@@ -293,9 +323,8 @@ export class ReturnImportInvoiceRepository {
             await manager.save(ImportInvoiceProductsEntity, productsToUpdate);
         }
 
-        // Update import invoice status and return count - ImportInvoiceEntity.
+        // Update import invoice status - ImportInvoiceEntity.
         lockedImport.status = isFullyReturned ? ImportInvoiceStatus.RETURNED : ImportInvoiceStatus.PARTIALLY_RETURNED;
-        lockedImport.returnCount += 1;
         await manager.save(ImportInvoiceEntity, lockedImport);
 
         // Subtract inventory for each returned line - ProductsEntity.
