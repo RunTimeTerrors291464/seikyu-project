@@ -589,6 +589,7 @@ export default function ReturnSellingInvoiceDetailPage() {
         open={confirmDraftPopupOpen}
         title={dict.confirmConfirmReturnDraftTitle}
         description={dict.confirmConfirmReturnDraftDescription}
+        warning={isDirty ? dict.confirmDiscardReturnDraftDescription : undefined}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         loading={confirming}
@@ -632,8 +633,8 @@ export default function ReturnSellingInvoiceDetailPage() {
 
       <ConfirmPopup
         open={discardNavigateOpen}
-        title={dict.confirmDiscardReturnDraftTitle}
-        description={dict.confirmDiscardReturnDraftDescription}
+        title={dict.confirmDiscardUnsavedTitle}
+        description={dict.confirmDiscardUnsavedDescription}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         onConfirm={confirmDiscardNavigate}

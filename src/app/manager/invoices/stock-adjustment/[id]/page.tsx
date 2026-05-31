@@ -420,6 +420,7 @@ export default function StockAdjustmentInvoiceDetailPage() {
         open={confirmDraftPopupOpen}
         title={dict.confirmConfirmStockAdjustmentDraftTitle}
         description={dict.confirmConfirmStockAdjustmentDraftDescription}
+        warning={isDirty ? dict.confirmDiscardUnsavedDescription : undefined}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         loading={confirming}
@@ -429,8 +430,8 @@ export default function StockAdjustmentInvoiceDetailPage() {
 
       <ConfirmPopup
         open={discardNavigateOpen}
-        title={dict.confirmDiscardStockAdjustmentUnsavedTitle}
-        description={dict.confirmDiscardStockAdjustmentUnsavedDescription}
+        title={dict.confirmDiscardUnsavedTitle}
+        description={dict.confirmDiscardUnsavedDescription}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         onConfirm={confirmDiscardNavigate}

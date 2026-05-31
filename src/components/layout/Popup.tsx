@@ -2,6 +2,7 @@
 
 import Button from "@/components/ui/Buttons";
 import { isEditableKeyboardTarget } from "@/lib/shortcuts/isEditableKeyboardTarget";
+import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { ReactNode, useEffect, useRef } from "react";
 import Popup from "./BlurPopupWrapper";
@@ -63,6 +64,7 @@ type Props = {
   open: boolean;
   title: string;
   description: string;
+  warning?: string;
 
   confirmText: string;
   cancelText: string;
@@ -82,6 +84,7 @@ export function ConfirmPopup({
   open,
   title,
   description,
+  warning,
   confirmText,
   cancelText,
   loading,
@@ -91,6 +94,8 @@ export function ConfirmPopup({
   accent = "neutral",
   backdropBlur,
 }: Props) {
+  const dict = useDict();
+
   async function handleConfirm(): Promise<void> {
     try {
       await onConfirm();
@@ -120,14 +125,20 @@ export function ConfirmPopup({
             </span>
           )}
 
-          <h2 className="text-sm font-semibold text-text">
+          <h2 className="text-base font-semibold text-text">
             {title}
           </h2>
         </div>
 
         {/* BODY */}
-        <div className="px-4 py-4 text-sm text-muted">
-          {description}
+        <div className="space-y-2 px-4 py-4 text-sm">
+          <p className="text-muted">{description}</p>
+          {warning ? (
+            <p className="text-danger">
+              <span className="font-semibold">{dict.warningLabel}: </span>
+              {warning}
+            </p>
+          ) : null}
         </div>
 
         {/* FOOTER */}
@@ -153,6 +164,7 @@ type DeletePopupProps = {
   open: boolean;
   title: string;
   description: string;
+  warning?: string;
   confirmText: string;
   cancelText: string;
   loading?: boolean;
@@ -166,6 +178,7 @@ export function DeletePopup({
   open,
   title,
   description,
+  warning,
   confirmText,
   cancelText,
   loading,
@@ -179,6 +192,7 @@ export function DeletePopup({
       open={open}
       title={title}
       description={description}
+      warning={warning}
       confirmText={confirmText}
       cancelText={cancelText}
       loading={loading}
