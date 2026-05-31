@@ -18,8 +18,8 @@ import {
   type StockAdjustmentReasonCategory,
 } from "../services/stockAdjustmentInvoice.service";
 import {
-  buildStockAdjustmentProductRequests,
   EditableStockAdjustmentLine,
+  buildStockAdjustmentProductRequests,
 } from "../types/stockAdjustmentDetail";
 import StockAdjustmentProductsCard from "./StockAdjustmentProductsCard";
 
@@ -242,7 +242,7 @@ export default function AddStockAdjustmentInvoicePopup({
                 {STOCK_ADJUSTMENT_REASON_CATEGORY_OPTIONS.map(function renderOption(option) {
                   return (
                     <option key={option.value} value={option.value}>
-                      {dict[option.dictKey as keyof typeof dict] ?? option.value}
+                      {dict[option.dictKey] ?? option.value}
                     </option>
                   );
                 })}

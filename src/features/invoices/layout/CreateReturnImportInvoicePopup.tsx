@@ -14,15 +14,15 @@ import { createReturnImportDraft } from "@/features/invoices/services/returnImpo
 import { returnImportDraftProductColumns } from "@/features/invoices/table/invoiceProductLineColumns";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
-    EditableReturnImportLine,
-    toEditableReturnImportLine,
+  EditableReturnImportLine,
+  toEditableReturnImportLine,
 } from "@/features/invoices/types/returnImportDraft";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
-    formatPriceNumber,
-    lineTotalFromQuantityAndMoneyStrings,
+  formatPriceNumber,
+  lineTotalFromQuantityAndMoneyStrings,
 } from "@/lib/numeric/integerAndMoneyInputs";
-import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReturnImportProductsCard from "./ReturnImportProductsCard";
@@ -108,41 +108,6 @@ export default function CreateReturnImportInvoicePopup({
     [lines],
   );
 
-  const returnNeedsLineMessage =
-    dict[INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.key];
-  const returnNeedsNoteMessage =
-    dict[INVOICE_DRAFT_ERRORS.returnMissingNote.key];
-
-  useEffect(
-    function clearReturnValidationMessageWhenFixed(): void {
-      if (!open) {
-        return;
-      }
-
-      setErrorMessage(function clearIfValidationResolved(previous): string {
-        if (previous === returnNeedsLineMessage && hasPositiveReturnLine) {
-          return "";
-        }
-
-        if (
-          previous === returnNeedsNoteMessage &&
-          !hasMissingNotesForPositiveLines
-        ) {
-          return "";
-        }
-
-        return previous;
-      });
-    },
-    [
-      open,
-      hasPositiveReturnLine,
-      hasMissingNotesForPositiveLines,
-      returnNeedsLineMessage,
-      returnNeedsNoteMessage,
-    ],
-  );
-
   useEffect(
     function resetCreateAttemptWhenFirstReturnQuantityAdded(): void {
       if (!open) {
@@ -208,7 +173,8 @@ export default function CreateReturnImportInvoicePopup({
       );
 
     if (productsPayload.length === 0) {
-      setErrorMessage(returnNeedsLineMessage);
+      setCreateAttempted(true);
+      setConfirmAction(null);
       return;
     }
 
@@ -217,7 +183,8 @@ export default function CreateReturnImportInvoicePopup({
     );
 
     if (payloadMissingNotes) {
-      setErrorMessage(returnNeedsNoteMessage);
+      setCreateAttempted(true);
+      setConfirmAction(null);
       return;
     }
 
@@ -245,12 +212,10 @@ export default function CreateReturnImportInvoicePopup({
     setErrorMessage("");
 
     if (!hasPositiveReturnLine) {
-      setErrorMessage(returnNeedsLineMessage);
       return;
     }
 
     if (hasMissingNotesForPositiveLines) {
-      setErrorMessage(returnNeedsNoteMessage);
       return;
     }
 
@@ -321,12 +286,12 @@ export default function CreateReturnImportInvoicePopup({
     },
   });
 
-  const returnHeaderErrorAccent =
-    errorMessage === returnNeedsLineMessage
-      ? INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.accent
-      : errorMessage === returnNeedsNoteMessage
-        ? INVOICE_DRAFT_ERRORS.returnMissingNote.accent
-        : "danger";
+  const draftError =
+    createAttempted && !hasPositiveReturnLine
+      ? INVOICE_DRAFT_ERRORS.returnAtLeastOneLine
+      : createAttempted && hasMissingNotesForPositiveLines
+        ? INVOICE_DRAFT_ERRORS.returnMissingNote
+        : null;
 
   const returnProductsCardDangerAccent =
     createAttempted && !hasPositiveReturnLine;
@@ -343,12 +308,20 @@ export default function CreateReturnImportInvoicePopup({
             {dict.createReturnInvoiceTitle}
           </h1>
           <div className="flex min-w-0 flex-1 justify-center px-2">
-            {errorMessage ? (
+            {draftError != null ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={dict[draftError.key]}
+                accent={draftError.accent}
+                format="text"
+              />
+            ) : errorMessage ? (
               <HeaderMeta
                 icon={<AlertTriangle className="h-4 w-4" />}
                 label={dict.error}
                 value={errorMessage}
-                accent={returnHeaderErrorAccent}
+                accent="danger"
                 format="text"
               />
             ) : null}

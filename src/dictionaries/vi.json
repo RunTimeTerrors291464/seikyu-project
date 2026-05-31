@@ -378,6 +378,7 @@
     "FIRST_ADMIN_ACCOUNT_ALREADY_EXISTS": "Tài khoản quản trị đầu tiên đã tồn tại.",
     "USER_CANNOT_DEACTIVATE_SELF": "Bạn không thể vô hiệu hóa hoặc kích hoạt chính mình.",
     "USER_ALREADY_DEACTIVATED": "Người dùng đã bị vô hiệu hóa.",
+    "USER_ALREADY_ACTIVATED": "Người dùng đã được kích hoạt.",
     "OLD_PASSWORD_INCORRECT": "Mật khẩu hiện tại không đúng.",
     "USERNAME_OR_PASSWORD_INCORRECT": "Tên đăng nhập hoặc mật khẩu không đúng.",
     "INVALID_JWT_PAYLOAD": "Cấu trúc JWT không hợp lệ.",

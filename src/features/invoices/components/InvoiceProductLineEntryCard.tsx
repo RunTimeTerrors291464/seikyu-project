@@ -167,16 +167,14 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
 
   const handleResetAndFocusSku = useCallback(
     function handleResetAndFocusSku(): void {
-      if (isEditMode) {
-        onClearEdit?.();
-      }
+      onClearEdit?.();
       reset();
       setLineCommitAttempted(false);
       window.requestAnimationFrame(function focusSkuAfterReset(): void {
         focusSku();
       });
     },
-    [focusSku, isEditMode, onClearEdit, reset],
+    [focusSku, onClearEdit, reset],
   );
 
   const handleResetShortcut = useCallback(

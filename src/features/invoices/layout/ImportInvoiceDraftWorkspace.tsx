@@ -8,9 +8,9 @@ import ImportDraftSummaryCard, {
 import InvoiceProductLineEntryCard, {
   type InvoiceProductLineEntryCardHandle,
 } from "@/features/invoices/components/InvoiceProductLineEntryCard";
+import type { ImportInvoiceProductsTotals } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import { buildDraftExcludedProductIds } from "@/features/invoices/lib/buildDraftExcludedProductIds";
 import { createImportLineEntryConfig } from "@/features/invoices/lib/importLineEntryConfig";
-import type { ImportInvoiceProductsTotals } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { useCallback, useMemo, useRef, useState } from "react";

@@ -2,6 +2,7 @@
 
 import { ACCENT_STYLES, type Accent } from "@/components/types/ui";
 import { useDict } from "@/lib/lang/DictProvider";
+import type { DictionaryLabelKey } from "@/lib/lang/i18n";
 import clsx from "clsx";
 import { LucideIcon } from "lucide-react";
 
@@ -14,7 +15,7 @@ type Props = {
   accent: Accent;
 
   label?: string;
-  dictKey?: string;
+  dictKey?: DictionaryLabelKey;
 
   className?: string;
 };
@@ -44,7 +45,7 @@ export default function IconPill({
     >
       <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} />
 
-      {label ?? (dictKey ? dict[dictKey as keyof typeof dict] : "")}
+      {label ?? (dictKey ? dict[dictKey] : "")}
     </span>
   );
 }

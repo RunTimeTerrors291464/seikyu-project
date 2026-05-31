@@ -14,16 +14,16 @@ import type { SellingInvoiceProductDto } from "@/features/invoices/services/sell
 import { returnSellingDraftProductColumns } from "@/features/invoices/table/sellingInvoiceProductLineColumns";
 import { toNumberOrZero } from "@/features/invoices/types/importInvoiceDetail";
 import {
-    EditableReturnSellingLine,
-    toEditableReturnSellingLine,
+  EditableReturnSellingLine,
+  toEditableReturnSellingLine,
 } from "@/features/invoices/types/returnSellingDraft";
-import { useDict } from "@/lib/lang/DictProvider";
 import { resolveApiErrorMessage } from "@/lib/api/errors";
+import { useDict } from "@/lib/lang/DictProvider";
 import {
-    formatPriceNumber,
-    lineTotalFromQuantityAndMoneyStrings,
+  formatPriceNumber,
+  lineTotalFromQuantityAndMoneyStrings,
 } from "@/lib/numeric/integerAndMoneyInputs";
-import { Boxes, DollarSign, Package } from "lucide-react";
+import { AlertTriangle, Boxes, DollarSign, Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReturnImportProductsCard from "./ReturnImportProductsCard";
 
@@ -137,9 +137,11 @@ export default function CreateReturnSellingInvoicePopup({
           Math.floor(toNumberOrZero(line.returnQuantity)),
           line.notes,
         ),
-      );
+    );
 
     if (productsPayload.length === 0) {
+      setCreateAttempted(true);
+      setConfirmAction(null);
       return;
     }
 
@@ -148,6 +150,8 @@ export default function CreateReturnSellingInvoicePopup({
     );
 
     if (hasMissingNotesForPositiveLines) {
+      setCreateAttempted(true);
+      setConfirmAction(null);
       return;
     }
 
@@ -172,19 +176,11 @@ export default function CreateReturnSellingInvoicePopup({
 
   function handleOpenCreateConfirm(): void {
     setCreateAttempted(true);
+    setErrorMessage("");
 
-    const hasPositiveLine = lines.some(
-      (line) => toNumberOrZero(line.returnQuantity) > 0,
-    );
-
-    if (!hasPositiveLine) {
+    if (!hasPositiveReturnLine) {
       return;
     }
-
-    const hasMissingNotesForPositiveLines = lines.some(
-      (line) =>
-        toNumberOrZero(line.returnQuantity) > 0 && line.notes.trim() === "",
-    );
 
     if (hasMissingNotesForPositiveLines) {
       return;
@@ -272,6 +268,16 @@ export default function CreateReturnSellingInvoicePopup({
     },
   });
 
+  const draftError =
+    createAttempted && !hasPositiveReturnLine
+      ? INVOICE_DRAFT_ERRORS.returnAtLeastOneLine
+      : createAttempted && hasMissingNotesForPositiveLines
+        ? INVOICE_DRAFT_ERRORS.returnMissingNote
+        : null;
+
+  const returnProductsCardDangerAccent =
+    createAttempted && !hasPositiveReturnLine;
+
   if (!open) {
     return null;
   }
@@ -279,42 +285,35 @@ export default function CreateReturnSellingInvoicePopup({
   return (
     <Popup open={open} onClose={() => setConfirmAction("cancel")}>
       <div className="flex h-[90vh] w-[92vw] max-w-[1200px] flex-col overflow-hidden bg-bg">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h1 className="text-sm font-semibold text-text">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <h1 className="shrink-0 text-sm font-semibold text-text">
             {dict.createReturnInvoiceTitle}
           </h1>
-          <div className="flex flex-1 items-center justify-center px-3">
-            {createAttempted && !hasPositiveReturnLine && (
+          <div className="flex min-w-0 flex-1 justify-center px-2">
+            {draftError != null ? (
               <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
                 label={dict.error}
-                value={dict[INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.key]}
-                accent={INVOICE_DRAFT_ERRORS.returnAtLeastOneLine.accent}
+                value={dict[draftError.key]}
+                accent={draftError.accent}
                 format="text"
               />
-            )}
-            {createAttempted &&
-              hasPositiveReturnLine &&
-              hasMissingNotesForPositiveLines && (
-                <HeaderMeta
-                  label={dict.error}
-                  value={dict[INVOICE_DRAFT_ERRORS.returnMissingNote.key]}
-                  accent={INVOICE_DRAFT_ERRORS.returnMissingNote.accent}
-                  format="text"
-                />
-              )}
+            ) : errorMessage ? (
+              <HeaderMeta
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label={dict.error}
+                value={errorMessage}
+                accent="danger"
+                format="text"
+              />
+            ) : null}
           </div>
-          <div className="flex justify-end">
+          <div className="shrink-0">
             <HeaderMeta label={dict.createdDate} value={nowText} />
           </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-auto p-5">
-          {errorMessage && (
-            <div className="rounded-md border border-danger bg-danger-soft px-3 text-sm text-danger">
-              {errorMessage}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <KpiTile
               label={dict.totalReturnPriceLabel}
@@ -351,6 +350,7 @@ export default function CreateReturnSellingInvoicePopup({
             onReturnAll={handleOpenReturnAllConfirm}
             resetKey={`${open}-${sellingInvoiceId}`}
             className="flex grow"
+            accent={returnProductsCardDangerAccent ? "danger" : "neutral"}
           />
 
           <Field label={dict.noteLabel}>
