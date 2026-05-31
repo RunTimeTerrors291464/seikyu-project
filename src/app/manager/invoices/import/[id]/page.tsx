@@ -426,6 +426,7 @@ export default function ImportInvoiceDetailPage() {
         open={confirmDraftPopupOpen}
         title={dict.confirmConfirmImportDraftTitle}
         description={dict.confirmConfirmImportDraftDescription}
+        warning={isDirty ? dict.confirmDiscardUnsavedDescription : undefined}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         loading={confirming}
@@ -435,8 +436,8 @@ export default function ImportInvoiceDetailPage() {
 
       <ConfirmPopup
         open={discardNavigateOpen}
-        title={dict.confirmDiscardImportDraftTitle}
-        description={dict.confirmDiscardImportDraftDescription}
+        title={dict.confirmDiscardUnsavedTitle}
+        description={dict.confirmDiscardUnsavedDescription}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         onConfirm={confirmDiscardNavigate}

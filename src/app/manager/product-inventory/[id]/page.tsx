@@ -141,8 +141,8 @@ export default function ProductInventoryDetailPage() {
 
       <ConfirmPopup
         open={discardNavigateOpen}
-        title={dict.confirmDiscardProductUnsavedTitle}
-        description={dict.confirmDiscardProductUnsavedDescription}
+        title={dict.confirmDiscardUnsavedTitle}
+        description={dict.confirmDiscardUnsavedDescription}
         confirmText={dict.confirm}
         cancelText={dict.cancel}
         onConfirm={confirmDiscardNavigate}
