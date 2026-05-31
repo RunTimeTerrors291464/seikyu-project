@@ -9,11 +9,11 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
-import ReturnImportInvoiceHeader from "@/features/invoices/layout/ReturnImportInvoiceHeader";
-import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
 import InvoicePrintPreviewPopup, {
   type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+import ReturnImportInvoiceHeader from "@/features/invoices/layout/ReturnImportInvoiceHeader";
+import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
 import { buildReturnImportProductRequest } from "@/features/invoices/lib/returnInvoiceReason";
 import { getImportInvoiceById } from "@/features/invoices/services/importInvoice.service";
 import {
@@ -30,9 +30,9 @@ import {
   toEditableReturnDetailLine,
   toReturnLinesSignature,
 } from "@/features/invoices/types/returnImportDetail";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
-import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
   formatPriceNumber,
@@ -644,7 +644,6 @@ export default function ReturnImportInvoiceDetailPage() {
 
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
-        title={dict.relatedReturnInvoices}
         data={printData}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);

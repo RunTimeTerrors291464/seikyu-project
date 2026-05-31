@@ -233,7 +233,6 @@ export default function CashierSellingInvoiceDetailPage() {
 
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
-        title={dict.salesInvoices}
         data={printData}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);

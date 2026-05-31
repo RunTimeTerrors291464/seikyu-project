@@ -7,13 +7,13 @@ import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useImportInvoiceProductsEditor } from "@/features/invoices/hooks/useImportInvoiceProductsEditor";
 import CreateReturnImportInvoicePopup from "@/features/invoices/layout/CreateReturnImportInvoicePopup";
+import ImportInvoiceDraftWorkspace from "@/features/invoices/layout/ImportInvoiceDraftWorkspace";
 import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader";
+import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
+import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
 import InvoicePrintPreviewPopup, {
   type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
-import ImportInvoiceDraftWorkspace from "@/features/invoices/layout/ImportInvoiceDraftWorkspace";
-import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
-import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
 import {
   ImportInvoiceResponseDto,
   confirmImportInvoice,
@@ -29,8 +29,8 @@ import {
 } from "@/features/invoices/types/importInvoiceDetail";
 import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
-import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
@@ -466,7 +466,6 @@ export default function ImportInvoiceDetailPage() {
 
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
-        title={dict.importInvoices}
         data={printData}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);
