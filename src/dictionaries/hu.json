@@ -23,6 +23,8 @@
   "report": "Jelentes",
   "manageAccounts": "Fiokok kezelese",
   "salesInvoices": "Ertekesitesi szamlak",
+  "returnSaleInvoices": "Értékesítési visszáru számlák",
+  "returnImportInvoice": "Beszerzési visszáru számla",
   "sellingInvoicesManager": "Ertekesitesi szamlak",
   "totalSellingPriceLabel": "Osszesen (HUF)",
   "totalAfterDiscountLabel": "Osszesen kedvezmeny utan (HUF)",

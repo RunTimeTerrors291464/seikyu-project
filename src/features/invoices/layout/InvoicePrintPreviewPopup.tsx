@@ -38,10 +38,35 @@ export type InvoicePrintData = {
 
 type InvoicePrintPreviewPopupProps = {
   open: boolean;
-  title: string;
   data: InvoicePrintData;
   onClose: () => void;
 };
+
+type InvoiceTitleLabelKey =
+  | "salesInvoices"
+  | "importInvoices"
+  | "returnSaleInvoices"
+  | "returnImportInvoice";
+
+function getInvoiceTitleLabelKey(invoiceCode: string): InvoiceTitleLabelKey {
+  if (invoiceCode.startsWith("RS")) {
+    return "returnSaleInvoices";
+  }
+
+  if (invoiceCode.startsWith("RI")) {
+    return "returnImportInvoice";
+  }
+
+  if (invoiceCode.startsWith("S")) {
+    return "salesInvoices";
+  }
+
+  if (invoiceCode.startsWith("I")) {
+    return "importInvoices";
+  }
+
+  return "salesInvoices";
+}
 
 registerInvoicePdfFonts();
 
@@ -144,6 +169,7 @@ const PRINT_PREVIEW_INDEX_COL_WIDTH = "2.5rem";
 const PRINT_PREVIEW_SKU_COL_WIDTH = "7.5rem";
 
 type InvoicePdfLabels = {
+  title: string;
   invoiceNumber: string;
   status: string;
   statusValue: string;
@@ -206,7 +232,10 @@ function buildInvoicePdfLabels(
   invoice: InvoicePrintData,
   localeTag: string,
 ): InvoicePdfLabels {
+  const titleLabelKey = getInvoiceTitleLabelKey(invoice.invoiceCode);
+
   return {
+    title: printDictionary[titleLabelKey],
     invoiceNumber: printDictionary.invoiceNumber,
     status: printDictionary.status,
     statusValue: printDictionary[invoice.status],
@@ -224,12 +253,10 @@ function buildInvoicePdfLabels(
 }
 
 function InvoicePdfDocument({
-  title,
   data,
   labels,
   quantityLocaleTag,
 }: {
-  title: string;
   data: InvoicePrintData;
   labels: InvoicePdfLabels;
   quantityLocaleTag: string;
@@ -242,7 +269,7 @@ function InvoicePdfDocument({
       <Page size="A4" style={styles.page}>
         <View style={styles.headerRow} fixed>
           <View>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title}>{labels.title}</Text>
             <Text style={styles.textSm}>{labels.invoiceNumber}: {data.invoiceCode}</Text>
             <Text style={styles.textSm}>{labels.status}: {labels.statusValue}</Text>
           </View>
@@ -314,7 +341,6 @@ function InvoicePdfDocument({
 
 export default function InvoicePrintPreviewPopup({
   open,
-  title,
   data,
   onClose,
 }: InvoicePrintPreviewPopupProps) {
@@ -339,11 +365,16 @@ export default function InvoicePrintPreviewPopup({
     [printLang],
   );
 
+  const labels = useMemo(
+    function buildPrintLabels(): InvoicePdfLabels {
+      return buildInvoicePdfLabels(printDictionary, data, printLocaleTag);
+    },
+    [printDictionary, data, printLocaleTag],
+  );
+
   async function createInvoicePdfBlob(): Promise<Blob> {
-    const labels = buildInvoicePdfLabels(printDictionary, data, printLocaleTag);
     return pdf(
       <InvoicePdfDocument
-        title={title}
         data={data}
         labels={labels}
         quantityLocaleTag={printLocaleTag}
@@ -415,14 +446,14 @@ export default function InvoicePrintPreviewPopup({
           <div className="print-area mx-auto w-full min-h-full max-w-[210mm] bg-white p-[12mm] text-black">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-xl font-bold">{title}</h3>
-                <p className="text-sm">{printDictionary.invoiceNumber}: {data.invoiceCode}</p>
-                <p className="text-sm">{printDictionary.status}: {printDictionary[data.status]}</p>
+                <h3 className="text-xl font-bold">{labels.title}</h3>
+                <p className="text-sm">{labels.invoiceNumber}: {data.invoiceCode}</p>
+                <p className="text-sm">{labels.status}: {printDictionary[data.status]}</p>
               </div>
               <div className="text-right text-sm">
-                <p>{printDictionary.by}: {data.confirmedBy ?? "—"}</p>
+                <p>{labels.by}: {data.confirmedBy ?? "—"}</p>
                 <p>
-                  {printDictionary.date}: {formatDateForPrintLocale(data.confirmedAt, printLocaleTag)}
+                  {labels.date}: {formatDateForPrintLocale(data.confirmedAt, printLocaleTag)}
                 </p>
               </div>
             </div>
@@ -435,13 +466,13 @@ export default function InvoicePrintPreviewPopup({
               <thead>
                 <tr>
                   <th className="border border-border px-2 py-1 text-left whitespace-nowrap">#</th>
-                  <th className="border border-border px-2 py-1 text-left">{printDictionary.sku}</th>
-                  <th className="border border-border px-2 py-1 text-left">{printDictionary.productName}</th>
-                  <th className="border border-border px-2 py-1 text-left">{printDictionary.quantityLabel}</th>
-                  <th className="border border-border px-2 py-1 text-left">{printDictionary.unit}</th>
-                  <th className="border border-border px-2 py-1 text-right">{printDictionary.totalPriceLabel}</th>
+                  <th className="border border-border px-2 py-1 text-left">{labels.sku}</th>
+                  <th className="border border-border px-2 py-1 text-left">{labels.productName}</th>
+                  <th className="border border-border px-2 py-1 text-left">{labels.quantityLabel}</th>
+                  <th className="border border-border px-2 py-1 text-left">{labels.unit}</th>
+                  <th className="border border-border px-2 py-1 text-right">{labels.totalPriceLabel}</th>
                   {data.showLineNotes && (
-                    <th className="border border-border px-2 py-1 text-left">{printDictionary.noteLabel}</th>
+                    <th className="border border-border px-2 py-1 text-left">{labels.noteLabel}</th>
                   )}
                 </tr>
               </thead>
@@ -470,7 +501,7 @@ export default function InvoicePrintPreviewPopup({
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
               <p className="col-span-2 font-semibold">
-                {printDictionary.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}
+                {labels.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}
               </p>
             </div>
           </div>

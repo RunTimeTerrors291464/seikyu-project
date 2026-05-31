@@ -23,6 +23,8 @@
   "report": "Report",
   "manageAccounts": "Manage Accounts",
   "salesInvoices": "Sales Invoices",
+  "returnSaleInvoices": "Return sale invoices",
+  "returnImportInvoice": "Return import invoice",
   "sellingInvoicesManager": "Selling Invoices",
   "totalSellingPriceLabel": "Total (HUF)",
   "totalAfterDiscountLabel": "Total after discount (HUF)",

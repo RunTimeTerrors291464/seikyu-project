@@ -6,10 +6,10 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
-import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
 import InvoicePrintPreviewPopup, {
   type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
 import ReturnSellingInvoiceHeader from "@/features/invoices/layout/ReturnSellingInvoiceHeader";
 import { buildReturnSellingProductRequest } from "@/features/invoices/lib/returnInvoiceReason";
 import {
@@ -27,9 +27,9 @@ import {
   toEditableReturnSellingDetailLine,
   toReturnSellingLinesSignature,
 } from "@/features/invoices/types/returnSellingDetail";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
-import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
   formatPriceNumber,
@@ -645,7 +645,6 @@ export default function ReturnSellingInvoiceDetailPage() {
 
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
-        title={dict.relatedReturnSellingInvoices}
         data={printData}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);

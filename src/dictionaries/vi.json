@@ -23,6 +23,8 @@
   "report": "Báo cáo",
   "manageAccounts": "Quản lý tài khoản",
   "salesInvoices": "Hóa đơn bán hàng",
+  "returnSaleInvoices": "Phiếu trả hàng bán",
+  "returnImportInvoice": "Phiếu trả hàng nhập",
   "sellingInvoicesManager": "Hóa đơn bán (quản lý)",
   "totalSellingPriceLabel": "Tổng (HUF)",
   "totalAfterDiscountLabel": "Tổng sau chiết khấu (HUF)",
