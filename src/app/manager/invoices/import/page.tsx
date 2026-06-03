@@ -50,6 +50,11 @@ type ImportInvoiceSortBy = ImportInvoiceListSortBy;
 type ReturnImportInvoiceSortBy = "returnInvoiceId" | "userId" | "createdAt";
 type SortOrder = "asc" | "desc";
 
+const DEFAULT_SORT_BY: ImportInvoiceSortBy = "createdAt";
+const DEFAULT_SORT_ORDER: SortOrder = "desc";
+const DEFAULT_RETURN_SORT_BY = "createdAt";
+const DEFAULT_RETURN_SORT_ORDER: SortOrder = "desc";
+
 function getStatusFilterClass(
   optionValue: ImportInvoiceStatusFilter,
   statusFilter: ImportInvoiceStatusFilter,
@@ -105,10 +110,14 @@ export default function ImportInvoicesListPage() {
     useState<ImportInvoiceStatusFilter>("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<ImportInvoiceSortBy | undefined>(undefined);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [returnSortBy, setReturnSortBy] = useState<ReturnImportInvoiceSortBy | undefined>(undefined);
-  const [returnSortOrder, setReturnSortOrder] = useState<SortOrder>("asc");
+  const [sortBy, setSortBy] = useState<ImportInvoiceSortBy>(DEFAULT_SORT_BY);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
+  const [returnSortBy, setReturnSortBy] = useState<ReturnImportInvoiceSortBy>(
+    DEFAULT_RETURN_SORT_BY,
+  );
+  const [returnSortOrder, setReturnSortOrder] = useState<SortOrder>(
+    DEFAULT_RETURN_SORT_ORDER,
+  );
 
   const { rows, total, loading, refetch } = useImportInvoices({
     page,
@@ -116,7 +125,7 @@ export default function ImportInvoicesListPage() {
     search: search || undefined,
     searchBy: search ? searchRule : undefined,
     sortBy,
-    sortOrder: sortBy ? sortOrder : undefined,
+    sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
@@ -282,12 +291,14 @@ export default function ImportInvoicesListPage() {
           return;
         }
 
-        const response = await getReturnImportInvoiceList({
-          search: importInvoiceNo,
-          searchBy: "importInvoiceId",
-          limit: RETURN_CHILDREN_LIMIT,
-          page: 1,
-        });
+          const response = await getReturnImportInvoiceList({
+            search: importInvoiceNo,
+            searchBy: "importInvoiceId",
+            limit: RETURN_CHILDREN_LIMIT,
+            page: 1,
+            sortBy: DEFAULT_RETURN_SORT_BY,
+            sortOrder: DEFAULT_RETURN_SORT_ORDER,
+          });
 
         setReturnChildrenByImportId(function mergeChildren(prev) {
           return { ...prev, [id]: response.invoices };
@@ -311,7 +322,10 @@ export default function ImportInvoicesListPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
-    sortBy === undefined &&
+    sortBy === DEFAULT_SORT_BY &&
+    sortOrder === DEFAULT_SORT_ORDER &&
+    returnSortBy === DEFAULT_RETURN_SORT_BY &&
+    returnSortOrder === DEFAULT_RETURN_SORT_ORDER &&
     page === 1 &&
     showFilters === false &&
     expandedRowIds.size === 0;
@@ -320,10 +334,10 @@ export default function ImportInvoicesListPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
-    setSortBy(undefined);
-    setSortOrder("asc");
-    setReturnSortBy(undefined);
-    setReturnSortOrder("asc");
+    setSortBy(DEFAULT_SORT_BY);
+    setSortOrder(DEFAULT_SORT_ORDER);
+    setReturnSortBy(DEFAULT_RETURN_SORT_BY);
+    setReturnSortOrder(DEFAULT_RETURN_SORT_ORDER);
     setPage(1);
     setShowFilters(false);
     setExpandedRowIds(new Set());

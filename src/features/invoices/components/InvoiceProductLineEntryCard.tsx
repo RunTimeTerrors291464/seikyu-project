@@ -120,8 +120,8 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
         if (hadEditSourceLineRef.current) {
           hadEditSourceLineRef.current = false;
           reset();
-          setLineCommitAttempted(false);
           window.requestAnimationFrame(function focusSkuAfterClearEdit(): void {
+            setLineCommitAttempted(false);
             focusSku();
           });
         }
@@ -129,8 +129,8 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
       }
 
       hadEditSourceLineRef.current = true;
-      setLineCommitAttempted(false);
       window.requestAnimationFrame(function focusQuantityForEdit(): void {
+        setLineCommitAttempted(false);
         focusQuantity();
       });
     },
@@ -159,14 +159,26 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
       const line = handleCommitLine();
       if (line) {
         onUpdateLine(line);
+        if (onClearEdit) {
+          hadEditSourceLineRef.current = false;
+          onClearEdit();
+          reset();
+          setLineCommitAttempted(false);
+          window.requestAnimationFrame(function focusSkuAfterUpdate(): void {
+            focusSku();
+          });
+          return;
+        }
+
         setLineCommitAttempted(false);
       }
     },
-    [handleCommitLine, onUpdateLine],
+    [focusSku, handleCommitLine, onClearEdit, onUpdateLine, reset],
   );
 
   const handleResetAndFocusSku = useCallback(
     function handleResetAndFocusSku(): void {
+      hadEditSourceLineRef.current = false;
       onClearEdit?.();
       reset();
       setLineCommitAttempted(false);
@@ -178,7 +190,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
   );
 
   const handleResetShortcut = useCallback(
-    function handleResetShortcut(_event: KeyboardEvent): void {
+    function handleResetShortcut(): void {
       handleResetAndFocusSku();
     },
     [handleResetAndFocusSku],
@@ -239,15 +251,13 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
     },
     [
       canCommitLine,
-      context.quantity,
-      context.skuValidated,
+      config,
       focusQuantity,
       focusSku,
       handleAddClick,
       handleSkuBlur,
       handleUpdateClick,
       isEditMode,
-      config.isVariantFieldsInvalidForCommit,
       context,
     ],
   );

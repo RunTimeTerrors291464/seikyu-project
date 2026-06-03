@@ -34,6 +34,9 @@ type StockAdjustmentSortBy =
   | "confirmedAt";
 type SortOrder = "asc" | "desc";
 
+const DEFAULT_SORT_BY: StockAdjustmentSortBy = "createdAt";
+const DEFAULT_SORT_ORDER: SortOrder = "desc";
+
 function getStatusFilterClass(
   optionValue: StockAdjustmentInvoiceStatusFilter,
   statusFilter: StockAdjustmentInvoiceStatusFilter,
@@ -75,10 +78,8 @@ export default function StockAdjustmentInvoicesListPage() {
     useState<StockAdjustmentInvoiceStatusFilter>("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<StockAdjustmentSortBy | undefined>(
-    undefined,
-  );
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [sortBy, setSortBy] = useState<StockAdjustmentSortBy>(DEFAULT_SORT_BY);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
 
   const { rows, total, loading, refetch } = useStockAdjustmentInvoices({
     page,
@@ -86,7 +87,7 @@ export default function StockAdjustmentInvoicesListPage() {
     search: search || undefined,
     searchBy: search ? searchRule : undefined,
     sortBy,
-    sortOrder: sortBy ? sortOrder : undefined,
+    sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
@@ -132,7 +133,8 @@ export default function StockAdjustmentInvoicesListPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
-    sortBy === undefined &&
+    sortBy === DEFAULT_SORT_BY &&
+    sortOrder === DEFAULT_SORT_ORDER &&
     page === 1 &&
     showFilters === false;
 
@@ -140,8 +142,8 @@ export default function StockAdjustmentInvoicesListPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
-    setSortBy(undefined);
-    setSortOrder("asc");
+    setSortBy(DEFAULT_SORT_BY);
+    setSortOrder(DEFAULT_SORT_ORDER);
     setPage(1);
     setShowFilters(false);
     setRuleInputResetKey((value) => value + 1);

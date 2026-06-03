@@ -35,6 +35,9 @@ import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingI
 type SellingInvoiceSortBy = "invoiceId" | "totalSellingPrice" | "confirmedAt";
 type SortOrder = "asc" | "desc";
 
+const DEFAULT_SORT_BY: SellingInvoiceSortBy = "confirmedAt";
+const DEFAULT_SORT_ORDER: SortOrder = "desc";
+
 function getStatusFilterClass(
   optionValue: SellingInvoiceStatusFilter,
   statusFilter: SellingInvoiceStatusFilter,
@@ -72,10 +75,8 @@ export default function CashierSellingInvoicesPage() {
     useState<SellingInvoiceStatusFilter>("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<SellingInvoiceSortBy | undefined>(
-    undefined,
-  );
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [sortBy, setSortBy] = useState<SellingInvoiceSortBy>(DEFAULT_SORT_BY);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
 
   const { rows, total, loading, refetch } = useSellingInvoices({
     page,
@@ -83,7 +84,7 @@ export default function CashierSellingInvoicesPage() {
     search: search || undefined,
     searchBy: search ? searchRule : undefined,
     sortBy,
-    sortOrder: sortBy ? sortOrder : undefined,
+    sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
@@ -128,7 +129,8 @@ export default function CashierSellingInvoicesPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
-    sortBy === undefined &&
+    sortBy === DEFAULT_SORT_BY &&
+    sortOrder === DEFAULT_SORT_ORDER &&
     page === 1 &&
     showFilters === false;
 
@@ -136,8 +138,8 @@ export default function CashierSellingInvoicesPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
-    setSortBy(undefined);
-    setSortOrder("asc");
+    setSortBy(DEFAULT_SORT_BY);
+    setSortOrder(DEFAULT_SORT_ORDER);
     setPage(1);
     setShowFilters(false);
     setRuleInputResetKey((value) => value + 1);
