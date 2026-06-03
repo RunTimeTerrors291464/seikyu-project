@@ -163,10 +163,10 @@ export class ProductCashierResponseDto {
     productNames: string[];
 
     @ApiProperty({
-        description: 'Product unit name',
+        description: 'Product unit name of the product',
         example: 'kg',
     })
-    unitName: string;
+    productUnitName: string;
 
     @ApiProperty({
         description: 'Product description',
