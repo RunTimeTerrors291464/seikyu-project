@@ -229,7 +229,7 @@ export default function AddStockAdjustmentInvoicePopup({
           />
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-            <Field label={dict.actionReasonLabel}>
+            <Field label={dict.actionReasonLabel} required>
               <select
                 value={reasonCategory}
                 onChange={function handleReasonChange(event): void {
@@ -251,7 +251,6 @@ export default function AddStockAdjustmentInvoicePopup({
 
             <Field
               label={dict.noteLabel}
-              warning={noteWarning ? dict.emptyDescription : undefined}
             >
               <Textarea
                 value={notes}
