@@ -13,6 +13,7 @@ import {
 import type { AddExistingProductsColumnPreset } from "@/features/invoices/table/addExistingProductsColumns";
 import useSkuCheck from "@/features/products/hooks/useSkuCheck";
 import type { Product } from "@/features/products/types/product";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
@@ -60,7 +61,9 @@ export default function AddProductPopup({
   productPickerColumnPreset,
 }: AddProductPopupProps) {
   const dict = useDict();
+  const canAddMultipleProducts = useMayUseManagerWorkflowControls();
   const [openBulkPicker, setOpenBulkPicker] = useState(false);
+  const bulkPickerOpen = canAddMultipleProducts && openBulkPicker;
 
   const handleNewShortcut = useCallback(function handleNewShortcut(): void {
     onOpenRequest();
@@ -72,7 +75,7 @@ export default function AddProductPopup({
     label: INVOICE_ADD_PRODUCT_NEW_SHORTCUT_FALLBACK_LABEL,
     handler: handleNewShortcut,
     allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
-    enabled: newShortcutEnabled && !open && !openBulkPicker,
+    enabled: newShortcutEnabled && !open && !bulkPickerOpen,
     priority: INVOICE_ADD_PRODUCT_NEW_SHORTCUT_PRIORITY,
   });
   const [sku, setSku] = useState("");
@@ -161,6 +164,10 @@ export default function AddProductPopup({
   }
 
   function handleOpenBulkPicker(): void {
+    if (!canAddMultipleProducts) {
+      return;
+    }
+
     resetSkuForm();
     onClose();
     setOpenBulkPicker(true);
@@ -175,7 +182,7 @@ export default function AddProductPopup({
     setOpenBulkPicker(false);
   }
 
-  if (!open && !openBulkPicker) {
+  if (!open && !bulkPickerOpen) {
     return null;
   }
 
@@ -189,9 +196,11 @@ export default function AddProductPopup({
           <div ref={formFieldsRef} className="flex w-[min(100%,24rem)] flex-col bg-bg">
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <h2 className="text-sm font-semibold text-text">{dict.addProduct}</h2>
-              <Button accent="neutral" onClick={handleOpenBulkPicker}>
-                {dict.addMultipleProducts}
-              </Button>
+              {canAddMultipleProducts ? (
+                <Button accent="neutral" onClick={handleOpenBulkPicker}>
+                  {dict.addMultipleProducts}
+                </Button>
+              ) : null}
             </div>
 
             <div className="px-4 py-4">
@@ -231,7 +240,7 @@ export default function AddProductPopup({
       ) : null}
 
       <AddExistingProductsPopup
-        open={openBulkPicker}
+        open={bulkPickerOpen}
         onClose={handleBulkClose}
         excludedProductIds={excludedProductIds}
         onConfirmSelect={handleBulkConfirm}
