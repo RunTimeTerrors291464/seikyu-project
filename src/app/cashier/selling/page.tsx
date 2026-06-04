@@ -9,7 +9,9 @@ import TablePagination from "@/components/ui/TablePagination";
 import { SELLING_STATUS_ACCENT } from "@/features/invoices/components/SellingInvoiceStatusPill";
 import {
   SELLING_INVOICE_STATUS_OPTIONS,
+  SELLING_INVOICE_TAX_FOCUS_OPTIONS,
   SellingInvoiceStatusFilter,
+  SellingInvoiceTaxFocusFilter,
 } from "@/features/invoices/filters/sellingInvoiceFilters";
 import {
   SellingInvoiceRow,
@@ -50,6 +52,18 @@ function getStatusFilterClass(
   );
 }
 
+function getTaxFocusFilterClass(
+  optionValue: SellingInvoiceTaxFocusFilter,
+  taxFocusFilter: SellingInvoiceTaxFocusFilter,
+): string {
+  return getFilterPillClassName(
+    optionValue,
+    taxFocusFilter,
+    "all",
+    (value) => (value === "true" ? "success" : "danger"),
+  );
+}
+
 export default function CashierSellingInvoicesPage() {
   const router = useRouter();
   const dict = useDict();
@@ -73,6 +87,8 @@ export default function CashierSellingInvoicesPage() {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] =
     useState<SellingInvoiceStatusFilter>("all");
+  const [taxFocusFilter, setTaxFocusFilter] =
+    useState<SellingInvoiceTaxFocusFilter>("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
   const [sortBy, setSortBy] = useState<SellingInvoiceSortBy>(DEFAULT_SORT_BY);
@@ -86,6 +102,7 @@ export default function CashierSellingInvoicesPage() {
     sortBy,
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
+    taxFocus: taxFocusFilter === "all" ? undefined : taxFocusFilter,
   });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
@@ -129,6 +146,7 @@ export default function CashierSellingInvoicesPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
+    taxFocusFilter === "all" &&
     sortBy === DEFAULT_SORT_BY &&
     sortOrder === DEFAULT_SORT_ORDER &&
     page === 1 &&
@@ -138,6 +156,7 @@ export default function CashierSellingInvoicesPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
+    setTaxFocusFilter("all");
     setSortBy(DEFAULT_SORT_BY);
     setSortOrder(DEFAULT_SORT_ORDER);
     setPage(1);
@@ -229,6 +248,26 @@ export default function CashierSellingInvoicesPage() {
                     setPage(1);
                   }}
                   className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
+                >
+                  {dict[option.dictKey]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted">{dict.taxFocusLabel}</span>
+
+            <div className="flex gap-1">
+              {SELLING_INVOICE_TAX_FOCUS_OPTIONS.map((option) => (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => {
+                    setTaxFocusFilter(option.value);
+                    setPage(1);
+                  }}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getTaxFocusFilterClass(option.value, taxFocusFilter)}`}
                 >
                   {dict[option.dictKey]}
                 </button>
