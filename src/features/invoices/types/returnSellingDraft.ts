@@ -21,7 +21,7 @@ export function toEditableReturnSellingLine(
   product: SellingInvoiceProductDto,
 ): EditableReturnSellingLine {
   return {
-    localId: `${product.productId}-${product.productSku}`,
+    localId: product.id,
     productId: product.productId,
     productSku: product.productSku,
     productName: product.productName,

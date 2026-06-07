@@ -1,4 +1,5 @@
 import type { Product } from "@/features/products/types/product";
+import { createInvoiceLineLocalId } from "../lib/createInvoiceLineLocalId";
 import { parseMoneyLikeString } from "@/lib/numeric/integerAndMoneyInputs";
 
 const PRODUCT_STUB_TIMESTAMP = "1970-01-01T00:00:00.000Z";
@@ -58,7 +59,7 @@ export function productToEditableImportLine(
   nameFallback: string,
 ): EditableImportInvoiceProduct {
   return {
-    localId: `${product.id}-${Date.now()}`,
+    localId: createInvoiceLineLocalId(product.id),
     productId: product.id,
     productSku: product.sku,
     productName: product.productNames?.[0] ?? nameFallback,
@@ -73,13 +74,13 @@ export function productToEditableImportLine(
  * Maps an API import line DTO to editable form state.
  *
  * @param product - Line from `getImportInvoiceById` / edit response.
- * @returns Editable row keyed by product id and SKU.
+ * @returns Editable row keyed by the server invoice line id.
  */
 export function importLineDtoToEditable(
   product: ImportInvoiceProductDto,
 ): EditableImportInvoiceProduct {
   return {
-    localId: `${product.productId}-${product.productSku}`,
+    localId: product.id,
     productId: product.productId,
     productSku: product.productSku,
     productName: product.productName,

@@ -8,7 +8,7 @@ import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import ImportDraftSummaryCard, {
   type ImportDraftSummaryRow,
 } from "@/features/invoices/components/ImportDraftSummaryCard";
-import { buildDraftExcludedProductIds } from "@/features/invoices/lib/buildDraftExcludedProductIds";
+// import { buildDraftExcludedProductIds } from "@/features/invoices/lib/buildDraftExcludedProductIds";
 import {
   clampPercentDiscount,
   finalizePercentDiscountInput,
@@ -215,16 +215,20 @@ export default function AddSellingInvoicePopup({
 
   const entryExcludedProductIds = useMemo(
     function getEntryExcludedProductIds(): Set<string> {
-      return buildDraftExcludedProductIds(products, editingLineLocalId);
+      // Duplicate check disabled for selling invoices.
+      // return buildDraftExcludedProductIds(products, editingLineLocalId);
+      return new Set<string>();
     },
-    [products, editingLineLocalId],
+    [],
   );
 
   const pickerExcludedProductIds = useMemo(
     function getPickerExcludedProductIds(): Set<string> {
-      return buildDraftExcludedProductIds(products, null);
+      // Duplicate check disabled for selling invoices.
+      // return buildDraftExcludedProductIds(products, null);
+      return new Set<string>();
     },
-    [products],
+    [],
   );
 
   const lineEntryConfig = useMemo(
