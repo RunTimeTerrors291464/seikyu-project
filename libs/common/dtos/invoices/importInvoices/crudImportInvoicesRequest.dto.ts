@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique, ArrayMaxSize } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -88,7 +88,7 @@ export class ImportInvoiceProductRequestDto {
 export class CreateImportInvoiceRequestDto {
 
     @ApiProperty({
-        description: 'List of products to import. Each productId must appear at most once.',
+        description: 'List of products to import. The same productId may appear multiple times when lines use different prices.',
         type: [ImportInvoiceProductRequestDto],
         maxItems: 100,
         example: [
@@ -100,7 +100,16 @@ export class CreateImportInvoiceRequestDto {
                 quantity: 100,
                 importPrice: 5000.00,
                 notes: 'This is a note for the import invoice product',
-            }
+            },
+            {
+                productId: '550e8400-e29b-41d4-a716-446655440000',
+                productSku: '1234567890123',
+                productName: 'Coca Cola 330ml',
+                productUnit: 'PCS',
+                quantity: 50,
+                importPrice: 4800.00,
+                notes: 'Same product from a cheaper batch',
+            },
         ],
     })
     @IsNotEmpty()
@@ -108,7 +117,6 @@ export class CreateImportInvoiceRequestDto {
     @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => ImportInvoiceProductRequestDto)
-    @ArrayUnique((item: ImportInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
     products: ImportInvoiceProductRequestDto[];
 
     @ApiPropertyOptional({
@@ -132,7 +140,7 @@ export class EditImportInvoiceRequestDto {
     id: string;
 
     @ApiProperty({
-        description: 'List of products to import (replace existing ones). Each productId must appear at most once.',
+        description: 'List of products to import (replace existing ones). The same productId may appear multiple times when lines use different prices.',
         type: [ImportInvoiceProductRequestDto],
         maxItems: 100,
         example: [
@@ -144,7 +152,16 @@ export class EditImportInvoiceRequestDto {
                 quantity: 100,
                 importPrice: 5000.00,
                 notes: 'This is a note for the import invoice product',
-            }
+            },
+            {
+                productId: '550e8400-e29b-41d4-a716-446655440000',
+                productSku: '1234567890123',
+                productName: 'Coca Cola 330ml',
+                productUnit: 'PCS',
+                quantity: 50,
+                importPrice: 4800.00,
+                notes: 'Updated cheaper batch',
+            },
         ],
     })
     @IsNotEmpty()
@@ -152,7 +169,6 @@ export class EditImportInvoiceRequestDto {
     @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => ImportInvoiceProductRequestDto)
-    @ArrayUnique((item: ImportInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
     products: ImportInvoiceProductRequestDto[];
 
     @ApiPropertyOptional({

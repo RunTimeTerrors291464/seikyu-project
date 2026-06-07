@@ -243,6 +243,7 @@ export class ImportInvoiceRepository {
                 InvoiceType.IMPORT,
                 lockedInvoice.id,
                 manager,
+                Number(product.totalImportPrice),
             );
         }
 

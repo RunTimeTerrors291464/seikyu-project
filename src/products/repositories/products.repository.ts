@@ -266,7 +266,7 @@ export class ProductsRepository {
     }
 
     // Update the inventory stock of a product.
-    async updateInventoryStock(productEntity: ProductsEntity, quantity: number, action: StockActionType, invoiceType: InvoiceType, invoiceId: string, manager: EntityManager): Promise<ProductsEntity> {
+    async updateInventoryStock(productEntity: ProductsEntity, quantity: number, action: StockActionType, invoiceType: InvoiceType, invoiceId: string, manager: EntityManager, rankingTotalPrice?: number): Promise<ProductsEntity> {
 
         // Lock the product entity with pessimistic write lock to prevent race condition.
         const lockedProduct: ProductsEntity = await manager.findOneOrFail(ProductsEntity, {
@@ -336,7 +336,7 @@ export class ProductsRepository {
         await this.updateProductOverview(overviewUpdates, manager);
 
         // --- Update the productRankingDaily entity ---
-        const totalPrice: number = Number(lockedProduct.sellingPrice) * quantity;
+        const totalPrice: number = rankingTotalPrice ?? Number(lockedProduct.sellingPrice) * quantity;
         await this.productRankingRepository.storeProductRankingDaily(
             manager,
             lockedProduct.id,

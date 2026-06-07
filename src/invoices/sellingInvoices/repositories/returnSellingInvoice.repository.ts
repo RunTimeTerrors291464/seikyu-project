@@ -66,6 +66,7 @@ export class ReturnSellingInvoiceRepository {
         const queryBuilder = repo
             .createQueryBuilder('invoice')
             .leftJoinAndSelect('invoice.returnSellingInvoiceProducts', 'products')
+            .leftJoinAndSelect('products.sellingInvoiceProduct', 'sellingInvoiceProduct')
             .leftJoinAndSelect('invoice.sellingInvoice', 'sellingInvoice')
             .where('invoice.id = :id', { id });
         this.appendDraftAndConfirmedUserJoins(queryBuilder);
@@ -301,6 +302,7 @@ export class ReturnSellingInvoiceRepository {
         for (const originalProduct of originalProducts) {
             const returnQty = returnQtyBySellingLineId.get(originalProduct.id) ?? 0;
             if (returnQty > 0) {
+                if (originalProduct.returnQuantity + returnQty > originalProduct.quantity) return null;
                 originalProduct.returnQuantity += returnQty;
                 productsToUpdate.push(originalProduct);
             }
@@ -337,6 +339,7 @@ export class ReturnSellingInvoiceRepository {
                 InvoiceType.RETURN_SELLING,
                 lockedReturn.id,
                 manager,
+                Number(rp.totalReturnPrice),
             );
         }
 

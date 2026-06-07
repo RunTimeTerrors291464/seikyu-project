@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 // Import entities.
 import { SellingInvoiceEntity } from '../entities/sellingInvoices.entity';
 import { SellingInvoiceProductsEntity } from '../entities/sellingInvoiceProducts.entity';
+import { ReturnSellingInvoiceProductsEntity } from '../entities/returnSellingInvoiceProducts.entity';
 
 // Import repositories.
 import { SellingInvoiceRepository } from '../repositories/sellingInvoice.repository';
@@ -53,7 +54,7 @@ export class ReturnSellingInvoiceService {
     // --- DRY methods ---
     // Calculate invoice totals from resolved return products.
     private calculateInvoiceTotals(resolvedProducts: ResolvedReturnSellingProductData[]) {
-        let totalProducts = resolvedProducts.length;
+        const totalProducts = new Set(resolvedProducts.map((item) => item.sellingInvoiceProduct.productId)).size;
         let totalQuantity = 0;
         let totalReturnPrice = 0;
 
@@ -63,6 +64,25 @@ export class ReturnSellingInvoiceService {
         });
 
         return { totalProducts, totalQuantity, totalReturnPrice };
+    }
+
+    private mergeReturnRequestsByProductId(
+        productsToReturn: ReturnSellingInvoiceProductRequestDto[],
+    ): ReturnSellingInvoiceProductRequestDto[] {
+        const byProductId = new Map<string, ReturnSellingInvoiceProductRequestDto>();
+
+        productsToReturn.forEach((item) => {
+            const existing = byProductId.get(item.productId);
+            if (!existing) {
+                byProductId.set(item.productId, { ...item });
+                return;
+            }
+
+            existing.returnQuantity += item.returnQuantity;
+            if (!existing.reasonNotes && item.reasonNotes) existing.reasonNotes = item.reasonNotes;
+        });
+
+        return [...byProductId.values()];
     }
 
     // Validate products to check if they are valid for return.
@@ -78,51 +98,90 @@ export class ReturnSellingInvoiceService {
         if (uniqueProductIds.length > 0) await this.productsService.getProductsByIds(uniqueProductIds);
 
         const sellingLines = sellingInvoice.sellingInvoiceProducts ?? [];
+        const mergedProductsToReturn = this.mergeReturnRequestsByProductId(productsToReturn);
 
         // 3. Check if products exist on the original selling invoice.
+        const linesByProductId = new Map<string, SellingInvoiceProductsEntity[]>();
+        sellingLines.forEach((line) => {
+            const lines = linesByProductId.get(line.productId) ?? [];
+            lines.push(line);
+            linesByProductId.set(line.productId, lines);
+        });
+
         const notInInvoice: string[] = [];
-        productsToReturn.forEach((item) => {
-            const productInInvoice = sellingLines.find((p) => p.productId === item.productId);
-            if (!productInInvoice) notInInvoice.push(item.productId);
+        mergedProductsToReturn.forEach((item) => {
+            if (!linesByProductId.has(item.productId)) notInInvoice.push(item.productId);
         });
         if (notInInvoice.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'One or more products are not part of the original selling invoice.', { productIds: notInInvoice });
 
-        // First selling line per productId (DTO enforces at most one row per productId).
-        const firstLineByProductId = new Map<string, SellingInvoiceProductsEntity>();
-        sellingLines.forEach((line) => {
-            if (!firstLineByProductId.has(line.productId)) firstLineByProductId.set(line.productId, line);
-        });
-
         // 4. Check return quantity vs returnable.
-        const requestedQtyByProductId = new Map<string, number>();
-        productsToReturn.forEach((item) => {
-            requestedQtyByProductId.set(item.productId, (requestedQtyByProductId.get(item.productId) ?? 0) + item.returnQuantity);
-        });
-
         const quantityExceeded: string[] = [];
-        requestedQtyByProductId.forEach((sumReturnQty, productId) => {
-            const productInInvoice = firstLineByProductId.get(productId);
-            if (!productInInvoice) return;
-            const returnableQuantity = productInInvoice.quantity - productInInvoice.returnQuantity;
-            if (sumReturnQty > returnableQuantity) quantityExceeded.push(productId);
+        mergedProductsToReturn.forEach((item) => {
+            const matchingLines = linesByProductId.get(item.productId) ?? [];
+            const returnableQuantity = matchingLines.reduce((sum, line) => sum + (line.quantity - line.returnQuantity), 0);
+            if (item.returnQuantity > returnableQuantity) quantityExceeded.push(item.productId);
         });
 
         if (quantityExceeded.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'Return quantity exceeds returnable quantity for one or more products.', { productIds: quantityExceeded });
 
         const resolvedProducts: ResolvedReturnSellingProductData[] = [];
-        productsToReturn.forEach((item) => {
-            const productInInvoice = firstLineByProductId.get(item.productId);
-            if (productInInvoice) {
+        mergedProductsToReturn.forEach((item) => {
+            let remainingQuantity = item.returnQuantity;
+            const matchingLines = linesByProductId.get(item.productId) ?? [];
+
+            for (const productInInvoice of matchingLines) {
+                if (remainingQuantity <= 0) break;
+
+                const returnableQuantity = productInInvoice.quantity - productInInvoice.returnQuantity;
+                const returnQuantity = Math.min(remainingQuantity, returnableQuantity);
+                if (returnQuantity <= 0) continue;
+
                 resolvedProducts.push({
                     sellingInvoiceProduct: productInInvoice,
-                    returnQuantity: item.returnQuantity,
+                    returnQuantity,
                     reasonCategory: item.reasonCategory,
                     reasonNotes: item.reasonNotes ?? null,
                 });
+
+                remainingQuantity -= returnQuantity;
             }
         });
 
         return resolvedProducts;
+    }
+
+    private async checkReturnSellingLinesStillReturnable(
+        returnLines: ReturnSellingInvoiceProductsEntity[],
+        sellingInvoice: SellingInvoiceEntity,
+    ): Promise<void> {
+        const productIds = [...new Set(returnLines.map((line) => line.productId))];
+        if (productIds.length > 0) await this.productsService.getProductsByIds(productIds);
+
+        const requestedQtyBySellingLineId = new Map<string, number>();
+        const sourceLineById = new Map<string, SellingInvoiceProductsEntity>();
+
+        returnLines.forEach((line) => {
+            const sourceLine = line.sellingInvoiceProduct;
+            if (!sourceLine || sourceLine.sellingInvoiceId !== sellingInvoice.id) {
+                throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'One or more products are not part of the original selling invoice.', { productIds: [line.productId] });
+            }
+
+            sourceLineById.set(sourceLine.id, sourceLine);
+            requestedQtyBySellingLineId.set(sourceLine.id, (requestedQtyBySellingLineId.get(sourceLine.id) ?? 0) + line.returnQuantity);
+        });
+
+        const quantityExceeded: string[] = [];
+        requestedQtyBySellingLineId.forEach((returnQuantity, sellingLineId) => {
+            const sourceLine = sourceLineById.get(sellingLineId);
+            if (!sourceLine) return;
+
+            const returnableQuantity = sourceLine.quantity - sourceLine.returnQuantity;
+            if (returnQuantity > returnableQuantity) quantityExceeded.push(sourceLine.productId);
+        });
+
+        if (quantityExceeded.length > 0) {
+            throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'Return quantity exceeds returnable quantity for one or more products.', { productIds: [...new Set(quantityExceeded)] });
+        }
     }
 
     // Get the original selling invoice by id.
@@ -242,13 +301,7 @@ export class ReturnSellingInvoiceService {
 
         // Check if the products are valid for return.
         const lines = returnSellingInvoice.returnSellingInvoiceProducts ?? [];
-        const productsToReturn: ReturnSellingInvoiceProductRequestDto[] = lines.map((p) => ({
-            productId: p.productId,
-            returnQuantity: p.returnQuantity,
-            reasonCategory: p.reasonCategory,
-            reasonNotes: p.reasonNotes ?? undefined,
-        }));
-        await this.checkProductInSellingInvoice(productsToReturn, sellingInvoice);
+        await this.checkReturnSellingLinesStillReturnable(lines, sellingInvoice);
 
         // Confirm the return selling invoice.
         const confirmedInvoice = await this.dataSource.transaction((manager) =>

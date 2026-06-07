@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 // Import entities.
 import { ImportInvoiceEntity } from '../entities/importInvoices.entity';
 import { ImportInvoiceProductsEntity } from '../entities/importInvocieProducts.entity';
+import { ReturnImportInvoiceProductsEntity } from '../entities/returnImportInvoiceProducts.entity';
 
 // Import repositories.
 import { ImportInvoiceRepository } from '../repositories/importInvoice.repository';
@@ -53,7 +54,7 @@ export class ReturnImportInvoiceService {
     // --- DRY methods ---
     // Calculate invoice totals from resolved return products.
     private calculateInvoiceTotals(resolvedProducts: ResolvedReturnProductData[]) {
-        let totalProducts = resolvedProducts.length;
+        const totalProducts = new Set(resolvedProducts.map((item) => item.importInvoiceProduct.productId)).size;
         let totalQuantity = 0;
         let totalReturnPrice = 0;
 
@@ -63,6 +64,23 @@ export class ReturnImportInvoiceService {
         });
 
         return { totalProducts, totalQuantity, totalReturnPrice };
+    }
+
+    private mergeReturnRequestsByProductId(productsToReturn: ReturnImportInvoiceProductRequestDto[]): ReturnImportInvoiceProductRequestDto[] {
+        const byProductId = new Map<string, ReturnImportInvoiceProductRequestDto>();
+
+        productsToReturn.forEach((item) => {
+            const existing = byProductId.get(item.productId);
+            if (!existing) {
+                byProductId.set(item.productId, { ...item });
+                return;
+            }
+
+            existing.returnQuantity += item.returnQuantity;
+            if (!existing.reasonNotes && item.reasonNotes) existing.reasonNotes = item.reasonNotes;
+        });
+
+        return [...byProductId.values()];
     }
 
     // Validate products to check if they are valid for return.
@@ -78,52 +96,90 @@ export class ReturnImportInvoiceService {
         if (uniqueProductIds.length > 0) await this.productsService.getProductsByIds(uniqueProductIds);
 
         const importLines = importInvoice.importInvoiceProducts ?? [];
+        const mergedProductsToReturn = this.mergeReturnRequestsByProductId(productsToReturn);
 
         // 3. Check if products exist on the original import invoice.
+        const linesByProductId = new Map<string, ImportInvoiceProductsEntity[]>();
+        importLines.forEach((line) => {
+            const lines = linesByProductId.get(line.productId) ?? [];
+            lines.push(line);
+            linesByProductId.set(line.productId, lines);
+        });
+
         const notInInvoice: string[] = [];
-        productsToReturn.forEach((item) => {
-            const productInInvoice = importLines.find((p) => p.productId === item.productId);
-            if (!productInInvoice) notInInvoice.push(item.productId);
+        mergedProductsToReturn.forEach((item) => {
+            if (!linesByProductId.has(item.productId)) notInInvoice.push(item.productId);
         });
         if (notInInvoice.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'One or more products are not part of the original import invoice.', { productIds: notInInvoice });
 
-        // First import line per productId.
-        const firstLineByProductId = new Map<string, ImportInvoiceProductsEntity>();
-        importLines.forEach((line) => {
-            if (!firstLineByProductId.has(line.productId)) firstLineByProductId.set(line.productId, line);
-        });
-
         // 4. Check return quantity vs returnable.
-        const requestedQtyByProductId = new Map<string, number>();
-
-        productsToReturn.forEach((item) => {
-            requestedQtyByProductId.set(item.productId, (requestedQtyByProductId.get(item.productId) ?? 0) + item.returnQuantity);
-        });
-
         const quantityExceeded: string[] = [];
-        requestedQtyByProductId.forEach((sumReturnQty, productId) => {
-            const productInInvoice = firstLineByProductId.get(productId);
-            if (!productInInvoice) return;
-            const returnableQuantity = productInInvoice.quantity - productInInvoice.returnedQuantity;
-            if (sumReturnQty > returnableQuantity) quantityExceeded.push(productId);
+        mergedProductsToReturn.forEach((item) => {
+            const matchingLines = linesByProductId.get(item.productId) ?? [];
+            const returnableQuantity = matchingLines.reduce((sum, line) => sum + (line.quantity - line.returnedQuantity), 0);
+            if (item.returnQuantity > returnableQuantity) quantityExceeded.push(item.productId);
         });
 
         if (quantityExceeded.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'Return quantity exceeds returnable quantity for one or more products.', { productIds: quantityExceeded });
 
         const resolvedProducts: ResolvedReturnProductData[] = [];
-        productsToReturn.forEach((item) => {
-            const productInInvoice = firstLineByProductId.get(item.productId);
-            if (productInInvoice) {
+        mergedProductsToReturn.forEach((item) => {
+            let remainingQuantity = item.returnQuantity;
+            const matchingLines = linesByProductId.get(item.productId) ?? [];
+
+            for (const productInInvoice of matchingLines) {
+                if (remainingQuantity <= 0) break;
+
+                const returnableQuantity = productInInvoice.quantity - productInInvoice.returnedQuantity;
+                const returnQuantity = Math.min(remainingQuantity, returnableQuantity);
+                if (returnQuantity <= 0) continue;
+
                 resolvedProducts.push({
                     importInvoiceProduct: productInInvoice,
-                    returnQuantity: item.returnQuantity,
+                    returnQuantity,
                     reasonCategory: item.reasonCategory,
                     reasonNotes: item.reasonNotes ?? null,
                 });
+
+                remainingQuantity -= returnQuantity;
             }
         });
 
         return resolvedProducts;
+    }
+
+    private async checkReturnImportLinesStillReturnable(
+        returnLines: ReturnImportInvoiceProductsEntity[],
+        importInvoice: ImportInvoiceEntity,
+    ): Promise<void> {
+        const productIds = [...new Set(returnLines.map((line) => line.productId))];
+        if (productIds.length > 0) await this.productsService.getProductsByIds(productIds);
+
+        const requestedQtyByImportLineId = new Map<string, number>();
+        const sourceLineById = new Map<string, ImportInvoiceProductsEntity>();
+
+        returnLines.forEach((line) => {
+            const sourceLine = line.importInvoiceProduct;
+            if (!sourceLine || sourceLine.importInvoiceId !== importInvoice.id) {
+                throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'One or more products are not part of the original import invoice.', { productIds: [line.productId] });
+            }
+
+            sourceLineById.set(sourceLine.id, sourceLine);
+            requestedQtyByImportLineId.set(sourceLine.id, (requestedQtyByImportLineId.get(sourceLine.id) ?? 0) + line.returnQuantity);
+        });
+
+        const quantityExceeded: string[] = [];
+        requestedQtyByImportLineId.forEach((returnQuantity, importLineId) => {
+            const sourceLine = sourceLineById.get(importLineId);
+            if (!sourceLine) return;
+
+            const returnableQuantity = sourceLine.quantity - sourceLine.returnedQuantity;
+            if (returnQuantity > returnableQuantity) quantityExceeded.push(sourceLine.productId);
+        });
+
+        if (quantityExceeded.length > 0) {
+            throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.DTO_VALIDATION_ERROR, 'Return quantity exceeds returnable quantity for one or more products.', { productIds: [...new Set(quantityExceeded)] });
+        }
     }
 
     // Get the original import invoice by id.
@@ -252,13 +308,7 @@ export class ReturnImportInvoiceService {
 
         // Check if the products are valid for return.
         const lines = returnImportInvoice.returnImportInvoiceProducts ?? [];
-        const productsToReturn: ReturnImportInvoiceProductRequestDto[] = lines.map((p) => ({
-            productId: p.productId,
-            returnQuantity: p.returnQuantity,
-            reasonCategory: p.reasonCategory,
-            reasonNotes: p.reasonNotes ?? undefined,
-        }));
-        await this.checkProductInImportInvoice(productsToReturn, importInvoice);
+        await this.checkReturnImportLinesStillReturnable(lines, importInvoice);
 
         // Confirm the return import invoice.
         const confirmedInvoice = await this.dataSource.transaction((manager) =>

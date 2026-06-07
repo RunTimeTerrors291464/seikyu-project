@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique, MaxLength, ArrayMaxSize } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, MaxLength, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -62,7 +62,7 @@ export class CreateReturnImportInvoiceRequestDto {
     importInvoiceId: string;
 
     @ApiProperty({
-        description: 'List of products to return. Each productId must appear at most once.',
+        description: 'List of products to return. The same productId may appear multiple times; quantities are summed by productId.',
         type: [ReturnImportInvoiceProductRequestDto],
         maxItems: 100,
         example: [
@@ -71,7 +71,13 @@ export class CreateReturnImportInvoiceRequestDto {
                 returnQuantity: 10,
                 reasonCategory: ReturnReason.DEFECTIVE,
                 reasonNotes: 'Defective items',
-            }
+            },
+            {
+                productId: '550e8400-e29b-41d4-a716-446655440000',
+                returnQuantity: 5,
+                reasonCategory: ReturnReason.OTHER,
+                reasonNotes: 'Same product, additional returned quantity',
+            },
         ],
     })
     @IsNotEmpty()
@@ -79,7 +85,6 @@ export class CreateReturnImportInvoiceRequestDto {
     @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => ReturnImportInvoiceProductRequestDto)
-    @ArrayUnique((item: ReturnImportInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
     products: ReturnImportInvoiceProductRequestDto[];
 
     @ApiPropertyOptional({
@@ -103,7 +108,7 @@ export class EditReturnImportInvoiceRequestDto {
     id: string;
 
     @ApiProperty({
-        description: 'List of products to return (replace existing ones). Each productId must appear at most once.',
+        description: 'List of products to return (replace existing ones). The same productId may appear multiple times; quantities are summed by productId.',
         type: [ReturnImportInvoiceProductRequestDto],
         maxItems: 100,
         example: [
@@ -112,7 +117,13 @@ export class EditReturnImportInvoiceRequestDto {
                 returnQuantity: 10,
                 reasonCategory: ReturnReason.DEFECTIVE,
                 reasonNotes: 'Defective items',
-            }
+            },
+            {
+                productId: '550e8400-e29b-41d4-a716-446655440000',
+                returnQuantity: 5,
+                reasonCategory: ReturnReason.OTHER,
+                reasonNotes: 'Same product, additional returned quantity',
+            },
         ],
     })
     @IsNotEmpty()
@@ -120,7 +131,6 @@ export class EditReturnImportInvoiceRequestDto {
     @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => ReturnImportInvoiceProductRequestDto)
-    @ArrayUnique((item: ReturnImportInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
     products: ReturnImportInvoiceProductRequestDto[];
 
     @ApiPropertyOptional({

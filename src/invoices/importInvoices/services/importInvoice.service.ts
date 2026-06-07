@@ -48,8 +48,8 @@ export class ImportInvoiceService {
 
     // --- DRY methods ---
     // Calculate invoice totals from products.
-    private calculateInvoiceTotals(products: Array<{ quantity: number; importPrice: number }>) {
-        let totalProducts = products.length;
+    private calculateInvoiceTotals(products: Array<{ productId: string; quantity: number; importPrice: number }>) {
+        const totalProducts = new Set(products.map((product) => product.productId)).size;
         let totalQuantity = 0;
         let totalImportPrice = 0;
 

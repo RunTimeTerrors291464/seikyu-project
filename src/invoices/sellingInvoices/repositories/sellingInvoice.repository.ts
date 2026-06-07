@@ -170,6 +170,7 @@ export class SellingInvoiceRepository {
                 InvoiceType.SELLING,
                 savedInvoice.id,
                 manager,
+                item.totalProductPrice,
             );
         }
 

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, ArrayUnique, IsBoolean, ArrayMaxSize } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, IsBoolean, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -92,7 +92,7 @@ export class SellingInvoiceProductRequestDto {
 export class CreateSellingInvoiceRequestDto {
 
     @ApiProperty({
-        description: 'List of products to sell (cashier). Each productSku must appear at most once.',
+        description: 'List of products to sell (cashier). The same productSku may appear multiple times when lines use different prices.',
         type: [SellingInvoiceProductRequestDto],
         maxItems: 100,
         example: [
@@ -105,6 +105,15 @@ export class CreateSellingInvoiceRequestDto {
                 productDiscount: 10,
                 notes: 'Gift-wrapped',
             },
+            {
+                productSku: '1234567890123',
+                productName: 'Coca Cola 330ml',
+                productUnit: 'PCS',
+                quantity: 5,
+                sellingPrice: 14000,
+                productDiscount: 0,
+                notes: 'Promotion price',
+            },
         ],
     })
     @IsNotEmpty()
@@ -112,7 +121,6 @@ export class CreateSellingInvoiceRequestDto {
     @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => SellingInvoiceProductRequestDto)
-    @ArrayUnique((item: SellingInvoiceProductRequestDto) => item.productSku, { message: 'Each productSku must appear only once in the list.' })
     products: SellingInvoiceProductRequestDto[];
 
     @ApiPropertyOptional({
@@ -156,7 +164,7 @@ export class EditSellingInvoiceRequestDto {
     id: string;
 
     @ApiProperty({
-        description: 'List of products (replace existing lines). Each productSku must appear at most once.',
+        description: 'List of products (replace existing lines). The same productSku may appear multiple times when lines use different prices.',
         type: [SellingInvoiceProductRequestDto],
         maxItems: 100,
         example: [
@@ -169,6 +177,15 @@ export class EditSellingInvoiceRequestDto {
                 productDiscount: 10,
                 notes: 'Updated line note',
             },
+            {
+                productSku: '1234567890123',
+                productName: 'Coca Cola 330ml',
+                productUnit: 'PCS',
+                quantity: 5,
+                sellingPrice: 14000,
+                productDiscount: 0,
+                notes: 'Updated promotion price',
+            },
         ],
     })
     @IsNotEmpty()
@@ -176,7 +193,6 @@ export class EditSellingInvoiceRequestDto {
     @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => SellingInvoiceProductRequestDto)
-    @ArrayUnique((item: SellingInvoiceProductRequestDto) => item.productSku, { message: 'Each productSku must appear only once in the list.' })
     products: SellingInvoiceProductRequestDto[];
 
     @ApiPropertyOptional({

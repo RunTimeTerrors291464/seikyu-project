@@ -56,7 +56,7 @@ export class SellingInvoiceService {
         invoiceDiscount: number;
         resolvedProducts: ResolvedSellingProductData[];
     } {
-        let totalProducts = products.length;
+        const totalProducts = new Set(products.map((product) => product.productSku)).size;
         let totalQuantity = 0;
         let totalSellingPrice = 0;
 
@@ -70,7 +70,7 @@ export class SellingInvoiceService {
         products.forEach((product) => {
             totalQuantity += product.quantity;
             const detail = productMap.get(product.productSku);
-            const unitPrice = detail?.sellingPrice ?? 0;
+            const unitPrice = product.sellingPrice;
             const appliedDiscount = resolveDiscountRate(product.productDiscount);
             const subtotal = product.quantity * unitPrice;
             const totalProductPrice = subtotal * (1 - appliedDiscount / 100);
