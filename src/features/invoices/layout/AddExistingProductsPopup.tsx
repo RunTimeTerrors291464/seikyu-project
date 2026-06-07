@@ -61,6 +61,7 @@ export default function AddExistingProductsPopup({
   const table = useProductTable({
     fetcher: productService.getProducts,
     initialQuery: initialTableQuery,
+    enabled: open,
   });
 
   const formFieldsRef = useFocusFirstFormControlOnOpen({ when: open });

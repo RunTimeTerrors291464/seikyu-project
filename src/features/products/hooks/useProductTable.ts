@@ -19,11 +19,13 @@ type UseProductTableProps<T, Q extends BaseQuery> = {
   }>;
 
   initialQuery: Q;
+  enabled?: boolean;
 };
 
 export function useProductTable<T, Q extends BaseQuery>({
   fetcher,
   initialQuery,
+  enabled = true,
 }: UseProductTableProps<T, Q>) {
 
   const [query, setQuery] = useState<Q>(initialQuery);
@@ -45,6 +47,10 @@ export function useProductTable<T, Q extends BaseQuery>({
   /* ============================= */
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     async function load() {
       setLoading(true);
 
@@ -64,7 +70,7 @@ export function useProductTable<T, Q extends BaseQuery>({
     }
 
     load();
-  }, [query, fetcher, refreshKey]);
+  }, [enabled, query, fetcher, refreshKey]);
 
   /* ============================= */
   /* ACTIONS */
