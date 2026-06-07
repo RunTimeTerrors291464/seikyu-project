@@ -207,6 +207,7 @@ export default function AddImportInvoicePopup({
             totals={totals}
             lineFieldValidationActive={createAttempted}
             productsCardAccent={productsCardDangerAccent}
+            disableDuplicateProductCheck={true}
           />
         </div>
 

@@ -379,6 +379,7 @@ export default function ImportInvoiceDetailPage() {
           updateRow={updateRow}
           totals={totals}
           lineFieldValidationActive={true}
+          disableDuplicateProductCheck={true}
         />
       ) : (
         <>

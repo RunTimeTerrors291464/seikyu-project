@@ -1,4 +1,5 @@
 import type { Product } from "@/features/products/types/product";
+import { createInvoiceLineLocalId } from "../lib/createInvoiceLineLocalId";
 
 const PRODUCT_STUB_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 import type {
@@ -59,7 +60,7 @@ export function productToEditableSellingCreateLine(
   nameFallback: string,
 ): EditableSellingInvoiceCreateLine {
   return {
-    localId: `${product.id}-${Date.now()}`,
+    localId: createInvoiceLineLocalId(product.id),
     productId: product.id,
     productSku: product.sku,
     productName: product.productNames?.[0] ?? nameFallback,
@@ -101,7 +102,7 @@ export function sellingLineDtoToEditableDisplay(
   product: SellingInvoiceProductDto,
 ): EditableSellingInvoiceCreateLine {
   return {
-    localId: `${product.productId}-${product.productSku}`,
+    localId: product.id,
     productId: product.productId,
     productSku: product.productSku,
     productName: product.productName,

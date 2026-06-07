@@ -31,6 +31,7 @@ type ImportInvoiceDraftWorkspaceProps = {
   lineFieldValidationActive: boolean;
   productsCardAccent?: Accent;
   notesDisabled?: boolean;
+  disableDuplicateProductCheck?: boolean;
 };
 
 export default function ImportInvoiceDraftWorkspace({
@@ -43,6 +44,7 @@ export default function ImportInvoiceDraftWorkspace({
   lineFieldValidationActive,
   productsCardAccent = "neutral",
   notesDisabled = false,
+  disableDuplicateProductCheck = false,
 }: ImportInvoiceDraftWorkspaceProps) {
   const dict = useDict();
   const entryCardRef = useRef<InvoiceProductLineEntryCardHandle>(null);
@@ -64,9 +66,15 @@ export default function ImportInvoiceDraftWorkspace({
 
   const excludedProductIds = useMemo(
     function getExcludedProductIds(): Set<string> {
+      if (disableDuplicateProductCheck) {
+        // Duplicate check disabled for add import invoices.
+        // return buildDraftExcludedProductIds(products, editingLineLocalId);
+        return new Set<string>();
+      }
+
       return buildDraftExcludedProductIds(products, editingLineLocalId);
     },
-    [products, editingLineLocalId],
+    [disableDuplicateProductCheck, products, editingLineLocalId],
   );
 
   const importSummaryRows = useMemo(

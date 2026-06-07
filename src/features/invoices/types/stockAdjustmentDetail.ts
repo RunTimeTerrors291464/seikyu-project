@@ -1,5 +1,6 @@
 import type { Product } from "@/features/products/types/product";
 import { parseMoneyLikeString } from "@/lib/numeric/integerAndMoneyInputs";
+import { createInvoiceLineLocalId } from "../lib/createInvoiceLineLocalId";
 import type {
   StockAdjustmentAction,
   StockAdjustmentInvoiceProductDto,
@@ -29,7 +30,7 @@ export function productToEditableStockAdjustmentLine(
   nameFallback: string,
 ): EditableStockAdjustmentLine {
   return {
-    localId: `${product.id}-${Date.now()}`,
+    localId: createInvoiceLineLocalId(product.id),
     productId: product.id,
     productSku: product.sku,
     productName: product.productNames?.[0] ?? nameFallback,

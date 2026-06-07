@@ -15,7 +15,7 @@ export function toEditableReturnImportLine(
   product: ImportInvoiceProductDto,
 ): EditableReturnImportLine {
   return {
-    localId: `${product.productId}-${product.productSku}`,
+    localId: product.id,
     productId: product.productId,
     productSku: product.productSku,
     productName: product.productName,
