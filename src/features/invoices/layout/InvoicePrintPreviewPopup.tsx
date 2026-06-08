@@ -271,10 +271,10 @@ function InvoicePdfDocument({
           <View>
             <Text style={styles.title}>{labels.title}</Text>
             <Text style={styles.textSm}>{labels.invoiceNumber}: {data.invoiceCode}</Text>
-            <Text style={styles.textSm}>{labels.status}: {labels.statusValue}</Text>
+            {/* <Text style={styles.textSm}>{labels.status}: {labels.statusValue}</Text> */}
           </View>
           <View>
-            <Text style={styles.rightText}>{labels.by}: {data.confirmedBy ?? "—"}</Text>
+            {/* <Text style={styles.rightText}>{labels.by}: {data.confirmedBy ?? "—"}</Text> */}
             <Text style={styles.rightText}>{labels.date}: {labels.confirmedAtFormatted}</Text>
           </View>
         </View>
@@ -448,10 +448,10 @@ export default function InvoicePrintPreviewPopup({
               <div>
                 <h3 className="text-xl font-bold">{labels.title}</h3>
                 <p className="text-sm">{labels.invoiceNumber}: {data.invoiceCode}</p>
-                <p className="text-sm">{labels.status}: {printDictionary[data.status]}</p>
+                {/* <p className="text-sm">{labels.status}: {printDictionary[data.status]}</p> */}
               </div>
               <div className="text-right text-sm">
-                <p>{labels.by}: {data.confirmedBy ?? "—"}</p>
+                {/* <p>{labels.by}: {data.confirmedBy ?? "—"}</p> */}
                 <p>
                   {labels.date}: {formatDateForPrintLocale(data.confirmedAt, printLocaleTag)}
                 </p>
