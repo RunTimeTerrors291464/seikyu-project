@@ -1,6 +1,7 @@
 "use client";
 
 import useSkuCheck from "@/features/products/hooks/useSkuCheck";
+import type { Product } from "@/features/products/types/product";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
   useCallback,
@@ -10,7 +11,6 @@ import {
   useState,
   type RefObject,
 } from "react";
-import type { Product } from "@/features/products/types/product";
 
 import {
   getInvoiceSkuCheckingHint,
@@ -111,12 +111,13 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
     intent: "lookupExisting",
   });
 
-  const currentSkuLookupProduct =
-    skuLookupProduct?.sku === sku ? skuLookupProduct : null;
+  // const currentSkuLookupProduct =
+  //   skuLookupProduct?.sku === sku ? skuLookupProduct : null;
 
   const resolvedProduct = isEditMode
     ? parsedEditState.product
-    : currentSkuLookupProduct;
+    // : currentSkuLookupProduct;
+    : skuLookupProduct;
 
   useEffect(
     function syncEditSourceLine(): void {
@@ -145,22 +146,27 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
         return;
       }
 
-      if (!currentSkuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
+      // if (!currentSkuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
+        if (!skuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
         lastHydratedProductIdRef.current = null;
         return;
       }
 
-      if (lastHydratedProductIdRef.current === currentSkuLookupProduct.id) {
+      // if (lastHydratedProductIdRef.current === currentSkuLookupProduct.id) {
+      if (lastHydratedProductIdRef.current === skuLookupProduct.id) {
         return;
       }
 
-      lastHydratedProductIdRef.current = currentSkuLookupProduct.id;
+      // lastHydratedProductIdRef.current = currentSkuLookupProduct.id;
+      lastHydratedProductIdRef.current = skuLookupProduct.id;
       setVariantFields({
         ...config.getDefaultVariantFields(),
-        ...config.hydrateVariantFieldsFromProduct(currentSkuLookupProduct),
+        // ...config.hydrateVariantFieldsFromProduct(currentSkuLookupProduct),
+        ...config.hydrateVariantFieldsFromProduct(skuLookupProduct),
       });
     },
-    [config, currentSkuLookupProduct, isEditMode],
+    // [config, currentSkuLookupProduct, isEditMode],
+    [config, skuLookupProduct, isEditMode],
   );
 
   const skuLookupState = useMemo(
