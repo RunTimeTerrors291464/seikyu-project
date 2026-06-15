@@ -23,7 +23,10 @@
     "migration:run": "ts-node -r tsconfig-paths/register libs/migrations/scripts/runMigrations.ts",
     "migration:create": "ts-node -r tsconfig-paths/register libs/migrations/scripts/createMigration.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d libs/migrations/scripts/dataSource.ts",
-    "migration:show": "npm run typeorm -- migration:show -d libs/migrations/scripts/dataSource.ts"
+    "migration:show": "npm run typeorm -- migration:show -d libs/migrations/scripts/dataSource.ts",
+    "seed": "ts-node -r tsconfig-paths/register libs/scripts/seed.script.ts",
+    "seed:api": "ts-node -r tsconfig-paths/register libs/scripts/seed-via-api.script.ts",
+    "db:clear": "ts-node -r tsconfig-paths/register libs/scripts/clear-db.script.ts"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.2.1",
@@ -45,6 +48,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.20.0",
+    "pm2": "^7.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
