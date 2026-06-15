@@ -291,7 +291,7 @@ export class ImportInvoiceRepository {
                 }));
             } else if (searchBy === 'productId') {
                 // Exact SKU match: zero-pad the search term to the 13-digit SKU length
-                // so searching "24" matches "0000000000024" but not "1200000000024".
+                // so searching "12" matches "0000000000012" but not "1200000000012".
                 const productSearchConditions = [`iip.product_sku = :productSkuSearch`];
                 const productSearchParams: Record<string, string> = {
                     productSkuSearch: search.padStart(13, '0'),

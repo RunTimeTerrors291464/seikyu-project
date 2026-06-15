@@ -179,7 +179,8 @@ export class ProductsService {
     // Get a product by sku.
     @HandleServiceError(ErrorCode.GET_PRODUCT_SERVICE)
     async getProductBySkuResponseDto(sku: string): Promise<ProductResponseDto> {
-        const product: ProductsEntity | null = await this.getProductBySku(sku);
+        // Zero-pad the lookup to the 13-digit SKU length so a shorthand like "12" matches "0000000000012".
+        const product: ProductsEntity | null = await this.getProductBySku(sku.padStart(13, '0'));
         if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'The product is not found.');
         return this.productMapper.toProductResponseDto(product);
     }
@@ -240,7 +241,8 @@ export class ProductsService {
     // Get a product cashier by sku.
     @HandleServiceError(ErrorCode.GET_PRODUCT_CASHIER_SERVICE)
     async getProductCashierBySkuResponseDto(sku: string): Promise<ProductCashierResponseDto> {
-        const product: ProductsEntity | null = await this.getProductBySku(sku);
+        // Zero-pad the lookup to the 13-digit SKU length so a shorthand like "12" matches "0000000000012".
+        const product: ProductsEntity | null = await this.getProductBySku(sku.padStart(13, '0'));
         if (!product) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'The product is not found.');
         return this.productMapper.toProductCashierResponseDto(product);
     }
