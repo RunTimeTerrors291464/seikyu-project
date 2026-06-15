@@ -290,9 +290,11 @@ export class ImportInvoiceRepository {
                         .orWhere('invoice.confirmedBy = :search', { search });
                 }));
             } else if (searchBy === 'productId') {
-                const productSearchConditions = [`iip.product_sku ILIKE :productSkuSearch${WILDCARD_ILIKE_ESCAPE_SQL}`];
+                // Exact SKU match: zero-pad the search term to the 13-digit SKU length
+                // so searching "24" matches "0000000000024" but not "1200000000024".
+                const productSearchConditions = [`iip.product_sku = :productSkuSearch`];
                 const productSearchParams: Record<string, string> = {
-                    productSkuSearch: buildWildcardIlikePattern(search),
+                    productSkuSearch: search.padStart(13, '0'),
                 };
 
                 if (isUuid(search)) {
