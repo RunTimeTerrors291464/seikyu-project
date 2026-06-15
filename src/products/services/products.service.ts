@@ -95,6 +95,9 @@ export class ProductsService {
     @HandleServiceError(ErrorCode.CREATE_PRODUCT_SERVICE)
     async createNewProduct(dto: CreateProductRequestDto, user: AccessTokenPayload): Promise<ProductResponseDto> {
 
+        // Zero-pad the SKU to the 13-digit length so a shorthand like "12" is stored as "0000000000012".
+        dto.sku = dto.sku.padStart(13, '0');
+
         // Check if the product exists.
         const product = await this.getProductBySku(dto.sku);
         if (product) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_SKU_ALREADY_EXISTS, 'The product SKU is already taken.');
@@ -125,8 +128,11 @@ export class ProductsService {
 
         // If editing the SKU, check if it is already taken by another product.
         if (dto.sku) {
+            // Zero-pad the SKU to the 13-digit length so a shorthand like "12" is stored as "0000000000012".
+            dto.sku = dto.sku.padStart(13, '0');
             const existingProduct: ProductsEntity | null = await this.getProductBySku(dto.sku);
-            if (existingProduct) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_SKU_ALREADY_EXISTS, 'The product SKU is already taken.');
+            // Allow keeping the same SKU on the product being edited; only reject if another product owns it.
+            if (existingProduct && existingProduct.id !== product.id) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_SKU_ALREADY_EXISTS, 'The product SKU is already taken.');
         }
 
         // If editing the product names, check if it has maximum 8 items.

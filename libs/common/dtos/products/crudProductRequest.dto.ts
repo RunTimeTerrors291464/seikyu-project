@@ -9,15 +9,15 @@ import { InvoiceType } from '@libs/common/enums/invoiceType.enum';
 
 export class CreateProductRequestDto {
     @ApiProperty({
-        description: 'The SKU of the product',
+        description: 'The SKU of the product. Shorter values are left zero-padded to 13 characters (e.g. "12" becomes "0000000000012").',
         example: '1234567890123',
-        minLength: 13,
+        minLength: 1,
         maxLength: 13,
     })
     @IsNotEmpty()
     @IsString()
-    @MinLength(13, { message: 'sku must be exactly 13 characters.' })
-    @MaxLength(13, { message: 'sku must be exactly 13 characters.' })
+    @MinLength(1, { message: 'sku must be between 1 and 13 characters.' })
+    @MaxLength(13, { message: 'sku must be between 1 and 13 characters.' })
     sku: string;
 
     @ApiProperty({
@@ -105,16 +105,16 @@ export class EditProductRequestDto {
     id: string;
 
     @ApiPropertyOptional({
-        description: 'The SKU of the product.',
+        description: 'The SKU of the product. Shorter values are left zero-padded to 13 characters (e.g. "12" becomes "0000000000012").',
         example: '1234567890123',
-        minLength: 13,
+        minLength: 1,
         maxLength: 13,
         required: false,
     })
     @IsOptional()
     @IsString()
-    @MinLength(13, { message: 'sku must be exactly 13 characters.' })
-    @MaxLength(13, { message: 'sku must be exactly 13 characters.' })
+    @MinLength(1, { message: 'sku must be between 1 and 13 characters.' })
+    @MaxLength(13, { message: 'sku must be between 1 and 13 characters.' })
     sku?: string;
 
     @ApiPropertyOptional({
