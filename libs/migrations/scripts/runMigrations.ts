@@ -1,10 +1,22 @@
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import AppDataSource from './dataSource';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+function buildPgSsl(): undefined | { rejectUnauthorized: boolean; ca: string } {
+    if (process.env.DB_SSL !== 'true') {
+        return undefined;
+    }
+    const certPath = process.env.DB_SSL_CERT || '/certs/global-bundle.pem';
+    return {
+        rejectUnauthorized: true,
+        ca: fs.readFileSync(certPath).toString(),
+    };
+}
 
 async function runMigrations() {
     const dbName = process.env.DB_DATABASE;
@@ -20,12 +32,14 @@ async function runMigrations() {
 
     // Step 1: Check connection to the PostgreSQL server via the default "postgres" database.
     console.log(`\n🔍 Checking connection to PostgreSQL server at ${host}:${port}...`);
+    const ssl = buildPgSsl();
     const pgClient = new Client({
         host,
         port,
         user,
         password,
         database: 'postgres',
+        ...(ssl !== undefined ? { ssl } : {}),
     });
 
     try {
