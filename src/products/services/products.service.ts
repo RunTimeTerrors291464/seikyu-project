@@ -295,7 +295,6 @@ export class ProductsService {
         return await this.dataSource.transaction(async (transactionManager) => {
             const notFoundProductIds: string[] = [];
             const inactiveProductIds: string[] = [];
-            const negativeStockProductIds: string[] = [];
             const validatedProducts: { product: ProductsEntity, update: (typeof dto.products)[number] }[] = [];
 
             // Sort by ID before locking to prevent deadlock when concurrent transactions.
@@ -320,14 +319,11 @@ export class ProductsService {
                     continue;
                 }
 
-                // Check if the quantity is not negative after the operation.
-                if (productUpdate.action === StockActionType.SUBTRACT && product.inventoryStock < productUpdate.quantity) negativeStockProductIds.push(productUpdate.id);
                 validatedProducts.push({ product, update: productUpdate });
             }
 
             if (notFoundProductIds.length > 0) throw new CustomException(HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND, 'One or more products were not found.', { productIds: [...new Set(notFoundProductIds)] });
             if (inactiveProductIds.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_NOT_ACTIVE, 'One or more products are not active and cannot have inventory updated.', { productIds: inactiveProductIds });
-            if (negativeStockProductIds.length > 0) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.PRODUCT_STOCK_CANNOT_BE_NEGATIVE, 'One or more products would have negative stock when subtracted.', { productIds: negativeStockProductIds });
 
             const results: ProductResponseDto[] = [];
 

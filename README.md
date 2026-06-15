@@ -259,7 +259,13 @@ seikyu-project-v2/
 │   │   └── scripts/                     # dataSource, runMigrations, createMigration
 │   │
 │   └── scripts/
-│       └── startDev.script.ts           # Preflight (Redis + DB + pending migrations)
+│       ├── startDev.script.ts              # Preflight (Redis + DB + pending migrations)
+│       ├── importExcel.util.ts             # Shared helpers for Excel import scripts
+│       ├── importProductUnitsFromExcel.script.ts
+│       └── importProductsFromExcel.script.ts
+│
+├── import/                              # Drop Excel files here (not committed; see .gitignore)
+│   └── product_import.xlsx              # Default filename for unit + product import
 │
 ├── ecosystem.config.js                  # PM2 cluster configuration
 ├── nest-cli.json                        # NestJS configuration
@@ -443,6 +449,102 @@ curl -X POST http://localhost:3000/api/v2/admin/first-admin-account \
 
 Then call `POST /api/v2/auth/login` to obtain access + refresh tokens, and click **Authorize** in Swagger UI to authorize subsequent requests.
 
+### 10. Import Data from Excel
+
+Bulk import **product units** and **products** from a spreadsheet without bypassing application business logic (validation, transactions, history, stock updates). Scripts bootstrap the NestJS app and call the same services as the HTTP API.
+
+#### Prepare the file
+
+1. Place your workbook at **`import/product_import.xlsx`** (also supports `.xls` / `.xlsm`).
+2. The workbook should contain at least these sheets:
+   - **`Product Unit`** — units of measure
+   - **`Product`** — product catalog + opening stock
+
+Excel files in `import/` are **gitignored**; only `import/.gitkeep` is tracked.
+
+#### Import order
+
+Run **product units first**, then **products** (products reference units by name).
+
+```bash
+# 1) Product units
+npm run import:product-units -- --dry-run   # validate only
+npm run import:product-units                 # import
+
+# 2) Products (after units exist)
+npm run import:products -- --dry-run
+npm run import:products
+```
+
+#### Commands
+
+| Script | Description |
+|--------|-------------|
+| `npm run import:product-units` | Import units from `import/product_import.xlsx` |
+| `npm run import:products` | Import products + set opening stock from the same file |
+
+**Common flags** (both scripts):
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Validate rows only; no database writes |
+| `--verbose` / `-v` | Log each skipped/created row with details |
+| `--file`, `-f` | Custom Excel path (default: `import/product_import.xlsx`) |
+| `--sheet`, `-s` | Sheet name (default: auto-detect) |
+| `--user`, `-u` | Manager/Admin username or UUID for history `createdBy` (optional; auto-picks first active Admin, else Manager) |
+
+Optional env: `IMPORT_USER_USERNAME` (same as `--user`).
+
+#### Sheet: Product Unit
+
+| Excel column | Maps to |
+|--------------|---------|
+| `Unit Name* (Hungarian)` | `unitName` |
+| `Unit Description` | `unitDescription` |
+
+#### Sheet: Product
+
+| Excel column | Maps to |
+|--------------|---------|
+| `SKU*` | `sku` (left-padded with `0` to 13 characters) |
+| `Product Description` | `productDescription` (product display name) |
+| `Product Name 1` | Fallback for description if `Product Description` is empty |
+| `Product Unit*` | `productUnitId` (lookup by unit name from DB) |
+| `Import Price*` | `importPrice` |
+| `Selling Price*` | `sellingPrice` |
+| `Reorder Threshold` | `reorderThreshold` (optional) |
+| `Quantity` | Opening `inventoryStock` via stock adjustment after create |
+
+`productNames` in the API is satisfied with the description text (or padded SKU if description is empty).
+
+#### Skip rules (products)
+
+Rows are skipped (and grouped in the summary) when:
+
+- SKU is empty or longer than 13 characters before padding
+- Duplicate SKU in the file (after padding) or SKU already in the database
+- Product unit is missing, not found, or inactive
+- Price / quantity / DTO validation fails
+- Quantity is not an integer or is outside the 4-byte integer range (`-2147483648` … `2147483647`)
+
+#### Example summary output (products)
+
+```
+[import:products] Summary
+  Total rows checked:      13165
+  Created / valid:         13074
+  Skipped (total):         91
+  Failed:                  0
+
+[import:products] Skipped breakdown:
+  Skipped (SKU exceeded 13 characters): 73
+  Skipped (Invalid quantity): 10
+  Skipped (Duplicate SKU in file): 7
+  Skipped (SKU already exists in database): 1
+```
+
+Use `--verbose` to see per-row skip reasons.
+
 ---
 
 ## API Endpoints
@@ -611,6 +713,13 @@ All endpoints are prefixed with **`/api/v2`**.
 | `npm run migration:show` | Show migration status |
 | `npm run migration:create` | Create an empty migration file |
 | `npm run typeorm` | Generic TypeORM CLI passthrough |
+
+### Excel Import
+
+| Script | Description |
+|--------|-------------|
+| `npm run import:product-units` | Import product units from `import/product_import.xlsx` (see [Import Data from Excel](#10-import-data-from-excel)) |
+| `npm run import:products` | Import products and opening stock from the same file |
 
 ---
 

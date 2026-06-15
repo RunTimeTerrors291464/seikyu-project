@@ -37,3 +37,9 @@ coverage/
 tmp/
 temp/
 .cache/
+
+# Import data files (place product_import.xlsx here)
+import/*.xlsx
+import/*.xls
+import/*.xlsm
+!import/.gitkeep

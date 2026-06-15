@@ -23,7 +23,9 @@
     "migration:run": "ts-node -r tsconfig-paths/register libs/migrations/scripts/runMigrations.ts",
     "migration:create": "ts-node -r tsconfig-paths/register libs/migrations/scripts/createMigration.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d libs/migrations/scripts/dataSource.ts",
-    "migration:show": "npm run typeorm -- migration:show -d libs/migrations/scripts/dataSource.ts"
+    "migration:show": "npm run typeorm -- migration:show -d libs/migrations/scripts/dataSource.ts",
+    "import:product-units": "ts-node -r tsconfig-paths/register libs/scripts/importProductUnitsFromExcel.script.ts",
+    "import:products": "ts-node -r tsconfig-paths/register libs/scripts/importProductsFromExcel.script.ts"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.2.1",
@@ -74,7 +76,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "xlsx": "^0.18.5"
   },
   "jest": {
     "moduleFileExtensions": [

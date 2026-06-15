@@ -320,12 +320,12 @@ export class UpdateProductInventoryRequestDto {
     @ApiProperty({
         description: 'Quantity to add or subtract',
         example: 10,
-        minimum: 0,
+        minimum: -2147483648,
         maximum: 2147483647,
     })
     @IsNotEmpty()
     @IsNumber()
-    @Min(0)
+    @Min(-2147483648)
     @Max(2147483647)
     @Type(() => Number)
     quantity: number;
