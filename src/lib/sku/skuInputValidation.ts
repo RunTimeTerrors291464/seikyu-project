@@ -71,9 +71,9 @@ export function getSkuBaseFieldError(
     return options?.showEmptyError ? dict.skuMustBe13 : "";
   }
 
-  if (!isSku13Format(value)) {
-    return dict.skuMustBe13;
-  }
+  // if (!isSku13Format(value)) {
+  //   return dict.skuMustBe13;
+  // }
 
   if (pending.skuDebouncing || pending.skuChecking) {
     return "";

@@ -2,9 +2,8 @@
 
 import { getProductBySku } from "@/features/products/services/product.service";
 import type { Product } from "@/features/products/types/product";
-import { isProductSkuNotFoundError } from "@/lib/sku/productSkuApiErrors";
-import { isSku13Format } from "@/lib/sku/skuInputValidation";
 import useDebounce from "@/lib/hooks/useDebounce";
+import { isProductSkuNotFoundError } from "@/lib/sku/productSkuApiErrors";
 import { useEffect, useRef, useState } from "react";
 
 export type SkuCheckIntent = "lookupExisting" | "checkDuplicate";
@@ -53,7 +52,10 @@ export default function useSkuCheck({
 
   useEffect(
     function runSkuCheck(): void {
-      if (skip || !isSku13Format(debouncedSku)) {
+      console.log("runSkuCheck", skip, intent);
+      if (skip
+        // || !isSku13Format(debouncedSku)
+      ) {
         setProduct(null);
         setNotFound(false);
         setIsDuplicate(false);

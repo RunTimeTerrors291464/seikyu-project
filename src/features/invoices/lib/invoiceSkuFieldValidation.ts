@@ -25,7 +25,7 @@ export type InvoiceSkuLookupState = {
 export {
   isSku13Format as isInvoiceSku13Format,
   isSkuInputEmpty as isInvoiceSkuInputEmpty,
-  normalizeSkuInput as normalizeInvoiceSkuInput,
+  normalizeSkuInput as normalizeInvoiceSkuInput
 };
 
 /**
@@ -75,7 +75,9 @@ export function getInvoiceSkuFieldError(
     return baseError;
   }
 
-  if (isSkuInputEmpty(value) || !isSku13Format(value)) {
+  if (isSkuInputEmpty(value)
+    // || !isSku13Format(value)
+  ) {
     return "";
   }
 
@@ -110,7 +112,8 @@ export function isInvoiceSkuResolved(state: InvoiceSkuLookupState): boolean {
     state;
 
   return (
-    isSku13Format(sku) &&
+    true &&
+    // isSku13Format(sku) &&
     !skuDebouncing &&
     !skuChecking &&
     resolvedProduct !== null &&
