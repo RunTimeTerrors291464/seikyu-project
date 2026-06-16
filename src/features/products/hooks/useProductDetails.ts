@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import {
-  activateProduct,
-  deactivateProduct,
-  getProductById,
-  getProductHistory,
-  getProductHistoryDetail,
-  updateProduct,
+    activateProduct,
+    deactivateProduct,
+    getProductById,
+    getProductHistory,
+    getProductHistoryDetail,
+    updateProduct,
 } from "../services/product.service";
 
 import { toast } from "sonner";
 import type {
-  Product,
-  ProductHistoryDetail,
-  ProductHistoryItem,
+    Product,
+    ProductHistoryDetail,
+    ProductHistoryItem,
 } from "../types/product";
 
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
@@ -112,7 +112,11 @@ function isPendingActivationSave(
 /* HOOK */
 /* ============================= */
 
-export function useProductDetail(id: string) {
+export function useProductDetail(
+  id: string,
+  options?: { loadHistory?: boolean },
+) {
+  const loadHistory = options?.loadHistory ?? true;
   const [product, setProduct] = useState<Product | null>(null);
   const [original, setOriginal] = useState<Product | null>(null);
 
@@ -148,19 +152,30 @@ export function useProductDetail(id: string) {
 
     async function fetchAll() {
       setLoading(true);
-      setHistoryLoading(true);
+      setHistoryLoading(loadHistory);
 
       try {
-        const [productData, historyData] = await Promise.all([
-          getProductById(id),
-          getProductHistory(id, { page: 1, limit: 100 }),
-        ]);
+        if (loadHistory) {
+          const [productData, historyData] = await Promise.all([
+            getProductById(id),
+            getProductHistory(id, { page: 1, limit: 100 }),
+          ]);
+
+          if (!isMounted) return;
+
+          setProduct(productData);
+          setOriginal(productData);
+          setHistory(historyData.history ?? []);
+          return;
+        }
+
+        const productData = await getProductById(id);
 
         if (!isMounted) return;
 
         setProduct(productData);
         setOriginal(productData);
-        setHistory(historyData.history ?? []);
+        setHistory([]);
       } catch (err) {
         console.error("[useProductDetail] fetch → error", err);
         toast.error("Failed to load product");
@@ -172,29 +187,14 @@ export function useProductDetail(id: string) {
       }
     }
 
-    async function fetchHistory() {
-      setHistoryLoading(true);
-
-      try {
-        const data = await getProductHistory(id, { page: 1, limit: 100 });
-        if (!isMounted) return;
-
-        setHistory(data.history ?? []);
-      } catch (err) {
-        console.error("fetchHistory failed", err);
-      } finally {
-        if (isMounted) setHistoryLoading(false);
-      }
+    if (id) {
+      void fetchAll();
     }
-
-    if (id) fetchHistory();
-
-    if (id) fetchAll();
 
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, loadHistory]);
 
 
 

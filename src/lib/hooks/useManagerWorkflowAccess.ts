@@ -2,8 +2,9 @@
 
 import type { UserRoleCode } from "@/features/admin/services/adminUsers.service";
 import {
-  userMayCreateSellingInvoice,
-  userMayUseManagerWorkflowControls,
+    userMayCreateSellingInvoice,
+    userMayUseManagerWorkflowControls,
+    userMayViewProductHistory,
 } from "@/lib/auth/authUser";
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -28,4 +29,14 @@ export function useMayUseManagerWorkflowControls(): boolean {
 export function useMayCreateSellingInvoice(): boolean {
   const roles = useAuthStore((state) => state.user?.roles ?? EMPTY_ROLES);
   return userMayCreateSellingInvoice(roles);
+}
+
+/**
+ * Client hook for product audit history (admin-only).
+ *
+ * @returns True when the signed-in user has the admin role.
+ */
+export function useMayViewProductHistory(): boolean {
+  const roles = useAuthStore((state) => state.user?.roles ?? EMPTY_ROLES);
+  return userMayViewProductHistory(roles);
 }

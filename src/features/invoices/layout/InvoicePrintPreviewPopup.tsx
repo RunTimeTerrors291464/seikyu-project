@@ -3,20 +3,20 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import Select from "@/components/ui/Select";
-import registerInvoicePdfFonts, { INVOICE_PDF_FONT_FAMILY } from "@/features/invoices/types/registerInvoicePdfFonts";
+import { Document, Font, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
+import { Download, Languages, Printer, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useDict, useUiLang } from "@/lib/lang/DictProvider";
 import type { Dictionary } from "@/lib/lang/i18n";
 import { getDictionary, getPrintLangCookie, type Lang } from "@/lib/lang/i18n";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
-import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
-import { Download, Languages, Printer, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 
 export type InvoicePrintLine = {
   sku: string;
   name: string;
   unit: string;
   quantity: number;
+  unitPrice: number;
   lineTotal: number;
   notes: string | null;
 };
@@ -66,6 +66,45 @@ function getInvoiceTitleLabelKey(invoiceCode: string): InvoiceTitleLabelKey {
   }
 
   return "salesInvoices";
+}
+
+const INVOICE_PDF_FONT_FAMILY = "Open Sans";
+
+let invoicePdfFontsRegistered = false;
+
+function resolveInvoicePdfFontSrc(relativePath: string): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}${relativePath}`;
+  }
+
+  return relativePath;
+}
+
+function registerInvoicePdfFonts(): void {
+  if (invoicePdfFontsRegistered) {
+    return;
+  }
+
+  invoicePdfFontsRegistered = true;
+
+  Font.register({
+    family: INVOICE_PDF_FONT_FAMILY,
+    fonts: [
+      {
+        src: resolveInvoicePdfFontSrc("/fonts/OpenSans-Regular.ttf"),
+        fontWeight: 400,
+      },
+      {
+        src: resolveInvoicePdfFontSrc("/fonts/OpenSans-Bold.ttf"),
+        fontWeight: 700,
+      },
+    ],
+  });
+
+  // Avoid hyphenating words; default hyphenation can break Hungarian/Vietnamese glyphs.
+  Font.registerHyphenationCallback(function keepWordIntact(word): string[] {
+    return [word];
+  });
 }
 
 registerInvoicePdfFonts();
@@ -145,23 +184,25 @@ const sharedPdfStyles = {
 
 const pdfStylesWithNotes = StyleSheet.create({
   ...sharedPdfStyles,
-  colIndex: { width: "6%" },
-  colSku: { width: "16%" },
-  colName: { width: "26%" },
-  colUnit: { width: "15%" },
-  colQty: { width: "12%" },
-  colTotal: { width: "15%" },
-  colNote: { width: "20%" },
+  colIndex: { width: "5%" },
+  colSku: { width: "14%" },
+  colName: { width: "22%" },
+  colUnit: { width: "10%" },
+  colQty: { width: "10%" },
+  colUnitPrice: { width: "12%" },
+  colTotal: { width: "12%" },
+  colNote: { width: "15%" },
 });
 
 const pdfStylesWithoutNotes = StyleSheet.create({
   ...sharedPdfStyles,
-  colIndex: { width: "6%" },
-  colSku: { width: "16%" },
-  colName: { width: "36%" },
-  colUnit: { width: "15%" },
-  colQty: { width: "12%" },
-  colTotal: { width: "15%" },
+  colIndex: { width: "5%" },
+  colSku: { width: "14%" },
+  colName: { width: "28%" },
+  colUnit: { width: "10%" },
+  colQty: { width: "10%" },
+  colUnitPrice: { width: "13%" },
+  colTotal: { width: "20%" },
 });
 
 /** Fixed widths for the first two HTML preview columns (`#`, SKU); other columns use automatic layout. */
@@ -180,6 +221,7 @@ type InvoicePdfLabels = {
   productName: string;
   unit: string;
   quantityLabel: string;
+  unitPriceLabel: string;
   totalPriceLabel: string;
   noteLabel: string;
   noNote: string;
@@ -246,6 +288,7 @@ function buildInvoicePdfLabels(
     productName: printDictionary.productName,
     unit: printDictionary.unit,
     quantityLabel: printDictionary.quantityLabel,
+    unitPriceLabel: printDictionary.unitPriceLabel,
     totalPriceLabel: printDictionary.totalPriceLabel,
     noteLabel: printDictionary.noteLabel,
     noNote: printDictionary.noLineNote,
@@ -270,12 +313,16 @@ function InvoicePdfDocument({
         <View style={styles.headerRow} fixed>
           <View>
             <Text style={styles.title}>{labels.title}</Text>
-            <Text style={styles.textSm}>{labels.invoiceNumber}: {data.invoiceCode}</Text>
+            <Text style={styles.textSm}>
+              {labels.invoiceNumber}: {data.invoiceCode}
+            </Text>
             {/* <Text style={styles.textSm}>{labels.status}: {labels.statusValue}</Text> */}
           </View>
           <View>
             {/* <Text style={styles.rightText}>{labels.by}: {data.confirmedBy ?? "—"}</Text> */}
-            <Text style={styles.rightText}>{labels.date}: {labels.confirmedAtFormatted}</Text>
+            <Text style={styles.rightText}>
+              {labels.date}: {labels.confirmedAtFormatted}
+            </Text>
           </View>
         </View>
 
@@ -286,6 +333,9 @@ function InvoicePdfDocument({
             <Text style={[styles.cellHeader, styles.colName]}>{labels.productName}</Text>
             <Text style={[styles.cellHeader, styles.colQty]}>{labels.quantityLabel}</Text>
             <Text style={[styles.cellHeader, styles.colUnit]}>{labels.unit}</Text>
+            <Text style={[styles.cellHeader, styles.colUnitPrice, styles.alignRight]}>
+              {labels.unitPriceLabel}
+            </Text>
             <Text
               style={[
                 styles.cellHeader,
@@ -297,7 +347,9 @@ function InvoicePdfDocument({
               {labels.totalPriceLabel}
             </Text>
             {hasNotes && (
-              <Text style={[styles.cellHeader, pdfStylesWithNotes.colNote, styles.noRightBorder]}>{labels.noteLabel}</Text>
+              <Text style={[styles.cellHeader, pdfStylesWithNotes.colNote, styles.noRightBorder]}>
+                {labels.noteLabel}
+              </Text>
             )}
           </View>
 
@@ -311,6 +363,9 @@ function InvoicePdfDocument({
                   {line.quantity.toLocaleString(quantityLocaleTag)}
                 </Text>
                 <Text style={[styles.cell, styles.colUnit]}>{line.unit}</Text>
+                <Text style={[styles.cell, styles.colUnitPrice, styles.alignRight]}>
+                  {formatPriceNumber(line.unitPrice)}
+                </Text>
                 <Text
                   style={[
                     styles.cell,
@@ -332,7 +387,9 @@ function InvoicePdfDocument({
         </View>
 
         <View style={styles.totals}>
-          <Text style={styles.totalStrong}>{labels.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}</Text>
+          <Text style={styles.totalStrong}>
+            {labels.totalPriceLabel}: {formatPriceNumber(data.totalAmount)}
+          </Text>
         </View>
       </Page>
     </Document>
@@ -373,6 +430,8 @@ export default function InvoicePrintPreviewPopup({
   );
 
   async function createInvoicePdfBlob(): Promise<Blob> {
+    registerInvoicePdfFonts();
+
     return pdf(
       <InvoicePdfDocument
         data={data}
@@ -470,6 +529,7 @@ export default function InvoicePrintPreviewPopup({
                   <th className="border border-border px-2 py-1 text-left">{labels.productName}</th>
                   <th className="border border-border px-2 py-1 text-left">{labels.quantityLabel}</th>
                   <th className="border border-border px-2 py-1 text-left">{labels.unit}</th>
+                  <th className="border border-border px-2 py-1 text-right">{labels.unitPriceLabel}</th>
                   <th className="border border-border px-2 py-1 text-right">{labels.totalPriceLabel}</th>
                   {data.showLineNotes && (
                     <th className="border border-border px-2 py-1 text-left">{labels.noteLabel}</th>
@@ -487,6 +547,7 @@ export default function InvoicePrintPreviewPopup({
                         {line.quantity.toLocaleString(printLocaleTag)}
                       </td>
                       <td className="border border-border px-2 py-1">{line.unit}</td>
+                      <td className="border border-border px-2 py-1 text-right">{formatPriceNumber(line.unitPrice)}</td>
                       <td className="border border-border px-2 py-1 text-right">{formatPriceNumber(line.lineTotal)}</td>
                       {data.showLineNotes && (
                         <td className="border border-border px-2 py-1 break-all">

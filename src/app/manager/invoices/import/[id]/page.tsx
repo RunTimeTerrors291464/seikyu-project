@@ -278,6 +278,7 @@ export default function ImportInvoiceDetailPage() {
         name: product.productName,
         unit: product.productUnit,
         quantity,
+        unitPrice: importPrice,
         lineTotal: quantity * importPrice,
         notes: product.notes,
       };

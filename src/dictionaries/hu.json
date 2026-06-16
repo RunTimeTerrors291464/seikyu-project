@@ -204,6 +204,7 @@
   "totalImportPriceLabel": "Teljes ar (HUF)",
   "productsLabel": "Termekek",
   "quantityLabel": "Mennyiseg",
+  "unitPriceLabel": "Egysegar (HUF)",
   "totalQuantity": "Osszes mennyiseg",
   "noteLabel": "Megjegyzes",
   "warningLabel": "Figyelem",

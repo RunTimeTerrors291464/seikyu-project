@@ -8,7 +8,7 @@ import {
   productUnitService,
 } from "../services/product.unit.service";
 
-export function useProductUnit(search: string) {
+export function useProductUnit(search: string, enabled = true) {
   const [units, setUnits] = useState<ProductUnit[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -18,39 +18,62 @@ export function useProductUnit(search: string) {
 
   const debouncedSearch = useDebounce(search, 500);
 
-  /* ───────── FETCH ───────── */
+  useEffect(
+    function markLoadingWhileSearchChanges(): void {
+      if (!enabled) {
+        return;
+      }
 
-  async function fetchUnits() {
-    setLoading(true);
-    try {
-      const res = await productUnitService.getAll({
-        page: 1,
-        limit: 20,
-        search: debouncedSearch,
-        isActive: "all",
-      });
+      setLoading(true);
+    },
+    [search, enabled],
+  );
 
-      setUnits(res.productUnits);
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(
+    function fetchUnitsWhenQueryChanges() {
+      if (!enabled) {
+        return;
+      }
 
-  useEffect(() => {
-    fetchUnits();
-  }, [debouncedSearch]);
+      let cancelled = false;
 
-  /* ───────── HELPERS ───────── */
+      async function fetchUnits(): Promise<void> {
+        setLoading(true);
+
+        try {
+          const res = await productUnitService.getAll({
+            page: 1,
+            limit: 100,
+            search: debouncedSearch,
+            isActive: "all",
+          });
+
+          if (cancelled) {
+            return;
+          }
+
+          setUnits(res.productUnits ?? []);
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
+      }
+
+      void fetchUnits();
+
+      return function cancelInFlightFetch(): void {
+        cancelled = true;
+      };
+    },
+    [debouncedSearch, enabled],
+  );
 
   function replaceUnit(updated: ProductUnit) {
     setUnits((prev) =>
       prev.map((u) => (u.id === updated.id ? updated : u))
     );
   }
-
-  // function removeUnit(id: string) {
-  //   setUnits((prev) => prev.filter((u) => u.id !== id));
-  // }
 
   function addHistory(
     unitId: string,
@@ -63,8 +86,6 @@ export function useProductUnit(search: string) {
       [unitId]: [history, ...(prev[unitId] || [])],
     }));
   }
-
-  /* ───────── CRUD ───────── */
 
   async function createUnit(name: string, desc: string) {
     const unit = await productUnitService.create({
@@ -93,8 +114,6 @@ export function useProductUnit(search: string) {
     return res.productUnit;
   }
 
-  /* ───────── ACTIVE / DEACTIVE ───────── */
-
   async function activateUnit(id: string) {
     const res = await productUnitService.activate(id);
 
@@ -113,13 +132,9 @@ export function useProductUnit(search: string) {
     return res.productUnit;
   }
 
-  /* ───────── RETURN ───────── */
-
   return {
     units,
     loading,
-
-    fetchUnits,
 
     createUnit,
     updateUnit,

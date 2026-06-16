@@ -154,6 +154,18 @@ export function userMayUseManagerWorkflowControls(
 }
 
 /**
+ * Whether the user may view product audit history (admin-only).
+ *
+ * @param roles - Roles from the signed-in user.
+ * @returns True when the user has the admin role.
+ */
+export function userMayViewProductHistory(
+  roles: readonly UserRoleCode[],
+): boolean {
+  return roles.includes(USER_ROLE_ADMIN);
+}
+
+/**
  * First app route to open after login when the user is on an auth page.
  * Prefers admin, then manager, then cashier.
  *

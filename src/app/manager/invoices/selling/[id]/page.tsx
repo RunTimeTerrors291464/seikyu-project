@@ -112,6 +112,7 @@ export default function ManagerSellingInvoiceDetailPage() {
         name: product.productName,
         unit: product.productUnit,
         quantity: product.quantity,
+        unitPrice: product.sellingPrice,
         lineTotal: product.totalSellingPrice,
         notes: product.notes,
       };
