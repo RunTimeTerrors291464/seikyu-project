@@ -2,13 +2,13 @@
 
 import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import InvoicePrintPreviewPopup, {
   type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
-import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import {
   getSellingInvoiceById,
   type SellingInvoiceResponseDto,

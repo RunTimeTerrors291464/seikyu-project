@@ -647,6 +647,7 @@ export default function ReturnImportInvoiceDetailPage() {
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);
         }}
+        compactTable={true}
       />
     </div>
   );
