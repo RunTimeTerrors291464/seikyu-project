@@ -2,18 +2,18 @@
 
 import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
+import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import CreateReturnSellingInvoicePopup from "@/features/invoices/layout/CreateReturnSellingInvoicePopup";
 import InvoicePrintPreviewPopup, {
-  type InvoicePrintData,
+    type InvoicePrintData,
 } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
 import SellingInvoiceReturnInvoicesCard from "@/features/invoices/layout/SellingInvoiceReturnInvoicesCard";
-import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import {
-  getSellingInvoiceById,
-  type SellingInvoiceResponseDto,
+    getSellingInvoiceById,
+    type SellingInvoiceResponseDto,
 } from "@/features/invoices/services/sellingInvoice.service";
 import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";

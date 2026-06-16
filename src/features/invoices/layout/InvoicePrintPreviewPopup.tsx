@@ -3,13 +3,14 @@
 import Popup from "@/components/layout/BlurPopupWrapper";
 import Button from "@/components/ui/Buttons";
 import Select from "@/components/ui/Select";
-import { Document, Font, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
-import { Download, Languages, Printer, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { useDict, useUiLang } from "@/lib/lang/DictProvider";
 import type { Dictionary } from "@/lib/lang/i18n";
 import { getDictionary, getPrintLangCookie, type Lang } from "@/lib/lang/i18n";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
+import { Document, Font, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
+import clsx from "clsx";
+import { Download, Languages, Printer, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 export type InvoicePrintLine = {
   sku: string;
@@ -40,6 +41,8 @@ type InvoicePrintPreviewPopupProps = {
   open: boolean;
   data: InvoicePrintData;
   onClose: () => void;
+  /** When true, renders invoice line tables with smaller text in preview and PDF. */
+  compactTable?: boolean;
 };
 
 type InvoiceTitleLabelKey =
@@ -182,32 +185,53 @@ const sharedPdfStyles = {
   },
 } as const;
 
-const pdfStylesWithNotes = StyleSheet.create({
-  ...sharedPdfStyles,
-  colIndex: { width: "5%" },
-  colSku: { width: "14%" },
-  colName: { width: "22%" },
-  colUnit: { width: "10%" },
-  colQty: { width: "10%" },
-  colUnitPrice: { width: "12%" },
-  colTotal: { width: "12%" },
-  colNote: { width: "15%" },
-});
+const INVOICE_TABLE_FONT_SIZE = {
+  normal: 9,
+  compact: 7,
+} as const;
 
-const pdfStylesWithoutNotes = StyleSheet.create({
-  ...sharedPdfStyles,
-  colIndex: { width: "5%" },
-  colSku: { width: "14%" },
-  colName: { width: "28%" },
-  colUnit: { width: "10%" },
-  colQty: { width: "10%" },
-  colUnitPrice: { width: "13%" },
-  colTotal: { width: "20%" },
-});
+const pdfColumnStylesWithNotes = {
+  colIndex: { width: 22 },
+  colSku: { width: 72 },
+  colName: { flex: 1 },
+  colUnit: { width: 54 },
+  colQty: { width: 48 },
+  colUnitPrice: { width: 64 },
+  colTotal: { width: 64 },
+  colNote: { flex: 1 },
+} as const;
 
-/** Fixed widths for the first two HTML preview columns (`#`, SKU); other columns use automatic layout. */
-const PRINT_PREVIEW_INDEX_COL_WIDTH = "2.5rem";
-const PRINT_PREVIEW_SKU_COL_WIDTH = "7.5rem";
+const pdfColumnStylesWithoutNotes = {
+  colIndex: { width: 22 },
+  colSku: { width: 74 },
+  colName: { flex: 1 },
+  colUnit: { width: 72 },
+  colQty: { width: 72 },
+  colUnitPrice: { width: 64 },
+  colTotal: { width: 64 },
+} as const;
+
+function createInvoicePdfStyles(hasNotes: boolean, compactTable: boolean) {
+  const tableFontSize = compactTable
+    ? INVOICE_TABLE_FONT_SIZE.compact
+    : INVOICE_TABLE_FONT_SIZE.normal;
+  const tableCellPadding = compactTable ? 3 : 4;
+
+  return StyleSheet.create({
+    ...sharedPdfStyles,
+    cellHeader: {
+      ...sharedPdfStyles.cellHeader,
+      fontSize: tableFontSize,
+      padding: tableCellPadding,
+    },
+    cell: {
+      ...sharedPdfStyles.cell,
+      fontSize: tableFontSize,
+      padding: tableCellPadding,
+    },
+    ...(hasNotes ? pdfColumnStylesWithNotes : pdfColumnStylesWithoutNotes),
+  });
+}
 
 type InvoicePdfLabels = {
   title: string;
@@ -299,13 +323,20 @@ function InvoicePdfDocument({
   data,
   labels,
   quantityLocaleTag,
+  compactTable = false,
 }: {
   data: InvoicePrintData;
   labels: InvoicePdfLabels;
   quantityLocaleTag: string;
+  compactTable?: boolean;
 }) {
   const hasNotes = Boolean(data.showLineNotes);
-  const styles = hasNotes ? pdfStylesWithNotes : pdfStylesWithoutNotes;
+  const styles = useMemo(
+    function buildPdfStyles() {
+      return createInvoicePdfStyles(hasNotes, compactTable);
+    },
+    [hasNotes, compactTable],
+  );
 
   return (
     <Document title={data.invoiceCode}>
@@ -347,7 +378,7 @@ function InvoicePdfDocument({
               {labels.totalPriceLabel}
             </Text>
             {hasNotes && (
-              <Text style={[styles.cellHeader, pdfStylesWithNotes.colNote, styles.noRightBorder]}>
+              <Text style={[styles.cellHeader, pdfColumnStylesWithNotes.colNote, styles.noRightBorder]}>
                 {labels.noteLabel}
               </Text>
             )}
@@ -377,7 +408,7 @@ function InvoicePdfDocument({
                   {formatPriceNumber(line.lineTotal)}
                 </Text>
                 {hasNotes && (
-                  <Text style={[styles.cell, pdfStylesWithNotes.colNote, styles.noRightBorder]}>
+                  <Text style={[styles.cell, pdfColumnStylesWithNotes.colNote, styles.noRightBorder]}>
                     {line.notes?.trim() ? line.notes : labels.noNote}
                   </Text>
                 )}
@@ -400,6 +431,7 @@ export default function InvoicePrintPreviewPopup({
   open,
   data,
   onClose,
+  compactTable = false,
 }: InvoicePrintPreviewPopupProps) {
   const dict = useDict();
   const uiLang = useUiLang();
@@ -437,6 +469,7 @@ export default function InvoicePrintPreviewPopup({
         data={data}
         labels={labels}
         quantityLocaleTag={printLocaleTag}
+        compactTable={compactTable}
       />,
     ).toBlob();
   }
@@ -465,7 +498,7 @@ export default function InvoicePrintPreviewPopup({
 
   return (
     <Popup open={open} onClose={onClose}>
-      <div className="flex w-[92vw] max-w-[980px] h-[90vh] flex-col overflow-auto">
+      <div className="flex w-auto max-w-[92vw] h-[90vh] flex-col overflow-auto">
         <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <h2 className="text-sm font-semibold text-text">{dict.printPreview}</h2>
@@ -502,7 +535,7 @@ export default function InvoicePrintPreviewPopup({
         </div>
 
         <div className="print-area-container flex-1 overflow-auto bg-bg p-4">
-          <div className="print-area mx-auto w-full min-h-full max-w-[210mm] bg-white p-[12mm] text-black">
+          <div className="print-area mx-auto w-auto min-w-full max-w-[210mm] min-h-full bg-white p-[12mm] text-black">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold">{labels.title}</h3>
@@ -517,11 +550,12 @@ export default function InvoicePrintPreviewPopup({
               </div>
             </div>
 
-            <table className="w-full table-auto border border-border text-sm">
-              <colgroup>
-                <col style={{ width: PRINT_PREVIEW_INDEX_COL_WIDTH }} />
-                <col style={{ width: PRINT_PREVIEW_SKU_COL_WIDTH }} />
-              </colgroup>
+            <table
+              className={clsx(
+                "w-full table-auto border border-border",
+                compactTable ? "text-xs" : "text-sm",
+              )}
+            >
               <thead>
                 <tr>
                   <th className="border border-border px-2 py-1 text-left whitespace-nowrap">#</th>
