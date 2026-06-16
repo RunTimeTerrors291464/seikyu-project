@@ -7,9 +7,13 @@ import ProductHeader from "@/features/products/layout/ProductHeader";
 import ProductHistoryCard from "@/features/products/layout/ProductHistoryCard";
 import ProductNamesCard from "@/features/products/layout/ProductNamesCard";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
-import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
+import {
+  useMayUseManagerWorkflowControls,
+  useMayViewProductHistory,
+} from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
 import { CircleOff, PowerCircle } from "lucide-react";
+import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +26,10 @@ export default function ProductInventoryDetailPage() {
   });
   const { id } = useParams();
   const productId = typeof id === "string" ? id : "";
+  const dict = useDict();
+  const canManage = useMayUseManagerWorkflowControls();
+  const canViewHistory = useMayViewProductHistory();
+
   // DETAILS HOOK
   const {
     product,
@@ -52,7 +60,7 @@ export default function ProductInventoryDetailPage() {
     saveProduct,
     isDirty,
     pendingActivationSave,
-  } = useProductDetail(productId);
+  } = useProductDetail(productId, { loadHistory: canViewHistory });
 
   const canEditDraft = Boolean(product?.isActive);
   const {
@@ -61,9 +69,6 @@ export default function ProductInventoryDetailPage() {
     confirmDiscardNavigate,
     closeDiscardNavigate,
   } = useDraftNavigationGuard(canEditDraft, isDirty);
-
-  const dict = useDict();
-  const canManage = useMayUseManagerWorkflowControls();
 
   if (loading || !product) return null;
 
@@ -150,7 +155,12 @@ export default function ProductInventoryDetailPage() {
         accent="danger"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+      <div
+        className={clsx(
+          "grid grid-cols-1 gap-4 flex-1 min-h-0",
+          canViewHistory ? "lg:grid-cols-3" : "lg:grid-cols-2",
+        )}
+      >
         <ProductDetailsCard
           product={product}
           update={update}
@@ -169,13 +179,15 @@ export default function ProductInventoryDetailPage() {
           />
         </div>
 
-        <ProductHistoryCard
-          history={history}
-          loading={historyLoading}
-          detailMap={detailMap}
-          loadingMap={loadingMap}
-          fetchDetail={fetchDetail}
-        />
+        {canViewHistory && (
+          <ProductHistoryCard
+            history={history}
+            loading={historyLoading}
+            detailMap={detailMap}
+            loadingMap={loadingMap}
+            fetchDetail={fetchDetail}
+          />
+        )}
       </div>
     </div>
   );

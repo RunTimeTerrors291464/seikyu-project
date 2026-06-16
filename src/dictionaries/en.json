@@ -204,6 +204,7 @@
   "totalImportPriceLabel": "Total Price (HUF)",
   "productsLabel": "Products",
   "quantityLabel": "Quantity",
+  "unitPriceLabel": "Unit price (HUF)",
   "totalQuantity": "Total Quantity",
   "noteLabel": "Note",
   "warningLabel": "Warning",

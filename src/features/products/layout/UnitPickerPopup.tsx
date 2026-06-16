@@ -58,7 +58,7 @@ export default function UnitPickerPopup({
   const [desc, setDesc] = useState("");
 
   const [page, setPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(30);
 
   const {
     units,
@@ -67,7 +67,7 @@ export default function UnitPickerPopup({
     updateUnit,
     activateUnit,
     deactivateUnit,
-  } = useProductUnit(search);
+  } = useProductUnit(search, open);
 
   const isDirty = useIsDirty<ProductUnit>();
   const formFieldsRef = useFocusFirstFormControlOnOpen({
@@ -75,10 +75,26 @@ export default function UnitPickerPopup({
     bumpKey: adding ? 1 : 0,
   });
 
+  useEffect(
+    function resetPickerStateWhenClosed(): void {
+      if (open) {
+        return;
+      }
+
+      setSearch("");
+      setAdding(false);
+      setEditingId(null);
+      setDraftMap({});
+      setPage(1);
+      setRowsPerPage(30);
+    },
+    [open],
+  );
+
   /* ───────── Pagination ───────── */
 
   const totalResults = units.length;
-  const totalPages = Math.ceil(totalResults / rowsPerPage);
+  const totalPages = totalResults === 0 ? 1 : Math.ceil(totalResults / rowsPerPage);
 
   const paginatedUnits = units.slice(
     (page - 1) * rowsPerPage,
@@ -192,6 +208,7 @@ export default function UnitPickerPopup({
         <div className="grow min-h-0 flex flex-col p-4">
           <DataTable<ProductUnit>
             data={paginatedUnits}
+            loading={loading}
             getRowId={(u, index) => u.id || `row-${index}`}
             maxHeight="fill"
             emptyMessage={loading ? dict.loading : dict.noUnit}
@@ -274,7 +291,7 @@ export default function UnitPickerPopup({
             page={page}
             totalPages={totalPages}
             rowsPerPage={rowsPerPage}
-            setRowsPerPage={() => { }}
+            setRowsPerPage={setRowsPerPage}
             setPage={setPage}
             totalResults={totalResults}
             dict={{

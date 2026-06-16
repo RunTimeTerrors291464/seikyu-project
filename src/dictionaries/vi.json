@@ -204,6 +204,7 @@
   "totalImportPriceLabel": "Tổng tiền nhập (HUF)",
   "productsLabel": "Sản phẩm",
   "quantityLabel": "Số lượng",
+  "unitPriceLabel": "Đơn giá (HUF)",
   "totalQuantity": "Tổng số lượng",
   "noteLabel": "Ghi chú",
   "warningLabel": "Lưu ý",

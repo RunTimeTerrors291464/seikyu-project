@@ -458,6 +458,7 @@ export default function ReturnImportInvoiceDetailPage() {
         name: line.productName,
         unit: line.productUnit,
         quantity,
+        unitPrice,
         lineTotal: quantity * unitPrice,
         notes: line.notes,
       };
