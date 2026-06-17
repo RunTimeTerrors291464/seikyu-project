@@ -43,3 +43,6 @@ import/*.xlsx
 import/*.xls
 import/*.xlsm
 !import/.gitkeep
+
+# Database export files (place database_export.sql here)
+data/db-exports/

@@ -28,7 +28,9 @@
     "import:products": "ts-node -r tsconfig-paths/register libs/scripts/importProductsFromExcel.script.ts",
     "seed": "ts-node -r tsconfig-paths/register libs/scripts/seed.script.ts",
     "seed:api": "ts-node -r tsconfig-paths/register libs/scripts/seed-via-api.script.ts",
-    "db:clear": "ts-node -r tsconfig-paths/register libs/scripts/clear-db.script.ts"
+    "db:clear": "ts-node -r tsconfig-paths/register libs/scripts/clear-db.script.ts",
+    "db:export": "ts-node -r tsconfig-paths/register libs/scripts/export-db.script.ts",
+    "db:import": "ts-node -r tsconfig-paths/register libs/scripts/import-db.script.ts"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.2.1",
