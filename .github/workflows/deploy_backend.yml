@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy
+    name: SSH Deploy to EC2
     runs-on: ubuntu-latest
 
     steps:
@@ -25,14 +25,14 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             export PATH="$PATH:/usr/local/bin:/usr/bin"
-            
+
             cd ${{ secrets.EC2_PROJECT_PATH_BACKEND }}
 
             echo "--- Pulling latest code ---"
             git pull origin backend-v2
 
-            echo "--- Installing dependencies ---"
-            npm ci --omit=dev
+            echo "--- Installing dependencies (including dev for build) ---"
+            npm ci
 
             echo "--- Building project ---"
             npm run build
