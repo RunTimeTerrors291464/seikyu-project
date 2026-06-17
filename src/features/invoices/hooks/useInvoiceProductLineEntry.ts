@@ -19,6 +19,7 @@ import {
   isInvoiceSkuValidated,
   normalizeInvoiceSkuInput,
 } from "../lib/invoiceSkuFieldValidation";
+import { skuInputMatchesProductSku } from "@/lib/sku/skuInputValidation";
 import type {
   InvoiceLineEntryContext,
   InvoiceLineEntryVariantConfig,
@@ -111,13 +112,14 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
     intent: "lookupExisting",
   });
 
-  // const currentSkuLookupProduct =
-  //   skuLookupProduct?.sku === sku ? skuLookupProduct : null;
+  const currentSkuLookupProduct =
+    skuLookupProduct != null && skuInputMatchesProductSku(sku, skuLookupProduct.sku)
+      ? skuLookupProduct
+      : null;
 
   const resolvedProduct = isEditMode
     ? parsedEditState.product
-    // : currentSkuLookupProduct;
-    : skuLookupProduct;
+    : currentSkuLookupProduct;
 
   useEffect(
     function syncEditSourceLine(): void {
@@ -146,27 +148,37 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
         return;
       }
 
-      // if (!currentSkuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
-        if (!skuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
+      if (!currentSkuLookupProduct || !config.hydrateVariantFieldsFromProduct) {
         lastHydratedProductIdRef.current = null;
         return;
       }
 
-      // if (lastHydratedProductIdRef.current === currentSkuLookupProduct.id) {
-      if (lastHydratedProductIdRef.current === skuLookupProduct.id) {
+      if (lastHydratedProductIdRef.current === currentSkuLookupProduct.id) {
         return;
       }
 
-      // lastHydratedProductIdRef.current = currentSkuLookupProduct.id;
-      lastHydratedProductIdRef.current = skuLookupProduct.id;
+      lastHydratedProductIdRef.current = currentSkuLookupProduct.id;
       setVariantFields({
         ...config.getDefaultVariantFields(),
-        // ...config.hydrateVariantFieldsFromProduct(currentSkuLookupProduct),
-        ...config.hydrateVariantFieldsFromProduct(skuLookupProduct),
+        ...config.hydrateVariantFieldsFromProduct(currentSkuLookupProduct),
       });
     },
-    // [config, currentSkuLookupProduct, isEditMode],
-    [config, skuLookupProduct, isEditMode],
+    [config, currentSkuLookupProduct, isEditMode],
+  );
+
+  useEffect(
+    function clearLineFieldsWhenProductUnresolved(): void {
+      if (isEditMode || resolvedProduct != null) {
+        return;
+      }
+
+      setQuantity("");
+      setNotes("");
+      lastHydratedProductIdRef.current = null;
+      setVariantFields(config.getDefaultVariantFields());
+      clearLineCommitAttempt();
+    },
+    [clearLineCommitAttempt, config, isEditMode, resolvedProduct],
   );
 
   const skuLookupState = useMemo(
@@ -229,7 +241,7 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
 
   const skuHint = isEditMode
     ? undefined
-    : getInvoiceSkuCheckingHint(skuDebouncing, skuChecking, dict);
+    : getInvoiceSkuCheckingHint(sku, skuDebouncing, skuChecking, dict);
 
   const setVariantField = useCallback(function setVariantField<
     K extends keyof TVariantFields,

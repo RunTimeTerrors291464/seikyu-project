@@ -4,6 +4,7 @@ import { getProductBySku } from "@/features/products/services/product.service";
 import type { Product } from "@/features/products/types/product";
 import useDebounce from "@/lib/hooks/useDebounce";
 import { isProductSkuNotFoundError } from "@/lib/sku/productSkuApiErrors";
+import { isSkuInputEmpty } from "@/lib/sku/skuInputValidation";
 import { useEffect, useRef, useState } from "react";
 
 export type SkuCheckIntent = "lookupExisting" | "checkDuplicate";
@@ -39,7 +40,8 @@ export default function useSkuCheck({
   intent,
 }: UseSkuCheckProps): UseSkuCheckResult {
   const debouncedSku = useDebounce(sku, 800);
-  const isDebouncing = sku !== debouncedSku;
+  const isDebouncing =
+    !isSkuInputEmpty(sku) && sku !== debouncedSku;
 
   const [checking, setChecking] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
@@ -51,14 +53,35 @@ export default function useSkuCheck({
   const activeRequest = useRef(0);
 
   useEffect(
+    function clearLookupWhenSkuEmpty(): void {
+      if (skip || !isSkuInputEmpty(sku)) {
+        return;
+      }
+
+      activeRequest.current += 1;
+      setChecking(false);
+      setProduct(null);
+      setNotFound(false);
+      setIsDuplicate(false);
+    },
+    [sku, skip],
+  );
+
+  useEffect(
     function runSkuCheck(): void {
-      console.log("runSkuCheck", skip, intent);
-      if (skip
-        // || !isSku13Format(debouncedSku)
-      ) {
+      if (skip) {
         setProduct(null);
         setNotFound(false);
         setIsDuplicate(false);
+        setChecking(false);
+        return;
+      }
+
+      if (isSkuInputEmpty(debouncedSku)) {
+        setProduct(null);
+        setNotFound(false);
+        setIsDuplicate(false);
+        setChecking(false);
         return;
       }
 

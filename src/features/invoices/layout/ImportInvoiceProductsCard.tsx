@@ -152,22 +152,20 @@ export default function ImportInvoiceProductsCard({
     const nextProducts = selectedProducts.map(function mapEditableProduct(product) {
       return productToEditableImportLine(product, dict.unnamed);
     });
-    onChangeProducts([...products, ...nextProducts]);
+    onChangeProducts([...nextProducts, ...products]);
     if (readOnlyTable) {
       entryCardRef?.current?.focusSku();
       return;
     }
     scheduleFocusLastInvoiceLineQuantity(
-      nextProducts.map(function mapLocalId(line) {
-        return line.localId;
-      }),
+      [nextProducts[0]!.localId],
       tableScopeRef.current,
     );
   }
 
   function handleAddSingleProduct(product: Product): void {
     const line = productToEditableImportLine(product, dict.unnamed);
-    onChangeProducts([...products, line]);
+    onChangeProducts([line, ...products]);
     if (readOnlyTable) {
       entryCardRef?.current?.focusSku();
       return;
@@ -176,7 +174,7 @@ export default function ImportInvoiceProductsCard({
   }
 
   function handleCreateAndAddProduct(product: EditableImportInvoiceProduct): void {
-    onChangeProducts([...products, product]);
+    onChangeProducts([product, ...products]);
     if (readOnlyTable) {
       entryCardRef?.current?.focusSku();
       return;

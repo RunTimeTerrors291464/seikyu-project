@@ -281,7 +281,7 @@ export default function AddNewProductForm({
         label={dict.sku}
         icon={<Barcode className="h-3 w-3" />}
         error={errors.sku}
-        hint={getSkuCheckingHint(skuDebouncing, skuChecking, dict.checkingSku)}
+        hint={getSkuCheckingHint(values.sku, skuDebouncing, skuChecking, dict.checkingSku)}
         required
         messageBesideLabel={true}
       >

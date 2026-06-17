@@ -240,8 +240,8 @@ export default function AddSellingInvoicePopup({
 
   function handleAddLineFromEntry(line: EditableSellingInvoiceCreateLine): void {
     setEditingLineLocalId(null);
-    setProducts(function appendLine(previous): EditableSellingInvoiceCreateLine[] {
-      return [...previous, line];
+    setProducts(function prependLine(previous): EditableSellingInvoiceCreateLine[] {
+      return [line, ...previous];
     });
   }
 

@@ -166,9 +166,10 @@ export function getInvoiceSkuDisplayError(
  * @returns Hint while lookup is pending, or undefined when idle.
  */
 export function getInvoiceSkuCheckingHint(
+  sku: string,
   skuDebouncing: boolean,
   skuChecking: boolean,
   dict: Dictionary,
 ): string | undefined {
-  return getSkuCheckingHint(skuDebouncing, skuChecking, dict.checkingSku);
+  return getSkuCheckingHint(sku, skuDebouncing, skuChecking, dict.checkingSku);
 }

@@ -97,6 +97,8 @@
   "name": "Name",
   "unnamed": "Unnamed",
   "filter": "Filter",
+  "dateFromLabel": "From",
+  "dateToLabel": "To",
   "refresh": "Refresh",
   "draft": "Draft",
   "confirmed": "Confirmed",

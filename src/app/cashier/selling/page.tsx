@@ -7,6 +7,7 @@ import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import TablePagination from "@/components/ui/TablePagination";
 import { SELLING_STATUS_ACCENT } from "@/features/invoices/components/SellingInvoiceStatusPill";
+import InvoiceListDateRangeFilter from "@/features/invoices/components/InvoiceListDateRangeFilter";
 import {
   SELLING_INVOICE_STATUS_OPTIONS,
   SELLING_INVOICE_TAX_FOCUS_OPTIONS,
@@ -17,6 +18,7 @@ import {
   SellingInvoiceRow,
   useSellingInvoices,
 } from "@/features/invoices/hooks/useSellingInvoices";
+import { useInvoiceListDateRangeFilter } from "@/features/invoices/hooks/useInvoiceListDateRangeFilter";
 import AddSellingInvoicePopup from "@/features/invoices/layout/AddSellingInvoicePopup";
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
 import { useMayCreateSellingInvoice } from "@/lib/hooks/useManagerWorkflowAccess";
@@ -89,6 +91,15 @@ export default function CashierSellingInvoicesPage() {
     useState<SellingInvoiceStatusFilter>("all");
   const [taxFocusFilter, setTaxFocusFilter] =
     useState<SellingInvoiceTaxFocusFilter>("all");
+  const {
+    fromDate: fromDateFilter,
+    toDate: toDateFilter,
+    setFromDate: setFromDateFilter,
+    setToDate: setToDateFilter,
+    listDateRange,
+    isDefaultRange: isDefaultDateRange,
+    resetDateRange,
+  } = useInvoiceListDateRangeFilter();
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
   const [sortBy, setSortBy] = useState<SellingInvoiceSortBy>(DEFAULT_SORT_BY);
@@ -103,6 +114,8 @@ export default function CashierSellingInvoicesPage() {
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
     taxFocus: taxFocusFilter === "all" ? undefined : taxFocusFilter,
+    fromDate: listDateRange.fromDate,
+    toDate: listDateRange.toDate,
   });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
@@ -147,6 +160,7 @@ export default function CashierSellingInvoicesPage() {
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
     taxFocusFilter === "all" &&
+    isDefaultDateRange &&
     sortBy === DEFAULT_SORT_BY &&
     sortOrder === DEFAULT_SORT_ORDER &&
     page === 1 &&
@@ -157,6 +171,7 @@ export default function CashierSellingInvoicesPage() {
     setSearchRule("invoiceId");
     setStatusFilter("all");
     setTaxFocusFilter("all");
+    resetDateRange();
     setSortBy(DEFAULT_SORT_BY);
     setSortOrder(DEFAULT_SORT_ORDER);
     setPage(1);
@@ -234,46 +249,61 @@ export default function CashierSellingInvoicesPage() {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">{dict.status}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">{dict.status}</span>
 
-            <div className="flex gap-1">
-              {SELLING_INVOICE_STATUS_OPTIONS.map((option) => (
-                <button
-                  key={String(option.value)}
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter(option.value);
-                    setPage(1);
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
-                >
-                  {dict[option.dictKey]}
-                </button>
-              ))}
+              <div className="flex gap-1">
+                {SELLING_INVOICE_STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={String(option.value)}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(option.value);
+                      setPage(1);
+                    }}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
+                  >
+                    {dict[option.dictKey]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">{dict.taxFocusLabel}</span>
+
+              <div className="flex gap-1">
+                {SELLING_INVOICE_TAX_FOCUS_OPTIONS.map((option) => (
+                  <button
+                    key={String(option.value)}
+                    type="button"
+                    onClick={() => {
+                      setTaxFocusFilter(option.value);
+                      setPage(1);
+                    }}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getTaxFocusFilterClass(option.value, taxFocusFilter)}`}
+                  >
+                    {dict[option.dictKey]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">{dict.taxFocusLabel}</span>
-
-            <div className="flex gap-1">
-              {SELLING_INVOICE_TAX_FOCUS_OPTIONS.map((option) => (
-                <button
-                  key={String(option.value)}
-                  type="button"
-                  onClick={() => {
-                    setTaxFocusFilter(option.value);
-                    setPage(1);
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getTaxFocusFilterClass(option.value, taxFocusFilter)}`}
-                >
-                  {dict[option.dictKey]}
-                </button>
-              ))}
-            </div>
-          </div>
+          <InvoiceListDateRangeFilter
+            fromDate={fromDateFilter}
+            toDate={toDateFilter}
+            onFromDateChange={function handleFromDateChange(value): void {
+              setFromDateFilter(value);
+              setPage(1);
+            }}
+            onToDateChange={function handleToDateChange(value): void {
+              setToDateFilter(value);
+              setPage(1);
+            }}
+          />
         </div>
       )}
 

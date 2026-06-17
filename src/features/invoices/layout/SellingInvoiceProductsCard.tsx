@@ -149,7 +149,7 @@ export default function SellingInvoiceProductsCard({
     ): EditableSellingInvoiceCreateLine {
       return catalogProductToEditableSellingCreateLine(product, dict.unnamed);
     });
-    onChangeProducts([...products, ...nextProducts]);
+    onChangeProducts([...nextProducts, ...products]);
     entryCardRef?.current?.focusSku();
   }
 
@@ -158,7 +158,7 @@ export default function SellingInvoiceProductsCard({
       return;
     }
     const line = catalogProductToEditableSellingCreateLine(product, dict.unnamed);
-    onChangeProducts([...products, line]);
+    onChangeProducts([line, ...products]);
     entryCardRef?.current?.focusSku();
   }
 

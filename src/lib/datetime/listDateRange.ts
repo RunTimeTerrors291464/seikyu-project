@@ -53,6 +53,124 @@ export function getDefaultListDateRange(
 }
 
 /**
+ * @param iso - UTC ISO timestamp from a list date bound.
+ * @returns `YYYY-MM-DD` for HTML date inputs.
+ */
+export function isoToCalendarDate(iso: string): string {
+  const date = new Date(iso);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Default list range as calendar dates for filter inputs.
+ */
+export function getDefaultListCalendarDateRange(): {
+  fromDate: string;
+  toDate: string;
+} {
+  const range = getDefaultListDateRange();
+  return {
+    fromDate: isoToCalendarDate(range.fromDate),
+    toDate: isoToCalendarDate(range.toDate),
+  };
+}
+
+const CALENDAR_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * @param calendarDate - `YYYY-MM-DD` from a date input.
+ * @returns UTC start-of-day ISO for `fromDate`, or undefined when invalid.
+ */
+export function calendarDateToFromIso(calendarDate: string): string | undefined {
+  if (!CALENDAR_DATE_PATTERN.test(calendarDate)) {
+    return undefined;
+  }
+
+  const [year, month, day] = calendarDate.split("-").map(Number);
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    Number.isNaN(year) ||
+    Number.isNaN(month) ||
+    Number.isNaN(day)
+  ) {
+    return undefined;
+  }
+
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0)).toISOString();
+}
+
+/**
+ * @param calendarDate - `YYYY-MM-DD` from a date input.
+ * @returns UTC end-of-day ISO for `toDate`, or undefined when invalid.
+ */
+export function calendarDateToToIso(calendarDate: string): string | undefined {
+  if (!CALENDAR_DATE_PATTERN.test(calendarDate)) {
+    return undefined;
+  }
+
+  const [year, month, day] = calendarDate.split("-").map(Number);
+  if (
+    year === undefined ||
+    month === undefined ||
+    day === undefined ||
+    Number.isNaN(year) ||
+    Number.isNaN(month) ||
+    Number.isNaN(day)
+  ) {
+    return undefined;
+  }
+
+  return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999)).toISOString();
+}
+
+/**
+ * @param fromDate - `YYYY-MM-DD` start of range.
+ * @param toDate - `YYYY-MM-DD` end of range.
+ * @returns True when both are valid calendar dates and `fromDate` <= `toDate`.
+ */
+export function isValidCalendarDateRange(
+  fromDate: string,
+  toDate: string,
+): boolean {
+  if (
+    !CALENDAR_DATE_PATTERN.test(fromDate) ||
+    !CALENDAR_DATE_PATTERN.test(toDate)
+  ) {
+    return false;
+  }
+
+  return fromDate <= toDate;
+}
+
+/**
+ * @param fromCalendarDate - `YYYY-MM-DD` start of range.
+ * @param toCalendarDate - `YYYY-MM-DD` end of range.
+ * @returns UTC ISO bounds, or null when the calendar range is invalid.
+ */
+export function buildListDateRangeIso(
+  fromCalendarDate: string,
+  toCalendarDate: string,
+): ListDateRangeIso | null {
+  if (!isValidCalendarDateRange(fromCalendarDate, toCalendarDate)) {
+    return null;
+  }
+
+  const fromDate = calendarDateToFromIso(fromCalendarDate);
+  const toDate = calendarDateToToIso(toCalendarDate);
+
+  if (fromDate === undefined || toDate === undefined) {
+    return null;
+  }
+
+  return { fromDate, toDate };
+}
+
+/**
  * Fills missing `fromDate` / `toDate` on a list query using {@link getDefaultListDateRange}.
  *
  * @param params - Query object that may omit either bound.

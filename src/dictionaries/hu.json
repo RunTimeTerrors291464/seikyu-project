@@ -97,6 +97,8 @@
   "name": "Nev",
   "unnamed": "Nevtelen",
   "filter": "Szures",
+  "dateFromLabel": "Tol",
+  "dateToLabel": "Ig",
   "refresh": "Frissites",
   "draft": "Piszkozat",
   "confirmed": "Megerositve",

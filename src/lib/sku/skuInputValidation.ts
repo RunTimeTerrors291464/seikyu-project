@@ -23,6 +23,26 @@ export function normalizeSkuInput(value: string): string {
 }
 
 /**
+ * @param inputSku - SKU digits currently in the input.
+ * @param productSku - SKU from a resolved catalog product.
+ * @returns True when both normalize to the same 13-digit SKU.
+ */
+export function skuInputMatchesProductSku(
+  inputSku: string,
+  productSku: string,
+): boolean {
+  if (isSkuInputEmpty(inputSku)) {
+    return false;
+  }
+
+  const padTo13 = function padTo13(value: string): string {
+    return normalizeSkuInput(value).padStart(13, "0");
+  };
+
+  return padTo13(inputSku) === padTo13(productSku);
+}
+
+/**
  * @param value - SKU digits currently in the input.
  * @returns True when the field has no characters to validate.
  */
@@ -45,10 +65,15 @@ export function isSku13Format(value: string): boolean {
  * @returns Hint while lookup is pending, or undefined when idle.
  */
 export function getSkuCheckingHint(
+  sku: string,
   skuDebouncing: boolean,
   skuChecking: boolean,
   checkingSkuLabel: string,
 ): string | undefined {
+  if (isSkuInputEmpty(sku)) {
+    return undefined;
+  }
+
   return skuDebouncing || skuChecking ? checkingSkuLabel : undefined;
 }
 

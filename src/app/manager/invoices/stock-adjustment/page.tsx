@@ -7,11 +7,13 @@ import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import TablePagination from "@/components/ui/TablePagination";
 import { STATUS_ACCENT } from "@/features/invoices/components/StockAdjustmentStatusPill";
+import InvoiceListDateRangeFilter from "@/features/invoices/components/InvoiceListDateRangeFilter";
 import {
   STOCK_ADJUSTMENT_INVOICE_STATUS_OPTIONS,
   type StockAdjustmentInvoiceStatusFilter,
 } from "@/features/invoices/filters/stockAdjustmentInvoiceFilters";
 import { useStockAdjustmentInvoices } from "@/features/invoices/hooks/useStockAdjustmentInvoices";
+import { useInvoiceListDateRangeFilter } from "@/features/invoices/hooks/useInvoiceListDateRangeFilter";
 import AddStockAdjustmentInvoicePopup from "@/features/invoices/layout/AddStockAdjustmentInvoicePopup";
 import { stockAdjustmentInvoiceColumns } from "@/features/invoices/table/stockAdjustmentInvoiceColumns";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
@@ -76,6 +78,15 @@ export default function StockAdjustmentInvoicesListPage() {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] =
     useState<StockAdjustmentInvoiceStatusFilter>("all");
+  const {
+    fromDate: fromDateFilter,
+    toDate: toDateFilter,
+    setFromDate: setFromDateFilter,
+    setToDate: setToDateFilter,
+    listDateRange,
+    isDefaultRange: isDefaultDateRange,
+    resetDateRange,
+  } = useInvoiceListDateRangeFilter();
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
   const [sortBy, setSortBy] = useState<StockAdjustmentSortBy>(DEFAULT_SORT_BY);
@@ -89,6 +100,8 @@ export default function StockAdjustmentInvoicesListPage() {
     sortBy,
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
+    fromDate: listDateRange.fromDate,
+    toDate: listDateRange.toDate,
   });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
@@ -133,6 +146,7 @@ export default function StockAdjustmentInvoicesListPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
+    isDefaultDateRange &&
     sortBy === DEFAULT_SORT_BY &&
     sortOrder === DEFAULT_SORT_ORDER &&
     page === 1 &&
@@ -142,6 +156,7 @@ export default function StockAdjustmentInvoicesListPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
+    resetDateRange();
     setSortBy(DEFAULT_SORT_BY);
     setSortOrder(DEFAULT_SORT_ORDER);
     setPage(1);
@@ -224,7 +239,7 @@ export default function StockAdjustmentInvoicesListPage() {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">
               {dict.status}
@@ -246,6 +261,19 @@ export default function StockAdjustmentInvoicesListPage() {
               ))}
             </div>
           </div>
+
+          <InvoiceListDateRangeFilter
+            fromDate={fromDateFilter}
+            toDate={toDateFilter}
+            onFromDateChange={function handleFromDateChange(value): void {
+              setFromDateFilter(value);
+              setPage(1);
+            }}
+            onToDateChange={function handleToDateChange(value): void {
+              setToDateFilter(value);
+              setPage(1);
+            }}
+          />
         </div>
       )}
 

@@ -186,7 +186,7 @@ export default function AddProductPopup({
     return null;
   }
 
-  const skuHint = getInvoiceSkuCheckingHint(skuDebouncing, skuChecking, dict);
+  const skuHint = getInvoiceSkuCheckingHint(sku, skuDebouncing, skuChecking, dict);
   const hasSkuError = skuError.length > 0;
 
   return (

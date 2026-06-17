@@ -9,6 +9,7 @@ import TablePagination from "@/components/ui/TablePagination";
 import {
   STATUS_ACCENT,
 } from "@/features/invoices/components/ImportInvoiceStatusPill";
+import InvoiceListDateRangeFilter from "@/features/invoices/components/InvoiceListDateRangeFilter";
 import {
   IMPORT_INVOICE_STATUS_OPTIONS,
   ImportInvoiceStatusFilter,
@@ -42,6 +43,7 @@ import {
 } from "lucide-react";
 
 import { ImportInvoiceRow, useImportInvoices } from "@/features/invoices/hooks/useImportInvoices";
+import { useInvoiceListDateRangeFilter } from "@/features/invoices/hooks/useInvoiceListDateRangeFilter";
 import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePopup";
 import { useRouter } from "next/navigation";
 
@@ -108,6 +110,15 @@ export default function ImportInvoicesListPage() {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] =
     useState<ImportInvoiceStatusFilter>("all");
+  const {
+    fromDate: fromDateFilter,
+    toDate: toDateFilter,
+    setFromDate: setFromDateFilter,
+    setToDate: setToDateFilter,
+    listDateRange,
+    isDefaultRange: isDefaultDateRange,
+    resetDateRange,
+  } = useInvoiceListDateRangeFilter();
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
   const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
   const [sortBy, setSortBy] = useState<ImportInvoiceSortBy>(DEFAULT_SORT_BY);
@@ -127,6 +138,8 @@ export default function ImportInvoicesListPage() {
     sortBy,
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
+    fromDate: listDateRange.fromDate,
+    toDate: listDateRange.toDate,
   });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
@@ -307,6 +320,7 @@ export default function ImportInvoicesListPage() {
     search.length === 0 &&
     searchRule === "invoiceId" &&
     statusFilter === "all" &&
+    isDefaultDateRange &&
     sortBy === DEFAULT_SORT_BY &&
     sortOrder === DEFAULT_SORT_ORDER &&
     returnSortBy === DEFAULT_RETURN_SORT_BY &&
@@ -319,6 +333,7 @@ export default function ImportInvoicesListPage() {
     setSearch("");
     setSearchRule("invoiceId");
     setStatusFilter("all");
+    resetDateRange();
     setSortBy(DEFAULT_SORT_BY);
     setSortOrder(DEFAULT_SORT_ORDER);
     setReturnSortBy(DEFAULT_RETURN_SORT_BY);
@@ -400,7 +415,7 @@ export default function ImportInvoicesListPage() {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">
               {dict.status}
@@ -422,6 +437,19 @@ export default function ImportInvoicesListPage() {
               ))}
             </div>
           </div>
+
+          <InvoiceListDateRangeFilter
+            fromDate={fromDateFilter}
+            toDate={toDateFilter}
+            onFromDateChange={function handleFromDateChange(value): void {
+              setFromDateFilter(value);
+              setPage(1);
+            }}
+            onToDateChange={function handleToDateChange(value): void {
+              setToDateFilter(value);
+              setPage(1);
+            }}
+          />
         </div>
       )}
 

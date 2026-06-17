@@ -97,6 +97,8 @@
   "name": "Tên",
   "unnamed": "Chưa đặt tên",
   "filter": "Lọc",
+  "dateFromLabel": "Từ",
+  "dateToLabel": "Đến",
   "refresh": "Làm mới",
   "draft": "Bản nháp",
   "confirmed": "Đã xác nhận",

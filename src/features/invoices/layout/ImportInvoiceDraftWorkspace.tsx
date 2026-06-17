@@ -109,7 +109,7 @@ export default function ImportInvoiceDraftWorkspace({
 
   function handleAddLineFromEntry(line: EditableImportInvoiceProduct): void {
     setEditingLineLocalId(null);
-    onChangeProducts([...products, line]);
+    onChangeProducts([line, ...products]);
   }
 
   function handleUpdateLineFromEntry(line: EditableImportInvoiceProduct): void {
