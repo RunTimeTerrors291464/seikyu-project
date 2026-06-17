@@ -1,0 +1,37 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches:
+      - frontend
+
+jobs:
+  deploy:
+    name: SSH Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST_FRONTEND }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY_FRONTEND }}
+          script: |
+            set -e
+
+            cd ${{ secrets.EC2_PROJECT_PATH_FRONTEND }}
+
+            echo ">>> Pulling latest code..."
+            git pull origin frontend
+
+            echo ">>> Installing dependencies..."
+            npm ci
+
+            echo ">>> Building Next.js app..."
+            npm run build
+
+            echo ">>> Restarting PM2 process..."
+            pm2 restart frontend
+
+            echo ">>> Deployment complete."
