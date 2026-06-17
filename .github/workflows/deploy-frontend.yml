@@ -14,9 +14,9 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.EC2_HOST_FRONTEND }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_FRONTEND }}
           script: |
             set -e
 
@@ -25,7 +25,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             export PATH="$PATH:/usr/local/bin:/usr/bin"
 
-            cd ${{ secrets.EC2_PROJECT_PATH }}
+            cd ${{ secrets.EC2_PROJECT_PATH_FRONTEND }}
 
             echo ">>> Pulling latest code..."
             git pull origin frontend
