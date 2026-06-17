@@ -1,4 +1,9 @@
 import { normalizeAuthUser, type AuthUser } from "@/lib/auth/authUser";
+import {
+  clearAuthCookies,
+  setAccessTokenCookie,
+  setUserRolesCookie,
+} from "@/lib/auth/authCookies";
 import { logout as logoutRequest } from "@/services/auth.service";
 import { create } from "zustand";
 
@@ -26,12 +31,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   // Called after successful login API request
   login: (token, rawUser) => {
-
-    console.log("AUTH STORE → storing token");
-
     const user = normalizeAuthUser(rawUser);
     if (!user) {
-      console.error("AUTH STORE → login payload missing id, username, or roles");
       return;
     }
 
@@ -44,12 +45,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       localStorage.setItem("user", JSON.stringify(user));
 
-      // Store token in cookie for Next.js middleware
-      document.cookie = `access_token=${encodeURIComponent(
-        token
-      )}; path=/; SameSite=Lax${
-        window.location.protocol === "https:" ? "; Secure" : ""
-      }`;
+      setAccessTokenCookie(token);
+      setUserRolesCookie(user.roles);
     }
 
     // Update Zustand state
@@ -63,29 +60,23 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   // Clears authentication
   logout: async function logout(): Promise<void> {
-
-    console.log("AUTH STORE → clearing auth");
-
     if (typeof window !== "undefined") {
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (refreshToken) {
         try {
           await logoutRequest(refreshToken);
-        } catch (error: unknown) {
-          console.warn("AUTH STORE → API logout failed, clearing local auth anyway", error);
+        } catch {
+          // Clear local auth even when API logout fails.
         }
       }
 
       // Remove token used by API client
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
 
-      // Delete cookie by expiring it
-      document.cookie =
-        "access_token=; path=/; SameSite=Lax" +
-        (window.location.protocol === "https:" ? "; Secure" : "") +
-        "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      clearAuthCookies();
 
       window.location.href = "/login";
     }
@@ -109,7 +100,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     const user = localStorage.getItem("user");
 
     if (!token) {
-      console.log("AUTH STORE → no stored token");
       set((previous) => ({
         ...previous,
         token: null,
@@ -118,8 +108,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       }));
       return;
     }
-
-    console.log("AUTH STORE → token loaded from storage");
 
     let restoredUser: AuthUser | null = null;
     if (user) {
@@ -136,5 +124,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: restoredUser,
       hydrated: true,
     }));
+
+    setAccessTokenCookie(token);
+    if (restoredUser) {
+      setUserRolesCookie(restoredUser.roles);
+    }
   },
 }));

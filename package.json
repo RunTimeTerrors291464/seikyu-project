@@ -6,19 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@fontsource/noto-sans": "^5.2.10",
-    "@fontsource/open-sans": "^5.2.7",
     "@hookform/resolvers": "^5.2.2",
     "@react-pdf/renderer": "^4.4.0",
-    "@tanstack/react-query": "^5.90.21",
-    "@tanstack/react-table": "^8.21.3",
     "axios": "1.14.0",
     "clsx": "^2.1.1",
-    "jwt-decode": "^4.0.0",
-    "lodash": "^4.17.23",
     "lucide-react": "^0.577.0",
     "next": "^16.2.1",
     "next-themes": "^0.4.6",
@@ -38,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

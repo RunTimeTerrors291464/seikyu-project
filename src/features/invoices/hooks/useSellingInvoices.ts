@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import { usePaginatedListQuery } from "@/lib/hooks/usePaginatedListQuery";
+import { useDict } from "@/lib/lang/DictProvider";
 
 import {
   getSellingInvoiceList,
@@ -35,13 +38,6 @@ export type UseSellingInvoicesResult = {
   refetch: () => void;
 };
 
-type InvoiceListState = {
-  rows: SellingInvoiceRow[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
 function mapToRow(dto: SellingInvoiceWithoutProductsDto): SellingInvoiceRow {
   return {
     id: dto.id,
@@ -60,66 +56,10 @@ function mapToRow(dto: SellingInvoiceWithoutProductsDto): SellingInvoiceRow {
   };
 }
 
-export function useSellingInvoices(
+function getSellingInvoiceQueryDeps(
   query: UseSellingInvoicesQuery,
-): UseSellingInvoicesResult {
-  const [state, setState] = useState<InvoiceListState>({
-    rows: [],
-    total: 0,
-    page: query.page ?? 1,
-    limit: query.limit ?? 10,
-  });
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function load(): Promise<void> {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await getSellingInvoiceList(query);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const rows = response.invoices.map(mapToRow);
-
-        setState({
-          rows,
-          total: response.total,
-          page: response.page,
-          limit: response.limit,
-        });
-      } catch (unknownError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const error =
-          unknownError instanceof Error
-            ? unknownError
-            : new Error("Failed to load selling invoices");
-
-        setError(error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
+): readonly unknown[] {
+  return [
     query.page,
     query.limit,
     query.search,
@@ -130,20 +70,19 @@ export function useSellingInvoices(
     query.taxFocus,
     query.fromDate,
     query.toDate,
-    refreshKey,
-  ]);
+  ];
+}
 
-  function refetch(): void {
-    setRefreshKey((current) => current + 1);
-  }
+export function useSellingInvoices(
+  query: UseSellingInvoicesQuery,
+): UseSellingInvoicesResult {
+  const dict = useDict();
 
-  return {
-    rows: state.rows,
-    total: state.total,
-    page: state.page,
-    limit: state.limit,
-    loading,
-    error,
-    refetch,
-  };
+  return usePaginatedListQuery({
+    query,
+    fetchList: getSellingInvoiceList,
+    mapToRow,
+    getQueryDeps: getSellingInvoiceQueryDeps,
+    fallbackErrorMessage: dict.sellingInvoicesLoadFailed,
+  });
 }

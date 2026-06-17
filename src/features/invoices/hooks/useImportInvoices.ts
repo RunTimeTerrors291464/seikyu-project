@@ -1,8 +1,9 @@
 "use client";
 
 import { parseApiError, resolveApiErrorMessage } from "@/lib/api/errors";
+import { usePaginatedListQuery } from "@/lib/hooks/usePaginatedListQuery";
 import { useDict } from "@/lib/lang/DictProvider";
-import { useEffect, useState } from "react";
+import type { Dictionary } from "@/lib/lang/i18n";
 
 import {
   getImportInvoiceList,
@@ -39,13 +40,6 @@ export type UseImportInvoicesResult = {
   refetch: () => void;
 };
 
-type InvoiceListState = {
-  rows: ImportInvoiceRow[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
 function mapToRow(dto: ImportInvoiceWithoutProductsDto): ImportInvoiceRow {
   return {
     id: dto.id,
@@ -63,78 +57,43 @@ function mapToRow(dto: ImportInvoiceWithoutProductsDto): ImportInvoiceRow {
   };
 }
 
+function getImportInvoiceQueryDeps(
+  query: UseImportInvoicesQuery,
+  dict: Dictionary,
+): readonly unknown[] {
+  return [
+    query.page,
+    query.limit,
+    query.search,
+    query.searchBy,
+    query.sortBy,
+    query.sortOrder,
+    query.status,
+    query.fromDate,
+    query.toDate,
+    dict,
+  ];
+}
+
 export function useImportInvoices(
   query: UseImportInvoicesQuery,
 ): UseImportInvoicesResult {
   const dict = useDict();
-  const [state, setState] = useState<InvoiceListState>({
-    rows: [],
-    total: 0,
-    page: query.page ?? 1,
-    limit: query.limit ?? 10,
+
+  return usePaginatedListQuery({
+    query,
+    fetchList: getImportInvoiceList,
+    mapToRow,
+    getQueryDeps: function getImportInvoiceQueryDepsWithDict(
+      currentQuery,
+    ): readonly unknown[] {
+      return getImportInvoiceQueryDeps(currentQuery, dict);
+    },
+    resolveErrorMessage: function resolveImportListError(error: unknown): string {
+      return parseApiError(error)
+        ? resolveApiErrorMessage(error, dict)
+        : dict.somethingWentWrong;
+    },
+    fallbackErrorMessage: dict.somethingWentWrong,
   });
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function load(): Promise<void> {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await getImportInvoiceList(query);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const rows = response.invoices.map(mapToRow);
-
-        setState({
-          rows,
-          total: response.total,
-          page: response.page,
-          limit: response.limit,
-        });
-      } catch (unknownError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const message = parseApiError(unknownError)
-          ? resolveApiErrorMessage(unknownError, dict)
-          : dict.somethingWentWrong;
-
-        setError(new Error(message));
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [dict, query.page, query.limit, query.search, query.searchBy, query.sortBy, query.sortOrder, query.status, query.fromDate, query.toDate, refreshKey]);
-
-  function refetch(): void {
-    setRefreshKey((current) => current + 1);
-  }
-
-  return {
-    rows: state.rows,
-    total: state.total,
-    page: state.page,
-    limit: state.limit,
-    loading,
-    error,
-    refetch,
-  };
 }

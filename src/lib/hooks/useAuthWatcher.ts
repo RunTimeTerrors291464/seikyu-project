@@ -26,7 +26,6 @@ export const useAuthWatcher = () => {
     // no token → go login
     if (!token) {
       if (!isAuthPage) {
-        console.log("No token → redirect to login");
         router.replace("/login");
       }
       return;
@@ -38,7 +37,6 @@ export const useAuthWatcher = () => {
         authUser?.roles?.length != null && authUser.roles.length > 0
           ? defaultHomePathForRoles(authUser.roles)
           : "/admin/dashboard";
-      console.log("Already logged in → redirect to app home");
       router.replace(home);
       return;
     }

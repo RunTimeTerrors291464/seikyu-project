@@ -245,20 +245,13 @@ export function getFieldLabel(
   const key = FIELD_KEYS[field];
 
   if (!key) {
-    console.warn("[History] ⚠️ Missing FIELD_KEYS mapping for:", field);
     return field;
   }
 
   const label = dict[key];
 
   if (!label) {
-    console.warn(
-      "[History] ⚠️ Missing dictionary key:",
-      key,
-      "for field:",
-      field
-    );
-    return field;
+    return key;
   }
 
   return label;

@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import { usePaginatedListQuery } from "@/lib/hooks/usePaginatedListQuery";
+import { useDict } from "@/lib/lang/DictProvider";
 
 import {
   getStockAdjustmentInvoiceList,
@@ -32,13 +35,6 @@ export type UseStockAdjustmentInvoicesResult = {
   refetch: () => void;
 };
 
-type InvoiceListState = {
-  rows: StockAdjustmentInvoiceRow[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
 function mapToRow(
   dto: StockAdjustmentInvoiceWithoutProductsDto,
 ): StockAdjustmentInvoiceRow {
@@ -56,66 +52,10 @@ function mapToRow(
   };
 }
 
-export function useStockAdjustmentInvoices(
+function getStockAdjustmentInvoiceQueryDeps(
   query: UseStockAdjustmentInvoicesQuery,
-): UseStockAdjustmentInvoicesResult {
-  const [state, setState] = useState<InvoiceListState>({
-    rows: [],
-    total: 0,
-    page: query.page ?? 1,
-    limit: query.limit ?? 10,
-  });
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function load(): Promise<void> {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await getStockAdjustmentInvoiceList(query);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const rows = response.invoices.map(mapToRow);
-
-        setState({
-          rows,
-          total: response.total,
-          page: response.page,
-          limit: response.limit,
-        });
-      } catch (unknownError) {
-        if (!isMounted) {
-          return;
-        }
-
-        const caughtError =
-          unknownError instanceof Error
-            ? unknownError
-            : new Error("Failed to load stock adjustment invoices");
-
-        setError(caughtError);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
+): readonly unknown[] {
+  return [
     query.page,
     query.limit,
     query.search,
@@ -125,20 +65,19 @@ export function useStockAdjustmentInvoices(
     query.status,
     query.fromDate,
     query.toDate,
-    refreshKey,
-  ]);
+  ];
+}
 
-  function refetch(): void {
-    setRefreshKey((current) => current + 1);
-  }
+export function useStockAdjustmentInvoices(
+  query: UseStockAdjustmentInvoicesQuery,
+): UseStockAdjustmentInvoicesResult {
+  const dict = useDict();
 
-  return {
-    rows: state.rows,
-    total: state.total,
-    page: state.page,
-    limit: state.limit,
-    loading,
-    error,
-    refetch,
-  };
+  return usePaginatedListQuery({
+    query,
+    fetchList: getStockAdjustmentInvoiceList,
+    mapToRow,
+    getQueryDeps: getStockAdjustmentInvoiceQueryDeps,
+    fallbackErrorMessage: dict.stockAdjustmentInvoicesLoadFailed,
+  });
 }

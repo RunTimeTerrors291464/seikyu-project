@@ -10,8 +10,7 @@ Next.js application for an inventory and invoicing dashboard. It talks to a REST
 | Styling           | [Tailwind CSS](https://tailwindcss.com/) 4                                                        |
 | HTTP              | [Axios](https://axios-http.com/) with interceptors (auth header, token refresh)                   |
 | State             | [Zustand](https://zustand-demo.pmnd.rs/) (auth)                                                   |
-| Server/async data | [TanStack Query](https://tanstack.com/query)                                                      |
-| Tables            | [TanStack Table](https://tanstack.com/table)                                                      |
+| Tables            | Custom `DataTable` (`src/components/ui/DataTable.tsx`)                                          |
 | Forms             | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) (`@hookform/resolvers`) |
 | Theming           | [next-themes](https://github.com/pacocoursey/next-themes)                                         |
 | Toasts            | [Sonner](https://sonner.emilkowal.ski/)                                                           |
@@ -40,6 +39,8 @@ Open [http://localhost:3000](http://localhost:3000). The dev server uses Next’
 | `npm run build` | Production build                      |
 | `npm run start` | Run production server (after `build`) |
 | `npm run lint`  | ESLint (Next.js config)               |
+| `npm run test`  | Vitest unit tests (pure lib functions) |
+| `npm run test:watch` | Vitest in watch mode             |
 
 ## Environment variables
 
@@ -70,7 +71,7 @@ Users receive numeric role codes from the API: **1 = Admin**, **2 = Manager**, *
 - **Cashier** — `/cashier/selling` (selling invoices; detail routes under `/cashier/selling/[id]`).
 - **Manager** — product inventory (`/manager/product-inventory`, detail `[id]`), import invoices, stock adjustment invoices, selling invoices (list + detail), return flows (`return-invoice`, `return-selling`, etc.).
 
-The root page (`src/app/page.tsx`) redirects: authenticated users → `/admin/dashboard`, otherwise → `/login`.
+The root page (`src/app/page.tsx`) redirects authenticated users to their role home via `defaultHomePathForRoles`, otherwise → `/login`.
 
 ### URL redirects
 
@@ -84,13 +85,13 @@ The root page (`src/app/page.tsx`) redirects: authenticated users → `/admin/da
 1. **Login** — `src/components/forms/login-form.tsx` calls `src/services/auth.service.ts`, which uses the shared Axios client.
 2. **Storage** — On success, `src/stores/auth.store.ts` saves:
    - `access_token` (and related data) in **localStorage** for API calls.
-   - `access_token` in an **HTTP cookie** (`path=/`, `SameSite=Lax`, `Secure` when on HTTPS) so **Next.js middleware** can gate routes.
-3. **Hydration** — `AuthProvider` runs `loadUserFromStorage` on mount so a full page refresh does not drop client auth state when the cookie still exists.
-4. **Middleware** — `src/middleware.ts` redirects unauthenticated users to `/login` (matcher skips `_next`, `api`, `favicon.ico`). Auth pages `/login` and `/register` stay reachable without a token.
+   - `access_token` and `user_roles` in **HTTP cookies** (`path=/`, `SameSite=Lax`, `Secure` when on HTTPS) so **Next.js middleware** can gate routes and enforce role access.
+3. **Hydration** — `AuthProvider` runs `loadUserFromStorage` on mount so a full page refresh does not drop client auth state when the cookie still exists. Existing sessions re-sync auth cookies from localStorage on load.
+4. **Middleware** — `src/middleware.ts` redirects unauthenticated users to `/login`, sends authenticated users away from auth pages to their role home, and blocks `/admin`, `/manager`, and `/cashier` routes when the signed-in user lacks the required role (admins inherit manager and cashier access).
 5. **Client guard** — `useAuthWatcher` syncs token absence with `/login` and bounces logged-in users off auth pages to the role-appropriate home.
 6. **Refresh** — `api-client.ts` implements a refresh-token queue on 401 responses (see that file for the full flow and dev-only logging).
 
-Logout clears localStorage, expires the cookie, and navigates to `/login`.
+Logout clears localStorage, expires auth cookies, and navigates to `/login`.
 
 ## Internationalization (i18n)
 
@@ -118,7 +119,7 @@ src/
 │   ├── admin/
 │   ├── cashier/
 │   ├── manager/
-│   └── user/
+│   └── login/
 ├── components/               # Shared UI and layout
 │   ├── forms/
 │   ├── layout/               # AppShell, Sidebar, popups, etc.
@@ -128,7 +129,7 @@ src/
 │   ├── invoices/             # Import / selling / stock adjustment / returns, PDF, hooks, services
 │   └── products/             # Catalog, units, history, product services
 ├── lib/                      # Cross-cutting utilities
-│   ├── auth/                 # normalizeAuthUser, role helpers, default home path
+│   ├── auth/                 # normalizeAuthUser, role helpers, auth cookies, route access
 │   ├── hooks/                # useAuthWatcher, draft guards, etc.
 │   ├── lang/                 # getDictionary, DictProvider
 │   ├── preferences/
@@ -148,9 +149,10 @@ src/
 
 ## Data fetching and forms
 
-- Feature hooks often wrap **TanStack Query** for caching and loading states.
-- Tables use **TanStack Table** with column definitions colocated under each feature’s `table/` folder.
-- Forms combine **React Hook Form** with **Zod** schemas where validation is centralized.
+- Invoice and product list pages use `usePaginatedListQuery` with feature-specific mappers (`useSellingInvoices`, `useImportInvoices`, etc.).
+- Shared invoice list UI lives under `src/features/invoices/components/` (`InvoiceListPageShell`, filter pills, date range).
+- Tables use the shared `DataTable` component with column definitions colocated under each feature’s `table/` folder.
+- Forms combine **React Hook Form** with **Zod** where validation is centralized (login, add product).
 
 ## Printing and PDF
 
@@ -160,6 +162,7 @@ Invoice flows include print-oriented UI (e.g. `InvoicePrintPreviewPopup`) and PD
 
 - **TypeScript** — `strict` mode (`tsconfig.json`).
 - **ESLint** — `eslint-config-next` via `npm run lint`.
+- **Unit tests** — Vitest covers pure helpers in `src/lib/**` and `src/features/**/lib/**` via `npm run test`.
 - **Spell check** — `cspell.json` is present for typo checking in editors/CI if configured.
 
 ## Troubleshooting
@@ -167,7 +170,7 @@ Invoice flows include print-oriented UI (e.g. `InvoicePrintPreviewPopup`) and PD
 | Symptom                          | Things to check                                                                               |
 | -------------------------------- | --------------------------------------------------------------------------------------------- |
 | API calls fail or hit wrong host | `NEXT_PUBLIC_API_URL`, CORS on the backend, network tab                                       |
-| Redirect loop or stuck on login  | Cookie `access_token` present and not expired; middleware vs client both need a valid session |
+| Redirect loop or stuck on login  | Cookie `access_token` / `user_roles` present and valid; re-login once after deploy if role cookie is missing |
 | 401 after idle                   | Refresh-token endpoint and cookie/localStorage alignment in `api-client.ts`                   |
 | Blank translations               | `lang` cookie and matching keys in `en.json` / `vi.json`                                      |
 

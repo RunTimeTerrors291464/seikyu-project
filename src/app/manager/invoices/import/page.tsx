@@ -3,17 +3,26 @@
 import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
-import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
-import TablePagination from "@/components/ui/TablePagination";
-import {
-  STATUS_ACCENT,
-} from "@/features/invoices/components/ImportInvoiceStatusPill";
-import InvoiceListDateRangeFilter from "@/features/invoices/components/InvoiceListDateRangeFilter";
+import InvoiceListExpandedReturnsPanel from "@/features/invoices/components/InvoiceListExpandedReturnsPanel";
+import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
+import { STATUS_ACCENT } from "@/features/invoices/components/ImportInvoiceStatusPill";
 import {
   IMPORT_INVOICE_STATUS_OPTIONS,
   ImportInvoiceStatusFilter,
 } from "@/features/invoices/filters/importInvoiceFilters";
+import {
+  ImportInvoiceRow,
+  useImportInvoices,
+} from "@/features/invoices/hooks/useImportInvoices";
+import {
+  useInvoiceListPageBase,
+  useInvoiceListSort,
+  useReturnChildSort,
+} from "@/features/invoices/hooks/useInvoiceListPageBase";
+import { useInvoiceReturnChildrenExpansion } from "@/features/invoices/hooks/useInvoiceReturnChildrenExpansion";
+import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePopup";
 import type {
   ImportInvoiceListSortBy,
   ImportInvoiceStatus,
@@ -32,30 +41,12 @@ import {
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
-
-import {
-  Filter,
-  Hash,
-  Plus,
-  RotateCcw,
-
-  User as UserIcon
-} from "lucide-react";
-
-import { ImportInvoiceRow, useImportInvoices } from "@/features/invoices/hooks/useImportInvoices";
-import { useInvoiceListDateRangeFilter } from "@/features/invoices/hooks/useInvoiceListDateRangeFilter";
-import AddImportInvoicePopup from "@/features/invoices/layout/AddImportInvoicePopup";
+import { Hash, Plus, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const RETURN_CHILDREN_LIMIT = 100;
-type ImportInvoiceSortBy = ImportInvoiceListSortBy;
-type ReturnImportInvoiceSortBy = "returnInvoiceId" | "userId" | "createdAt";
-type SortOrder = "asc" | "desc";
-
-const DEFAULT_SORT_BY: ImportInvoiceSortBy = "createdAt";
-const DEFAULT_SORT_ORDER: SortOrder = "desc";
-const DEFAULT_RETURN_SORT_BY = "createdAt";
-const DEFAULT_RETURN_SORT_ORDER: SortOrder = "desc";
+const DEFAULT_SORT_BY: ImportInvoiceListSortBy = "createdAt";
+const DEFAULT_SEARCH_RULE = "invoiceId" as const;
 
 function getStatusFilterClass(
   optionValue: ImportInvoiceStatusFilter,
@@ -73,13 +64,41 @@ export default function ImportInvoicesListPage() {
   const router = useRouter();
   const dict = useDict();
   const canManage = useMayUseManagerWorkflowControls();
-
-  const [page, setPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(30);
+  const listBase = useInvoiceListPageBase();
+  const [searchRule, setSearchRule] = useState<"invoiceId" | "userId">(
+    DEFAULT_SEARCH_RULE,
+  );
+  const [statusFilter, setStatusFilter] =
+    useState<ImportInvoiceStatusFilter>("all");
+  const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
+  const { sortBy, sortOrder, handleSort, resetSort, isDefaultSort } =
+    useInvoiceListSort(
+      DEFAULT_SORT_BY,
+      "desc",
+      [
+        "invoiceId",
+        "totalImportPrice",
+        "createdAt",
+        "confirmedAt",
+        "draftAt",
+      ],
+      listBase.resetPageOnFilterChange,
+    );
+  const {
+    returnSortBy,
+    returnSortOrder,
+    handleReturnSort,
+    resetReturnSort,
+    isDefaultReturnSort,
+  } = useReturnChildSort("createdAt", "desc");
 
   const columns = useMemo(
-    () => importInvoiceColumns(dict, { page, rowsPerPage }),
-    [dict, page, rowsPerPage],
+    () =>
+      importInvoiceColumns(dict, {
+        page: listBase.page,
+        rowsPerPage: listBase.rowsPerPage,
+      }),
+    [dict, listBase.page, listBase.rowsPerPage],
   );
   const returnColumns = useMemo(
     () =>
@@ -93,53 +112,47 @@ export default function ImportInvoicesListPage() {
       ),
     [dict],
   );
-
-  const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [returnChildrenByImportId, setReturnChildrenByImportId] = useState<
-    Record<string, ReturnImportInvoiceWithoutProductsDto[]>
-  >({});
-  const [returnChildrenLoading, setReturnChildrenLoading] = useState<
-    Record<string, boolean>
-  >({});
-  const [search, setSearch] = useState<string>("");
-  const [searchRule, setSearchRule] = useState<"invoiceId" | "userId">(
-    "invoiceId",
-  );
-  const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [statusFilter, setStatusFilter] =
-    useState<ImportInvoiceStatusFilter>("all");
-  const {
-    fromDate: fromDateFilter,
-    toDate: toDateFilter,
-    setFromDate: setFromDateFilter,
-    setToDate: setToDateFilter,
-    listDateRange,
-    isDefaultRange: isDefaultDateRange,
-    resetDateRange,
-  } = useInvoiceListDateRangeFilter();
-  const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
-  const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<ImportInvoiceSortBy>(DEFAULT_SORT_BY);
-  const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
-  const [returnSortBy, setReturnSortBy] = useState<ReturnImportInvoiceSortBy>(
-    DEFAULT_RETURN_SORT_BY,
-  );
-  const [returnSortOrder, setReturnSortOrder] = useState<SortOrder>(
-    DEFAULT_RETURN_SORT_ORDER,
+  const statusOptions = useMemo(
+    function buildStatusOptions() {
+      return IMPORT_INVOICE_STATUS_OPTIONS.map(function mapOption(option) {
+        return { value: option.value, label: dict[option.dictKey] };
+      });
+    },
+    [dict],
   );
 
   const { rows, total, loading, refetch } = useImportInvoices({
-    page,
-    limit: rowsPerPage,
-    search: search || undefined,
-    searchBy: search ? searchRule : undefined,
+    page: listBase.page,
+    limit: listBase.rowsPerPage,
+    search: listBase.search || undefined,
+    searchBy: listBase.search ? searchRule : undefined,
     sortBy,
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
-    fromDate: listDateRange.fromDate,
-    toDate: listDateRange.toDate,
+    fromDate: listBase.listDateRange.fromDate,
+    toDate: listBase.listDateRange.toDate,
+  });
+
+  const fetchReturnChildren = useCallback(async function fetchReturnChildren(
+    invoiceNumber: string,
+  ): Promise<ReturnImportInvoiceWithoutProductsDto[]> {
+    const response = await getReturnImportInvoiceList({
+      search: invoiceNumber,
+      searchBy: "importInvoiceId",
+      limit: RETURN_CHILDREN_LIMIT,
+      page: 1,
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    });
+    return response.invoices;
+  }, []);
+
+  const returnExpansion = useInvoiceReturnChildrenExpansion<ImportInvoiceRow>({
+    rows,
+    getRowId: (row) => row.id,
+    getReturnCount: (row) => row.returnCount,
+    getInvoiceNumber: (row) => row.invoiceId,
+    fetchChildren: fetchReturnChildren,
   });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
@@ -158,397 +171,158 @@ export default function ImportInvoicesListPage() {
     enabled: canManage && !addInvoicePopupOpen,
   });
 
-  function compareNullableString(
-    leftValue: string | null,
-    rightValue: string | null,
-    currentSortOrder: SortOrder,
-  ): number {
-    const left = leftValue ?? "";
-    const right = rightValue ?? "";
-    const baseCompare = left.localeCompare(right);
-    return currentSortOrder === "asc" ? baseCompare : -baseCompare;
-  }
-
-  function sortReturnChildrenRows(
-    children: ReturnImportInvoiceWithoutProductsDto[],
-    currentSortBy: ReturnImportInvoiceSortBy | undefined,
-    currentSortOrder: SortOrder,
-  ): ReturnImportInvoiceWithoutProductsDto[] {
-    if (!currentSortBy) {
-      return children;
-    }
-
-    const sorted = [...children];
-    sorted.sort(function compareChildren(left, right): number {
-      if (currentSortBy === "returnInvoiceId") {
-        return compareNullableString(
-          left.returnInvoiceId,
-          right.returnInvoiceId,
-          currentSortOrder,
-        );
-      }
-
-      if (currentSortBy === "userId") {
-        return compareNullableString(
-          left.confirmedByUsername,
-          right.confirmedByUsername,
-          currentSortOrder,
-        );
-      }
-
-      return compareNullableString(
-        left.draftAt,
-        right.draftAt,
-        currentSortOrder,
-      );
-    });
-
-    return sorted;
-  }
-
-  function handleSort(nextField: string): void {
-    const apiSortFields: ImportInvoiceListSortBy[] = [
-      "invoiceId",
-      "totalImportPrice",
-      "createdAt",
-      "confirmedAt",
-      "draftAt",
-    ];
-
-    if (!apiSortFields.includes(nextField as ImportInvoiceListSortBy)) {
-      return;
-    }
-
-    if (sortBy !== nextField) {
-      setSortBy(nextField as ImportInvoiceListSortBy);
-      setSortOrder("asc");
-      setPage(1);
-      return;
-    }
-
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    setPage(1);
-  }
-
-  function handleReturnSort(nextField: string): void {
-    if (
-      nextField !== "returnInvoiceId" &&
-      nextField !== "userId" &&
-      nextField !== "createdAt"
-    ) {
-      return;
-    }
-
-    if (returnSortBy !== nextField) {
-      setReturnSortBy(nextField);
-      setReturnSortOrder("asc");
-      return;
-    }
-
-    setReturnSortOrder(returnSortOrder === "asc" ? "desc" : "asc");
-  }
-
-  function handleToggleExpandRow(rowId: string | number): void {
-    const id = String(rowId);
-
-    if (expandedRowIds.has(id)) {
-      setExpandedRowIds(function collapseExpanded(prev) {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      setReturnChildrenByImportId(function dropCache(current) {
-        const copy = { ...current };
-        delete copy[id];
-        return copy;
-      });
-      setReturnChildrenLoading(function clearLoading(current) {
-        const copy = { ...current };
-        delete copy[id];
-        return copy;
-      });
-      return;
-    }
-
-    if (returnChildrenLoading[id]) {
-      return;
-    }
-
-    const row = rows.find((candidate) => candidate.id === id);
-    if (!row || row.returnCount <= 0) {
-      return;
-    }
-
-    setExpandedRowIds(function expandRow(prev) {
-      if (prev.has(id)) {
-        return prev;
-      }
-
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-
-    setReturnChildrenLoading(function setLoading(current) {
-      return { ...current, [id]: true };
-    });
-
-    void (async function fetchReturns(): Promise<void> {
-      try {
-        const importInvoiceNo = row.invoiceId?.trim() ?? "";
-
-        if (!importInvoiceNo) {
-          setReturnChildrenByImportId(function setEmpty(prev) {
-            return { ...prev, [id]: [] };
-          });
-          return;
-        }
-
-          const response = await getReturnImportInvoiceList({
-            search: importInvoiceNo,
-            searchBy: "importInvoiceId",
-            limit: RETURN_CHILDREN_LIMIT,
-            page: 1,
-            sortBy: DEFAULT_RETURN_SORT_BY,
-            sortOrder: DEFAULT_RETURN_SORT_ORDER,
-          });
-
-        setReturnChildrenByImportId(function mergeChildren(prev) {
-          return { ...prev, [id]: response.invoices };
-        });
-      } catch (error) {
-        console.error("Failed to fetch return import invoices", error);
-        setReturnChildrenByImportId(function setEmpty(prev) {
-          return { ...prev, [id]: [] };
-        });
-      } finally {
-        setReturnChildrenLoading(function finishLoading(prev) {
-          return { ...prev, [id]: false };
-        });
-      }
-    })();
-  }
-
-  const totalPages =
-    total === 0 ? 1 : Math.ceil(total / rowsPerPage);
+  const totalPages = total === 0 ? 1 : Math.ceil(total / listBase.rowsPerPage);
   const isResetFilterDisabled =
-    search.length === 0 &&
-    searchRule === "invoiceId" &&
+    listBase.search.length === 0 &&
+    searchRule === DEFAULT_SEARCH_RULE &&
     statusFilter === "all" &&
-    isDefaultDateRange &&
-    sortBy === DEFAULT_SORT_BY &&
-    sortOrder === DEFAULT_SORT_ORDER &&
-    returnSortBy === DEFAULT_RETURN_SORT_BY &&
-    returnSortOrder === DEFAULT_RETURN_SORT_ORDER &&
-    page === 1 &&
-    showFilters === false &&
-    expandedRowIds.size === 0;
+    listBase.isDefaultRange &&
+    isDefaultSort &&
+    isDefaultReturnSort &&
+    listBase.page === 1 &&
+    listBase.showFilters === false &&
+    !returnExpansion.hasExpandedRows;
 
   function handleResetFilters(): void {
-    setSearch("");
-    setSearchRule("invoiceId");
+    listBase.setSearch("");
+    setSearchRule(DEFAULT_SEARCH_RULE);
     setStatusFilter("all");
-    resetDateRange();
-    setSortBy(DEFAULT_SORT_BY);
-    setSortOrder(DEFAULT_SORT_ORDER);
-    setReturnSortBy(DEFAULT_RETURN_SORT_BY);
-    setReturnSortOrder(DEFAULT_RETURN_SORT_ORDER);
-    setPage(1);
-    setShowFilters(false);
-    setExpandedRowIds(new Set());
-    setReturnChildrenByImportId({});
-    setReturnChildrenLoading({});
-    setRuleInputResetKey((value) => value + 1);
+    listBase.resetDateRange();
+    resetSort();
+    resetReturnSort();
+    listBase.resetPagination();
+    listBase.setShowFilters(false);
+    returnExpansion.resetExpansion();
+    listBase.resetRuleInput();
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
-      <div className="grid grid-cols-3 items-center gap-2">
-        <div className="flex items-center justify-start gap-2">
-          <h1 className="text-xl font-semibold">
-            {dict.importInvoices}
-          </h1>
-        </div>
-
-        <div className="w-full max-w-xl">
-          <RuleInput
-            key={ruleInputResetKey}
-            options={[
-              {
-                label: dict.invoiceNumber,
-                icon: <Hash className="h-3 w-3" />,
-              },
-              {
-                label: dict.confirmBy,
-                icon: <UserIcon className="h-3 w-3" />,
-              },
-            ]}
-            placeholder={dict.searchPlaceholder}
-            onChange={({ rule, value }) => {
-              const normalizedRule =
-                rule === dict.confirmBy ? "userId" : "invoiceId";
-              setSearchRule(
-                normalizedRule as "invoiceId" | "userId",
-              );
-              setSearch(value);
-              setPage(1);
-            }}
-          />
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
+    <InvoiceListPageShell<ImportInvoiceRow>
+      title={dict.importInvoices}
+      searchInput={
+        <RuleInput
+          key={listBase.ruleInputResetKey}
+          options={[
+            {
+              label: dict.invoiceNumber,
+              icon: <Hash className="h-3 w-3" />,
+            },
+            {
+              label: dict.confirmBy,
+              icon: <UserIcon className="h-3 w-3" />,
+            },
+          ]}
+          placeholder={dict.searchPlaceholder}
+          onChange={function handleSearchChange({ rule, value }): void {
+            setSearchRule(rule === dict.confirmBy ? "userId" : DEFAULT_SEARCH_RULE);
+            listBase.setSearch(value);
+            listBase.resetPageOnFilterChange();
+          }}
+        />
+      }
+      showFilters={listBase.showFilters}
+      onToggleFilters={function toggleFilters(): void {
+        listBase.setShowFilters(function toggle(value) {
+          return !value;
+        });
+      }}
+      onResetFilters={handleResetFilters}
+      isResetFilterDisabled={isResetFilterDisabled}
+      toolbarActions={
+        canManage ? (
           <Button
-            icon={<Filter className="h-3.5 w-3.5" />}
-            accent={showFilters ? "primary" : "neutral"}
+            icon={<Plus className="h-3.5 w-3.5" />}
+            accent="primary"
             size="sm"
-            onClick={() => setShowFilters((value) => !value)}
-          >
-            <span>{dict.filter}</span>
-          </Button>
-
-          <Button
-            icon={<RotateCcw className="h-3.5 w-3.5" />}
-            accent="neutral"
-            size="sm"
-            onClick={handleResetFilters}
-            disabled={isResetFilterDisabled}
-          >
-            {dict.resetFilter}
-          </Button>
-
-          {canManage ? (
-            <Button
-              icon={<Plus className="h-3.5 w-3.5" />}
-              accent="primary"
-              size="sm"
-              onClick={() => setAddInvoicePopupOpen(true)}
-            >
-              {dict.createNewImportDraft}
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">
-              {dict.status}
-            </span>
-
-            <div className="flex gap-1">
-              {IMPORT_INVOICE_STATUS_OPTIONS.map((option) => (
-                <button
-                  key={String(option.value)}
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter(option.value);
-                    setPage(1);
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
-                >
-                  {dict[option.dictKey]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <InvoiceListDateRangeFilter
-            fromDate={fromDateFilter}
-            toDate={toDateFilter}
-            onFromDateChange={function handleFromDateChange(value): void {
-              setFromDateFilter(value);
-              setPage(1);
+            onClick={function openCreatePopup(): void {
+              setAddInvoicePopupOpen(true);
             }}
-            onToDateChange={function handleToDateChange(value): void {
-              setToDateFilter(value);
-              setPage(1);
-            }}
-          />
-        </div>
-      )}
-
-      <DataTable<ImportInvoiceRow>
-        columns={columns}
-        data={rows}
-        loading={loading}
-        getRowId={(row) => row.id}
-        sortField={sortBy}
-        sortDirection={sortOrder}
-        onSort={handleSort}
-        maxHeight="fill"
-        expansionAfterColumnCount={1}
-        expandedRowIds={expandedRowIds}
-        onToggleExpandRow={handleToggleExpandRow}
-        canExpandRow={(row) => row.returnCount > 0}
-        renderExpandedRow={function renderExpandedRow(row) {
+          >
+            {dict.createNewImportDraft}
+          </Button>
+        ) : null
+      }
+      filterGroups={
+        <InvoiceListFilterPillGroup
+          label={dict.status}
+          options={statusOptions}
+          value={statusFilter}
+          onChange={function selectStatus(value): void {
+            setStatusFilter(value);
+            listBase.resetPageOnFilterChange();
+          }}
+          getOptionClassName={getStatusFilterClass}
+        />
+      }
+      filterGroupsLayout="stack"
+      fromDate={listBase.fromDate}
+      toDate={listBase.toDate}
+      onFromDateChange={function handleFromDateChange(value): void {
+        listBase.setFromDate(value);
+        listBase.resetPageOnFilterChange();
+      }}
+      onToDateChange={function handleToDateChange(value): void {
+        listBase.setToDate(value);
+        listBase.resetPageOnFilterChange();
+      }}
+      columns={columns}
+      rows={rows}
+      loading={loading}
+      getRowId={(row) => row.id}
+      sortField={sortBy}
+      sortDirection={sortOrder}
+      onSort={handleSort}
+      page={listBase.page}
+      totalPages={totalPages}
+      rowsPerPage={listBase.rowsPerPage}
+      onRowsPerPageChange={listBase.handleRowsPerPageChange}
+      onPageChange={listBase.setPage}
+      totalResults={total}
+      tableProps={{
+        expansionAfterColumnCount: 1,
+        expandedRowIds: returnExpansion.expandedRowIds,
+        onToggleExpandRow: returnExpansion.handleToggleExpandRow,
+        canExpandRow: (row) => row.returnCount > 0,
+        renderExpandedRow: function renderExpandedRow(row) {
           const importId = row.id;
-          const childLoading = returnChildrenLoading[importId] === true;
-          const children = returnChildrenByImportId[importId] ?? [];
-          const sortedChildren = sortReturnChildrenRows(
-            children,
-            returnSortBy,
-            returnSortOrder,
-          );
-
-          if (childLoading) {
-            return (
-              <div className="px-4 py-6 text-center text-sm text-muted">
-                {dict.loading}
-              </div>
-            );
-          }
-
-          if (sortedChildren.length === 0) {
-            return (
-              <div className="px-4 py-3 text-sm text-muted">
-                {dict.noRelatedReturns}
-              </div>
-            );
-          }
+          const childLoading = returnExpansion.childrenLoading[importId] === true;
+          const children =
+            (returnExpansion.childrenByParentId[
+              importId
+            ] as ReturnImportInvoiceWithoutProductsDto[] | undefined) ?? [];
 
           return (
-            <DataTable<ReturnImportInvoiceWithoutProductsDto>
+            <InvoiceListExpandedReturnsPanel<ReturnImportInvoiceWithoutProductsDto>
+              loading={childLoading}
+              returnRows={children}
               columns={returnColumns}
-              data={sortedChildren}
-              getRowId={(r) => r.id}
               sortField={returnSortBy}
               sortDirection={returnSortOrder}
               onSort={handleReturnSort}
-              maxHeight="240px"
-              className="overflow-x-hidden"
-              showHeader={false}
-              embedded
-              leadingRail
-              emptyMessage={dict.noRelatedReturns}
+              sortAccessors={{
+                getReturnInvoiceId: (child) => child.returnInvoiceId,
+                getUserName: (child) => child.confirmedByUsername,
+                getCreatedAt: (child) => child.draftAt,
+              }}
+              getRowId={(child) => child.id}
             />
           );
-        }}
-      />
-
-      <TablePagination
-        page={page}
-        totalPages={totalPages}
-        rowsPerPage={rowsPerPage}
-        setRowsPerPage={(value) => {
-          setRowsPerPage(value);
-          setPage(1);
-        }}
-        setPage={setPage}
-        totalResults={total}
-        dict={dict}
-      />
-
-      {canManage ? (
-        <AddImportInvoicePopup
-          open={addInvoicePopupOpen}
-          onClose={() => setAddInvoicePopupOpen(false)}
-          onCreated={(invoiceId) => {
-            void refetch();
-            router.push(`/manager/invoices/import/${invoiceId}`);
-          }}
-        />
-      ) : null}
-    </div>
+        },
+      }}
+      footer={
+        canManage ? (
+          <AddImportInvoicePopup
+            open={addInvoicePopupOpen}
+            onClose={function closeCreatePopup(): void {
+              setAddInvoicePopupOpen(false);
+            }}
+            onCreated={function navigateToCreatedInvoice(invoiceId): void {
+              void refetch();
+              router.push(`/manager/invoices/import/${invoiceId}`);
+            }}
+          />
+        ) : null
+      }
+    />
   );
 }

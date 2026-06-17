@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import Button from "@/components/ui/Buttons";
-import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
-import TablePagination from "@/components/ui/TablePagination";
+import InvoiceListExpandedReturnsPanel from "@/features/invoices/components/InvoiceListExpandedReturnsPanel";
+import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { SELLING_STATUS_ACCENT } from "@/features/invoices/components/SellingInvoiceStatusPill";
-import InvoiceListDateRangeFilter from "@/features/invoices/components/InvoiceListDateRangeFilter";
 import {
   SELLING_INVOICE_STATUS_OPTIONS,
   SELLING_INVOICE_TAX_FOCUS_OPTIONS,
@@ -15,10 +14,15 @@ import {
   SellingInvoiceTaxFocusFilter,
 } from "@/features/invoices/filters/sellingInvoiceFilters";
 import {
+  useInvoiceListPageBase,
+  useInvoiceListSort,
+  useReturnChildSort,
+} from "@/features/invoices/hooks/useInvoiceListPageBase";
+import { useInvoiceReturnChildrenExpansion } from "@/features/invoices/hooks/useInvoiceReturnChildrenExpansion";
+import {
   SellingInvoiceRow,
   useSellingInvoices,
 } from "@/features/invoices/hooks/useSellingInvoices";
-import { useInvoiceListDateRangeFilter } from "@/features/invoices/hooks/useInvoiceListDateRangeFilter";
 import type { ReturnSellingInvoiceWithoutProductsDto } from "@/features/invoices/services/returnSellingInvoice.service";
 import { getReturnSellingInvoiceList } from "@/features/invoices/services/returnSellingInvoice.service";
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
@@ -26,17 +30,11 @@ import { returnSellingInvoiceListColumns } from "@/features/invoices/table/retur
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
 import { useDict } from "@/lib/lang/DictProvider";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
-import { Filter, Hash, Package, RotateCcw, User as UserIcon } from "lucide-react";
+import { Hash, Package, User as UserIcon } from "lucide-react";
+
 const RETURN_CHILDREN_LIMIT = 100;
-
-type SellingInvoiceSortBy = "invoiceId" | "totalSellingPrice" | "confirmedAt";
-type ReturnSellingInvoiceSortBy = "returnInvoiceId" | "userId" | "createdAt";
-type SortOrder = "asc" | "desc";
-
-const DEFAULT_SORT_BY: SellingInvoiceSortBy = "confirmedAt";
-const DEFAULT_SORT_ORDER: SortOrder = "desc";
-const DEFAULT_RETURN_SORT_BY = "createdAt";
-const DEFAULT_RETURN_SORT_ORDER: SortOrder = "desc";
+const DEFAULT_SORT_BY = "confirmedAt" as const;
+const DEFAULT_SEARCH_RULE = "invoiceId" as const;
 
 function getStatusFilterClass(
   optionValue: SellingInvoiceStatusFilter,
@@ -64,17 +62,36 @@ function getTaxFocusFilterClass(
 
 export default function ManagerSellingInvoicesPage() {
   const dict = useDict();
-
-  const [page, setPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(30);
+  const listBase = useInvoiceListPageBase();
+  const [searchRule, setSearchRule] = useState<
+    "invoiceId" | "userId" | "productId"
+  >(DEFAULT_SEARCH_RULE);
+  const [statusFilter, setStatusFilter] =
+    useState<SellingInvoiceStatusFilter>("all");
+  const [taxFocusFilter, setTaxFocusFilter] =
+    useState<SellingInvoiceTaxFocusFilter>("all");
+  const { sortBy, sortOrder, handleSort, resetSort, isDefaultSort } =
+    useInvoiceListSort(
+      DEFAULT_SORT_BY,
+      "desc",
+      ["invoiceId", "totalSellingPrice", "confirmedAt"],
+      listBase.resetPageOnFilterChange,
+    );
+  const {
+    returnSortBy,
+    returnSortOrder,
+    handleReturnSort,
+    resetReturnSort,
+    isDefaultReturnSort,
+  } = useReturnChildSort("createdAt", "desc");
 
   const columns = useMemo(
     () =>
       sellingInvoiceColumns(dict, {
         detailBasePath: "/manager/invoices/selling",
-        pagination: { page, rowsPerPage },
+        pagination: { page: listBase.page, rowsPerPage: listBase.rowsPerPage },
       }),
-    [dict, page, rowsPerPage],
+    [dict, listBase.page, listBase.rowsPerPage],
   );
   const returnColumns = useMemo(
     () =>
@@ -88,471 +105,205 @@ export default function ManagerSellingInvoicesPage() {
       ),
     [dict],
   );
-
-  const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(
-    () => new Set(),
+  const statusOptions = useMemo(
+    function buildStatusOptions() {
+      return SELLING_INVOICE_STATUS_OPTIONS.map(function mapOption(option) {
+        return { value: option.value, label: dict[option.dictKey] };
+      });
+    },
+    [dict],
   );
-  const [returnChildrenBySellingId, setReturnChildrenBySellingId] = useState<
-    Record<string, ReturnSellingInvoiceWithoutProductsDto[]>
-  >({});
-  const [returnChildrenLoading, setReturnChildrenLoading] = useState<
-    Record<string, boolean>
-  >({});
-  const [search, setSearch] = useState<string>("");
-  const [searchRule, setSearchRule] = useState<
-    "invoiceId" | "userId" | "productId"
-  >("invoiceId");
-  const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [statusFilter, setStatusFilter] =
-    useState<SellingInvoiceStatusFilter>("all");
-  const [taxFocusFilter, setTaxFocusFilter] =
-    useState<SellingInvoiceTaxFocusFilter>("all");
-  const {
-    fromDate: fromDateFilter,
-    toDate: toDateFilter,
-    setFromDate: setFromDateFilter,
-    setToDate: setToDateFilter,
-    listDateRange,
-    isDefaultRange: isDefaultDateRange,
-    resetDateRange,
-  } = useInvoiceListDateRangeFilter();
-  const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<SellingInvoiceSortBy>(DEFAULT_SORT_BY);
-  const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
-  const [returnSortBy, setReturnSortBy] = useState<ReturnSellingInvoiceSortBy>(
-    DEFAULT_RETURN_SORT_BY,
-  );
-  const [returnSortOrder, setReturnSortOrder] = useState<SortOrder>(
-    DEFAULT_RETURN_SORT_ORDER,
+  const taxFocusOptions = useMemo(
+    function buildTaxFocusOptions() {
+      return SELLING_INVOICE_TAX_FOCUS_OPTIONS.map(function mapOption(option) {
+        return { value: option.value, label: dict[option.dictKey] };
+      });
+    },
+    [dict],
   );
 
   const { rows, total, loading } = useSellingInvoices({
-    page,
-    limit: rowsPerPage,
-    search: search || undefined,
-    searchBy: search ? searchRule : undefined,
+    page: listBase.page,
+    limit: listBase.rowsPerPage,
+    search: listBase.search || undefined,
+    searchBy: listBase.search ? searchRule : undefined,
     sortBy,
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
     taxFocus: taxFocusFilter === "all" ? undefined : taxFocusFilter,
-    fromDate: listDateRange.fromDate,
-    toDate: listDateRange.toDate,
+    fromDate: listBase.listDateRange.fromDate,
+    toDate: listBase.listDateRange.toDate,
   });
 
-  function compareNullableString(
-    leftValue: string | null,
-    rightValue: string | null,
-    currentSortOrder: SortOrder,
-  ): number {
-    const left = leftValue ?? "";
-    const right = rightValue ?? "";
-    const baseCompare = left.localeCompare(right);
-    return currentSortOrder === "asc" ? baseCompare : -baseCompare;
-  }
-
-  function sortReturnChildrenRows(
-    children: ReturnSellingInvoiceWithoutProductsDto[],
-    currentSortBy: ReturnSellingInvoiceSortBy | undefined,
-    currentSortOrder: SortOrder,
-  ): ReturnSellingInvoiceWithoutProductsDto[] {
-    if (!currentSortBy) {
-      return children;
-    }
-
-    const sorted = [...children];
-    sorted.sort(function compareChildren(left, right): number {
-      if (currentSortBy === "returnInvoiceId") {
-        return compareNullableString(
-          left.returnInvoiceId,
-          right.returnInvoiceId,
-          currentSortOrder,
-        );
-      }
-
-      if (currentSortBy === "userId") {
-        return compareNullableString(
-          left.confirmedByUsername,
-          right.confirmedByUsername,
-          currentSortOrder,
-        );
-      }
-
-      return compareNullableString(
-        left.createdAt,
-        right.createdAt,
-        currentSortOrder,
-      );
+  const fetchReturnChildren = useCallback(async function fetchReturnChildren(
+    invoiceNumber: string,
+  ): Promise<ReturnSellingInvoiceWithoutProductsDto[]> {
+    const response = await getReturnSellingInvoiceList({
+      search: invoiceNumber,
+      searchBy: "sellingInvoiceId",
+      limit: RETURN_CHILDREN_LIMIT,
+      page: 1,
+      sortBy: "createdAt",
+      sortOrder: "desc",
     });
+    return response.invoices;
+  }, []);
 
-    return sorted;
-  }
+  const returnExpansion = useInvoiceReturnChildrenExpansion<SellingInvoiceRow>({
+    rows,
+    getRowId: (row) => row.id,
+    getReturnCount: (row) => row.returnCount,
+    getInvoiceNumber: (row) => row.invoiceId,
+    fetchChildren: fetchReturnChildren,
+  });
 
-  function handleSort(nextField: string): void {
-    if (
-      nextField !== "invoiceId" &&
-      nextField !== "totalSellingPrice" &&
-      nextField !== "confirmedAt"
-    ) {
-      return;
-    }
-
-    if (sortBy !== nextField) {
-      setSortBy(nextField as SellingInvoiceSortBy);
-      setSortOrder("asc");
-      setPage(1);
-      return;
-    }
-
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    setPage(1);
-  }
-
-  function handleReturnSort(nextField: string): void {
-    if (
-      nextField !== "returnInvoiceId" &&
-      nextField !== "userId" &&
-      nextField !== "createdAt"
-    ) {
-      return;
-    }
-
-    if (returnSortBy !== nextField) {
-      setReturnSortBy(nextField as ReturnSellingInvoiceSortBy);
-      setReturnSortOrder("asc");
-      return;
-    }
-
-    setReturnSortOrder(returnSortOrder === "asc" ? "desc" : "asc");
-  }
-
-  function handleToggleExpandRow(rowId: string | number): void {
-    const id = String(rowId);
-
-    if (expandedRowIds.has(id)) {
-      setExpandedRowIds(function collapseExpanded(prev) {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      setReturnChildrenBySellingId(function dropCache(current) {
-        const copy = { ...current };
-        delete copy[id];
-        return copy;
-      });
-      setReturnChildrenLoading(function clearLoading(current) {
-        const copy = { ...current };
-        delete copy[id];
-        return copy;
-      });
-      return;
-    }
-
-    if (returnChildrenLoading[id]) {
-      return;
-    }
-
-    const row = rows.find((candidate) => candidate.id === id);
-    if (!row || row.returnCount <= 0) {
-      return;
-    }
-
-    setExpandedRowIds(function expandRow(prev) {
-      if (prev.has(id)) {
-        return prev;
-      }
-
-      const next = new Set(prev);
-      next.add(id);
-      setReturnChildrenLoading(function setLoading(current) {
-        return { ...current, [id]: true };
-      });
-
-      void (async function fetchReturns(): Promise<void> {
-        try {
-          const sellingInvoiceNo = row.invoiceId?.trim() ?? "";
-
-          if (!sellingInvoiceNo) {
-            setReturnChildrenBySellingId(function setEmpty(prev) {
-              return { ...prev, [id]: [] };
-            });
-            return;
-          }
-
-          const response = await getReturnSellingInvoiceList({
-            search: sellingInvoiceNo,
-            searchBy: "sellingInvoiceId",
-            limit: RETURN_CHILDREN_LIMIT,
-            page: 1,
-            sortBy: DEFAULT_RETURN_SORT_BY,
-            sortOrder: DEFAULT_RETURN_SORT_ORDER,
-          });
-
-          setReturnChildrenBySellingId(function mergeChildren(prev) {
-            return { ...prev, [id]: response.invoices };
-          });
-        } finally {
-          setReturnChildrenLoading(function finishLoading(prev) {
-            return { ...prev, [id]: false };
-          });
-        }
-      })();
-
-      return next;
-    });
-
-    setReturnChildrenLoading(function setLoading(current) {
-      return { ...current, [id]: true };
-    });
-
-    void (async function fetchReturns(): Promise<void> {
-      try {
-        const response = await getReturnSellingInvoiceList({
-          search: row.invoiceId ?? undefined,
-          searchBy: "sellingInvoiceId",
-          limit: RETURN_CHILDREN_LIMIT,
-          page: 1,
-        });
-
-        setReturnChildrenBySellingId(function mergeChildren(prev) {
-          return { ...prev, [id]: response.invoices };
-        });
-      } catch (error) {
-        console.error("Failed to fetch return selling invoices", error);
-        setReturnChildrenBySellingId(function setEmpty(prev) {
-          return { ...prev, [id]: [] };
-        });
-      } finally {
-        setReturnChildrenLoading(function finishLoading(prev) {
-          return { ...prev, [id]: false };
-        });
-      }
-    })();
-  }
-
-  const totalPages = total === 0 ? 1 : Math.ceil(total / rowsPerPage);
+  const totalPages = total === 0 ? 1 : Math.ceil(total / listBase.rowsPerPage);
   const isResetFilterDisabled =
-    search.length === 0 &&
-    searchRule === "invoiceId" &&
+    listBase.search.length === 0 &&
+    searchRule === DEFAULT_SEARCH_RULE &&
     statusFilter === "all" &&
     taxFocusFilter === "all" &&
-    isDefaultDateRange &&
-    sortBy === DEFAULT_SORT_BY &&
-    sortOrder === DEFAULT_SORT_ORDER &&
-    returnSortBy === DEFAULT_RETURN_SORT_BY &&
-    returnSortOrder === DEFAULT_RETURN_SORT_ORDER &&
-    page === 1 &&
-    showFilters === false &&
-    expandedRowIds.size === 0;
+    listBase.isDefaultRange &&
+    isDefaultSort &&
+    isDefaultReturnSort &&
+    listBase.page === 1 &&
+    listBase.showFilters === false &&
+    !returnExpansion.hasExpandedRows;
 
   function handleResetFilters(): void {
-    setSearch("");
-    setSearchRule("invoiceId");
+    listBase.setSearch("");
+    setSearchRule(DEFAULT_SEARCH_RULE);
     setStatusFilter("all");
     setTaxFocusFilter("all");
-    resetDateRange();
-    setSortBy(DEFAULT_SORT_BY);
-    setSortOrder(DEFAULT_SORT_ORDER);
-    setReturnSortBy(DEFAULT_RETURN_SORT_BY);
-    setReturnSortOrder(DEFAULT_RETURN_SORT_ORDER);
-    setPage(1);
-    setShowFilters(false);
-    setExpandedRowIds(new Set());
-    setReturnChildrenBySellingId({});
-    setReturnChildrenLoading({});
-    setRuleInputResetKey((value) => value + 1);
+    listBase.resetDateRange();
+    resetSort();
+    resetReturnSort();
+    listBase.resetPagination();
+    listBase.setShowFilters(false);
+    returnExpansion.resetExpansion();
+    listBase.resetRuleInput();
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
-      <div className="grid grid-cols-3 items-center gap-2">
-        <div className="flex items-center justify-start gap-2">
-          <h1 className="text-xl font-semibold">{dict.sellingInvoicesManager}</h1>
-        </div>
-
-        <div className="w-full max-w-xl">
-          <RuleInput
-            key={ruleInputResetKey}
-            options={[
-              {
-                label: dict.invoiceNumber,
-                icon: <Hash className="h-3 w-3" />,
-              },
-              {
-                label: dict.confirmBy,
-                icon: <UserIcon className="h-3 w-3" />,
-              },
-              {
-                label: dict.productSkuSearchLabel,
-                icon: <Package className="h-3 w-3" />,
-              },
-            ]}
-            placeholder={dict.searchPlaceholder}
-            onChange={({ rule, value }) => {
-              let normalized: "invoiceId" | "userId" | "productId" =
-                "invoiceId";
-              if (rule === dict.confirmBy) {
-                normalized = "userId";
-              } else if (rule === dict.productSkuSearchLabel) {
-                normalized = "productId";
-              }
-              setSearchRule(normalized);
-              setSearch(value);
-              setPage(1);
+    <InvoiceListPageShell<SellingInvoiceRow>
+      title={dict.sellingInvoicesManager}
+      searchInput={
+        <RuleInput
+          key={listBase.ruleInputResetKey}
+          options={[
+            {
+              label: dict.invoiceNumber,
+              icon: <Hash className="h-3 w-3" />,
+            },
+            {
+              label: dict.confirmBy,
+              icon: <UserIcon className="h-3 w-3" />,
+            },
+            {
+              label: dict.productSkuSearchLabel,
+              icon: <Package className="h-3 w-3" />,
+            },
+          ]}
+          placeholder={dict.searchPlaceholder}
+          onChange={function handleSearchChange({ rule, value }): void {
+            if (rule === dict.confirmBy) {
+              setSearchRule("userId");
+            } else if (rule === dict.productSkuSearchLabel) {
+              setSearchRule("productId");
+            } else {
+              setSearchRule(DEFAULT_SEARCH_RULE);
+            }
+            listBase.setSearch(value);
+            listBase.resetPageOnFilterChange();
+          }}
+        />
+      }
+      showFilters={listBase.showFilters}
+      onToggleFilters={function toggleFilters(): void {
+        listBase.setShowFilters(function toggle(value) {
+          return !value;
+        });
+      }}
+      onResetFilters={handleResetFilters}
+      isResetFilterDisabled={isResetFilterDisabled}
+      filterGroups={
+        <>
+          <InvoiceListFilterPillGroup
+            label={dict.status}
+            options={statusOptions}
+            value={statusFilter}
+            onChange={function selectStatus(value): void {
+              setStatusFilter(value);
+              listBase.resetPageOnFilterChange();
             }}
+            getOptionClassName={getStatusFilterClass}
           />
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            icon={<Filter className="h-3.5 w-3.5" />}
-            accent={showFilters ? "primary" : "neutral"}
-            size="sm"
-            onClick={() => setShowFilters((value) => !value)}
-          >
-            <span>{dict.filter}</span>
-          </Button>
-
-          <Button
-            icon={<RotateCcw className="h-3.5 w-3.5" />}
-            accent="neutral"
-            size="sm"
-            onClick={handleResetFilters}
-            disabled={isResetFilterDisabled}
-          >
-            {dict.resetFilter}
-          </Button>
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">{dict.status}</span>
-
-              <div className="flex gap-1">
-                {SELLING_INVOICE_STATUS_OPTIONS.map((option) => (
-                  <button
-                    key={String(option.value)}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter(option.value);
-                      setPage(1);
-                    }}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
-                  >
-                    {dict[option.dictKey]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">{dict.taxFocusLabel}</span>
-
-              <div className="flex gap-1">
-                {SELLING_INVOICE_TAX_FOCUS_OPTIONS.map((option) => (
-                  <button
-                    key={String(option.value)}
-                    type="button"
-                    onClick={() => {
-                      setTaxFocusFilter(option.value);
-                      setPage(1);
-                    }}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getTaxFocusFilterClass(option.value, taxFocusFilter)}`}
-                  >
-                    {dict[option.dictKey]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <InvoiceListDateRangeFilter
-            fromDate={fromDateFilter}
-            toDate={toDateFilter}
-            onFromDateChange={function handleFromDateChange(value): void {
-              setFromDateFilter(value);
-              setPage(1);
+          <InvoiceListFilterPillGroup
+            label={dict.taxFocusLabel}
+            options={taxFocusOptions}
+            value={taxFocusFilter}
+            onChange={function selectTaxFocus(value): void {
+              setTaxFocusFilter(value);
+              listBase.resetPageOnFilterChange();
             }}
-            onToDateChange={function handleToDateChange(value): void {
-              setToDateFilter(value);
-              setPage(1);
-            }}
+            getOptionClassName={getTaxFocusFilterClass}
           />
-        </div>
-      )}
-
-      <DataTable<SellingInvoiceRow>
-        columns={columns}
-        data={rows}
-        loading={loading}
-        getRowId={(row) => row.id}
-        sortField={sortBy}
-        sortDirection={sortOrder}
-        onSort={handleSort}
-        maxHeight="fill"
-        expansionAfterColumnCount={1}
-        expandedRowIds={expandedRowIds}
-        onToggleExpandRow={handleToggleExpandRow}
-        canExpandRow={(row) => row.returnCount > 0}
-        renderExpandedRow={function renderExpandedRow(row) {
+        </>
+      }
+      fromDate={listBase.fromDate}
+      toDate={listBase.toDate}
+      onFromDateChange={function handleFromDateChange(value): void {
+        listBase.setFromDate(value);
+        listBase.resetPageOnFilterChange();
+      }}
+      onToDateChange={function handleToDateChange(value): void {
+        listBase.setToDate(value);
+        listBase.resetPageOnFilterChange();
+      }}
+      columns={columns}
+      rows={rows}
+      loading={loading}
+      getRowId={(row) => row.id}
+      sortField={sortBy}
+      sortDirection={sortOrder}
+      onSort={handleSort}
+      page={listBase.page}
+      totalPages={totalPages}
+      rowsPerPage={listBase.rowsPerPage}
+      onRowsPerPageChange={listBase.handleRowsPerPageChange}
+      onPageChange={listBase.setPage}
+      totalResults={total}
+      tableProps={{
+        expansionAfterColumnCount: 1,
+        expandedRowIds: returnExpansion.expandedRowIds,
+        onToggleExpandRow: returnExpansion.handleToggleExpandRow,
+        canExpandRow: (row) => row.returnCount > 0,
+        renderExpandedRow: function renderExpandedRow(row) {
           const sellingId = row.id;
-          const childLoading = returnChildrenLoading[sellingId] === true;
-          const children = returnChildrenBySellingId[sellingId] ?? [];
-          const sortedChildren = sortReturnChildrenRows(
-            children,
-            returnSortBy,
-            returnSortOrder,
-          );
-
-          if (childLoading) {
-            return (
-              <div className="px-4 py-6 text-center text-sm text-muted">
-                {dict.loading}
-              </div>
-            );
-          }
-
-          if (sortedChildren.length === 0) {
-            return (
-              <div className="px-4 py-3 text-sm text-muted">
-                {dict.noRelatedReturns}
-              </div>
-            );
-          }
+          const childLoading = returnExpansion.childrenLoading[sellingId] === true;
+          const children =
+            (returnExpansion.childrenByParentId[
+              sellingId
+            ] as ReturnSellingInvoiceWithoutProductsDto[] | undefined) ?? [];
 
           return (
-            <DataTable<ReturnSellingInvoiceWithoutProductsDto>
+            <InvoiceListExpandedReturnsPanel<ReturnSellingInvoiceWithoutProductsDto>
+              loading={childLoading}
+              returnRows={children}
               columns={returnColumns}
-              data={sortedChildren}
-              getRowId={(r) => r.id}
               sortField={returnSortBy}
               sortDirection={returnSortOrder}
               onSort={handleReturnSort}
-              maxHeight="240px"
-              className="overflow-x-hidden"
-              showHeader={false}
-              embedded
-              leadingRail
-              emptyMessage={dict.noRelatedReturns}
+              sortAccessors={{
+                getReturnInvoiceId: (child) => child.returnInvoiceId,
+                getUserName: (child) => child.confirmedByUsername,
+                getCreatedAt: (child) => child.createdAt,
+              }}
+              getRowId={(child) => child.id}
             />
           );
-        }}
-      />
-
-      <TablePagination
-        page={page}
-        totalPages={totalPages}
-        rowsPerPage={rowsPerPage}
-        setRowsPerPage={(value) => {
-          setRowsPerPage(value);
-          setPage(1);
-        }}
-        setPage={setPage}
-        totalResults={total}
-        dict={dict}
-      />
-    </div>
+        },
+      }}
+    />
   );
 }

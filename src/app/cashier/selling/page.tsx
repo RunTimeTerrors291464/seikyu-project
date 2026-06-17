@@ -3,11 +3,10 @@
 import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
-import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
-import TablePagination from "@/components/ui/TablePagination";
+import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { SELLING_STATUS_ACCENT } from "@/features/invoices/components/SellingInvoiceStatusPill";
-import InvoiceListDateRangeFilter from "@/features/invoices/components/InvoiceListDateRangeFilter";
 import {
   SELLING_INVOICE_STATUS_OPTIONS,
   SELLING_INVOICE_TAX_FOCUS_OPTIONS,
@@ -15,10 +14,13 @@ import {
   SellingInvoiceTaxFocusFilter,
 } from "@/features/invoices/filters/sellingInvoiceFilters";
 import {
+  useInvoiceListPageBase,
+  useInvoiceListSort,
+} from "@/features/invoices/hooks/useInvoiceListPageBase";
+import {
   SellingInvoiceRow,
   useSellingInvoices,
 } from "@/features/invoices/hooks/useSellingInvoices";
-import { useInvoiceListDateRangeFilter } from "@/features/invoices/hooks/useInvoiceListDateRangeFilter";
 import AddSellingInvoicePopup from "@/features/invoices/layout/AddSellingInvoicePopup";
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
 import { useMayCreateSellingInvoice } from "@/lib/hooks/useManagerWorkflowAccess";
@@ -31,16 +33,15 @@ import {
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
 import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
-import { Filter, Hash, Plus, RotateCcw } from "lucide-react";
+import { Hash, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
 
 type SellingInvoiceSortBy = "invoiceId" | "totalSellingPrice" | "confirmedAt";
-type SortOrder = "asc" | "desc";
 
 const DEFAULT_SORT_BY: SellingInvoiceSortBy = "confirmedAt";
-const DEFAULT_SORT_ORDER: SortOrder = "desc";
+const DEFAULT_SEARCH_RULE = "invoiceId" as const;
 
 function getStatusFilterClass(
   optionValue: SellingInvoiceStatusFilter,
@@ -70,52 +71,59 @@ export default function CashierSellingInvoicesPage() {
   const router = useRouter();
   const dict = useDict();
   const canCreateSelling = useMayCreateSellingInvoice();
-
-  const [page, setPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(30);
+  const listBase = useInvoiceListPageBase();
+  const [searchRule, setSearchRule] = useState<"invoiceId">(DEFAULT_SEARCH_RULE);
+  const [statusFilter, setStatusFilter] =
+    useState<SellingInvoiceStatusFilter>("all");
+  const [taxFocusFilter, setTaxFocusFilter] =
+    useState<SellingInvoiceTaxFocusFilter>("all");
+  const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
+  const { sortBy, sortOrder, handleSort, resetSort, isDefaultSort } =
+    useInvoiceListSort(
+      DEFAULT_SORT_BY,
+      "desc",
+      ["invoiceId", "totalSellingPrice", "confirmedAt"],
+      listBase.resetPageOnFilterChange,
+    );
 
   const columns = useMemo(
     () =>
       sellingInvoiceColumns(dict, {
         detailBasePath: "/cashier/selling",
-        pagination: { page, rowsPerPage },
+        pagination: { page: listBase.page, rowsPerPage: listBase.rowsPerPage },
       }),
-    [dict, page, rowsPerPage],
+    [dict, listBase.page, listBase.rowsPerPage],
   );
-  const [search, setSearch] = useState<string>("");
-  const [searchRule, setSearchRule] = useState<
-    "invoiceId" | "userId" | "productId"
-  >("invoiceId");
-  const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [statusFilter, setStatusFilter] =
-    useState<SellingInvoiceStatusFilter>("all");
-  const [taxFocusFilter, setTaxFocusFilter] =
-    useState<SellingInvoiceTaxFocusFilter>("all");
-  const {
-    fromDate: fromDateFilter,
-    toDate: toDateFilter,
-    setFromDate: setFromDateFilter,
-    setToDate: setToDateFilter,
-    listDateRange,
-    isDefaultRange: isDefaultDateRange,
-    resetDateRange,
-  } = useInvoiceListDateRangeFilter();
-  const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
-  const [ruleInputResetKey, setRuleInputResetKey] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<SellingInvoiceSortBy>(DEFAULT_SORT_BY);
-  const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
+
+  const statusOptions = useMemo(
+    function buildStatusOptions() {
+      return SELLING_INVOICE_STATUS_OPTIONS.map(function mapOption(option) {
+        return { value: option.value, label: dict[option.dictKey] };
+      });
+    },
+    [dict],
+  );
+
+  const taxFocusOptions = useMemo(
+    function buildTaxFocusOptions() {
+      return SELLING_INVOICE_TAX_FOCUS_OPTIONS.map(function mapOption(option) {
+        return { value: option.value, label: dict[option.dictKey] };
+      });
+    },
+    [dict],
+  );
 
   const { rows, total, loading, refetch } = useSellingInvoices({
-    page,
-    limit: rowsPerPage,
-    search: search || undefined,
-    searchBy: search ? searchRule : undefined,
+    page: listBase.page,
+    limit: listBase.rowsPerPage,
+    search: listBase.search || undefined,
+    searchBy: listBase.search ? searchRule : undefined,
     sortBy,
     sortOrder,
     status: statusFilter === "all" ? undefined : statusFilter,
     taxFocus: taxFocusFilter === "all" ? undefined : taxFocusFilter,
-    fromDate: listDateRange.fromDate,
-    toDate: listDateRange.toDate,
+    fromDate: listBase.listDateRange.fromDate,
+    toDate: listBase.listDateRange.toDate,
   });
 
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
@@ -134,213 +142,132 @@ export default function CashierSellingInvoicesPage() {
     enabled: canCreateSelling && !addInvoicePopupOpen,
   });
 
-  function handleSort(nextField: string): void {
-    if (
-      nextField !== "invoiceId" &&
-      nextField !== "totalSellingPrice" &&
-      nextField !== "confirmedAt"
-    ) {
-      return;
-    }
-
-    if (sortBy !== nextField) {
-      setSortBy(nextField as SellingInvoiceSortBy);
-      setSortOrder("asc");
-      setPage(1);
-      return;
-    }
-
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    setPage(1);
-  }
-
-  const totalPages = total === 0 ? 1 : Math.ceil(total / rowsPerPage);
+  const totalPages = total === 0 ? 1 : Math.ceil(total / listBase.rowsPerPage);
   const isResetFilterDisabled =
-    search.length === 0 &&
-    searchRule === "invoiceId" &&
+    listBase.search.length === 0 &&
+    searchRule === DEFAULT_SEARCH_RULE &&
     statusFilter === "all" &&
     taxFocusFilter === "all" &&
-    isDefaultDateRange &&
-    sortBy === DEFAULT_SORT_BY &&
-    sortOrder === DEFAULT_SORT_ORDER &&
-    page === 1 &&
-    showFilters === false;
+    listBase.isDefaultRange &&
+    isDefaultSort &&
+    listBase.page === 1 &&
+    listBase.showFilters === false;
 
   function handleResetFilters(): void {
-    setSearch("");
-    setSearchRule("invoiceId");
+    listBase.setSearch("");
+    setSearchRule(DEFAULT_SEARCH_RULE);
     setStatusFilter("all");
     setTaxFocusFilter("all");
-    resetDateRange();
-    setSortBy(DEFAULT_SORT_BY);
-    setSortOrder(DEFAULT_SORT_ORDER);
-    setPage(1);
-    setShowFilters(false);
-    setRuleInputResetKey((value) => value + 1);
+    listBase.resetDateRange();
+    resetSort();
+    listBase.resetPagination();
+    listBase.setShowFilters(false);
+    listBase.resetRuleInput();
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col w-full gap-4">
-      <div className="grid grid-cols-3 items-center gap-2">
-        <div className="flex items-center justify-start gap-2">
-          <h1 className="text-xl font-semibold">{dict.salesInvoices}</h1>
-        </div>
-
-        <div className="w-full max-w-xl">
-          <RuleInput
-            key={ruleInputResetKey}
-            options={[
-              {
-                label: dict.invoiceNumber,
-                icon: <Hash className="h-3 w-3" />,
-              },
-              // {
-              //   label: dict.confirmBy,
-              //   icon: <UserIcon className="h-3 w-3" />,
-              // },
-              // {
-              //   label: dict.productSkuSearchLabel,
-              //   icon: <Package className="h-3 w-3" />,
-              // },
-            ]}
-            placeholder={dict.searchPlaceholder}
-            onChange={({ rule, value }) => {
-              const ruleMap: Record<string, "invoiceId"> = {
-                [dict.invoiceNumber]: "invoiceId",
-              };
-              setSearchRule(ruleMap[rule] as "invoiceId");
-              setSearch(value);
-              setPage(1);
-            }}
-          />
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            icon={<Filter className="h-3.5 w-3.5" />}
-            accent={showFilters ? "primary" : "neutral"}
-            size="sm"
-            onClick={() => setShowFilters((value) => !value)}
-          >
-            <span>{dict.filter}</span>
-          </Button>
-
-          <Button
-            icon={<RotateCcw className="h-3.5 w-3.5" />}
-            accent="neutral"
-            size="sm"
-            onClick={handleResetFilters}
-            disabled={isResetFilterDisabled}
-          >
-            {dict.resetFilter}
-          </Button>
-
-          {canCreateSelling ? (
-            <Button
-              icon={<Plus className="h-3.5 w-3.5" />}
-              accent="primary"
-              size="sm"
-              onClick={() => setAddInvoicePopupOpen(true)}
-            >
-              {dict.createNewSellingInvoice}
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">{dict.status}</span>
-
-              <div className="flex gap-1">
-                {SELLING_INVOICE_STATUS_OPTIONS.map((option) => (
-                  <button
-                    key={String(option.value)}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter(option.value);
-                      setPage(1);
-                    }}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getStatusFilterClass(option.value, statusFilter)}`}
-                  >
-                    {dict[option.dictKey]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">{dict.taxFocusLabel}</span>
-
-              <div className="flex gap-1">
-                {SELLING_INVOICE_TAX_FOCUS_OPTIONS.map((option) => (
-                  <button
-                    key={String(option.value)}
-                    type="button"
-                    onClick={() => {
-                      setTaxFocusFilter(option.value);
-                      setPage(1);
-                    }}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getTaxFocusFilterClass(option.value, taxFocusFilter)}`}
-                  >
-                    {dict[option.dictKey]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <InvoiceListDateRangeFilter
-            fromDate={fromDateFilter}
-            toDate={toDateFilter}
-            onFromDateChange={function handleFromDateChange(value): void {
-              setFromDateFilter(value);
-              setPage(1);
-            }}
-            onToDateChange={function handleToDateChange(value): void {
-              setToDateFilter(value);
-              setPage(1);
-            }}
-          />
-        </div>
-      )}
-
-      <DataTable<SellingInvoiceRow>
-        columns={columns}
-        data={rows}
-        loading={loading}
-        getRowId={(row) => row.id}
-        sortField={sortBy}
-        sortDirection={sortOrder}
-        onSort={handleSort}
-        maxHeight="fill"
-      />
-
-      <TablePagination
-        page={page}
-        totalPages={totalPages}
-        rowsPerPage={rowsPerPage}
-        setRowsPerPage={(value) => {
-          setRowsPerPage(value);
-          setPage(1);
-        }}
-        setPage={setPage}
-        totalResults={total}
-        dict={dict}
-      />
-
-      {canCreateSelling ? (
-        <AddSellingInvoicePopup
-          open={addInvoicePopupOpen}
-          onClose={() => setAddInvoicePopupOpen(false)}
-          onCreated={(invoiceId) => {
-            void refetch();
-            router.push(`/cashier/selling/${invoiceId}`);
+    <InvoiceListPageShell<SellingInvoiceRow>
+      title={dict.salesInvoices}
+      searchInput={
+        <RuleInput
+          key={listBase.ruleInputResetKey}
+          options={[
+            {
+              label: dict.invoiceNumber,
+              icon: <Hash className="h-3 w-3" />,
+            },
+          ]}
+          placeholder={dict.searchPlaceholder}
+          onChange={function handleSearchChange({ value }): void {
+            setSearchRule(DEFAULT_SEARCH_RULE);
+            listBase.setSearch(value);
+            listBase.resetPageOnFilterChange();
           }}
         />
-      ) : null}
-    </div>
+      }
+      showFilters={listBase.showFilters}
+      onToggleFilters={function toggleFilters(): void {
+        listBase.setShowFilters(function toggle(value) {
+          return !value;
+        });
+      }}
+      onResetFilters={handleResetFilters}
+      isResetFilterDisabled={isResetFilterDisabled}
+      toolbarActions={
+        canCreateSelling ? (
+          <Button
+            icon={<Plus className="h-3.5 w-3.5" />}
+            accent="primary"
+            size="sm"
+            onClick={function openCreatePopup(): void {
+              setAddInvoicePopupOpen(true);
+            }}
+          >
+            {dict.createNewSellingInvoice}
+          </Button>
+        ) : null
+      }
+      filterGroups={
+        <>
+          <InvoiceListFilterPillGroup
+            label={dict.status}
+            options={statusOptions}
+            value={statusFilter}
+            onChange={function selectStatus(value): void {
+              setStatusFilter(value);
+              listBase.resetPageOnFilterChange();
+            }}
+            getOptionClassName={getStatusFilterClass}
+          />
+          <InvoiceListFilterPillGroup
+            label={dict.taxFocusLabel}
+            options={taxFocusOptions}
+            value={taxFocusFilter}
+            onChange={function selectTaxFocus(value): void {
+              setTaxFocusFilter(value);
+              listBase.resetPageOnFilterChange();
+            }}
+            getOptionClassName={getTaxFocusFilterClass}
+          />
+        </>
+      }
+      fromDate={listBase.fromDate}
+      toDate={listBase.toDate}
+      onFromDateChange={function handleFromDateChange(value): void {
+        listBase.setFromDate(value);
+        listBase.resetPageOnFilterChange();
+      }}
+      onToDateChange={function handleToDateChange(value): void {
+        listBase.setToDate(value);
+        listBase.resetPageOnFilterChange();
+      }}
+      columns={columns}
+      rows={rows}
+      loading={loading}
+      getRowId={(row) => row.id}
+      sortField={sortBy}
+      sortDirection={sortOrder}
+      onSort={handleSort}
+      page={listBase.page}
+      totalPages={totalPages}
+      rowsPerPage={listBase.rowsPerPage}
+      onRowsPerPageChange={listBase.handleRowsPerPageChange}
+      onPageChange={listBase.setPage}
+      totalResults={total}
+      footer={
+        canCreateSelling ? (
+          <AddSellingInvoicePopup
+            open={addInvoicePopupOpen}
+            onClose={function closeCreatePopup(): void {
+              setAddInvoicePopupOpen(false);
+            }}
+            onCreated={function navigateToCreatedInvoice(invoiceId): void {
+              void refetch();
+              router.push(`/cashier/selling/${invoiceId}`);
+            }}
+          />
+        ) : null
+      }
+    />
   );
 }

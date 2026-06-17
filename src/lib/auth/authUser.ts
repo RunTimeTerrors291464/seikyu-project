@@ -187,3 +187,32 @@ export function defaultHomePathForRoles(roles: UserRoleCode[]): string {
 
   return "/admin/dashboard";
 }
+
+/**
+ * Whether the signed-in user may open a route prefix.
+ * Admins inherit manager and cashier access for navigation and middleware.
+ *
+ * @param userRoles - Roles from the signed-in user.
+ * @param pathname - Request pathname such as `/manager/invoices/import`.
+ * @returns True when the route is unrestricted or the user has the required role.
+ */
+export function userMayAccessPath(
+  userRoles: readonly UserRoleCode[],
+  pathname: string,
+): boolean {
+  const effectiveRoles = effectiveRolesForSidebarNav([...userRoles]);
+
+  if (pathname.startsWith("/admin")) {
+    return effectiveRoles.includes(USER_ROLE_ADMIN);
+  }
+
+  if (pathname.startsWith("/manager")) {
+    return effectiveRoles.includes(USER_ROLE_MANAGER);
+  }
+
+  if (pathname.startsWith("/cashier")) {
+    return effectiveRoles.includes(USER_ROLE_CASHIER);
+  }
+
+  return true;
+}

@@ -18,6 +18,7 @@ import type {
 } from "../types/product";
 
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { useDict } from "@/lib/lang/DictProvider";
 
 /* ============================= */
 /* HELPER */
@@ -116,6 +117,7 @@ export function useProductDetail(
   id: string,
   options?: { loadHistory?: boolean },
 ) {
+  const dict = useDict();
   const loadHistory = options?.loadHistory ?? true;
   const [product, setProduct] = useState<Product | null>(null);
   const [original, setOriginal] = useState<Product | null>(null);
@@ -176,9 +178,8 @@ export function useProductDetail(
         setProduct(productData);
         setOriginal(productData);
         setHistory([]);
-      } catch (err) {
-        console.error("[useProductDetail] fetch → error", err);
-        toast.error("Failed to load product");
+      } catch {
+        toast.error(dict.productLoadFailed);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -214,11 +215,8 @@ export function useProductDetail(
         ...prev,
         [version]: data,
       }));
-    } catch (err) {
-      console.error(
-        "useProductDetail → detail fetch failed",
-        err
-      );
+    } catch {
+      // Ignore detail fetch failures; row stays collapsed.
     } finally {
       setLoadingMap((prev) => ({
         ...prev,
@@ -236,7 +234,6 @@ export function useProductDetail(
     value: Product[K]
   ) {
     if (product && !product.isActive) {
-      console.log("[useProductDetail] blocked → inactive");
       return;
     }
 
@@ -256,29 +253,20 @@ export function useProductDetail(
   /* ============================= */
 
   function requestToggleActive() {
-    console.log("[useProductDetail] requestToggleActive");
-
     setShowActivePopup(true);
   }
 
   function confirmToggleActive() {
-    console.log("[useProductDetail] confirmToggleActive");
-
     setProduct((prev) => {
       if (!prev || !original) return prev;
 
       // If deactivating → revert ALL changes
       if (prev.isActive) {
-        console.log("[useProductDetail] deactivating → revert changes");
-
         return {
           ...original,
           isActive: false,
         };
       }
-
-      // If activating → just activate
-      console.log("[useProductDetail] activating");
 
       return {
         ...prev,
@@ -298,8 +286,6 @@ export function useProductDetail(
   /* ============================= */
 
   function addName(name: string) {
-    console.log("[useProductDetail] addName", name);
-
     const trimmed = name.trim();
     if (!trimmed) return;
 
@@ -324,8 +310,6 @@ export function useProductDetail(
   }
 
   function removeName(index: number) {
-    console.log("[useProductDetail] removeName", index);
-
     if (isPendingActivationSave(product, original)) {
       return;
     }
@@ -343,8 +327,6 @@ export function useProductDetail(
   }
 
   function makeDefault(index: number) {
-    console.log("[useProductDetail] makeDefault", index);
-
     if (isPendingActivationSave(product, original)) {
       return;
     }
@@ -421,7 +403,7 @@ export function useProductDetail(
           prev ? { ...prev, isActive: product.isActive } : prev
         );
 
-        toast.success("Status updated");
+        toast.success(dict.productStatusUpdatedSuccess);
         return true;
       }
 
@@ -443,14 +425,13 @@ export function useProductDetail(
           addHistory(res.history);
         }
 
-        toast.success("Product updated");
+        toast.success(dict.productUpdatedSuccess);
         return true;
       }
 
       return false;
-    } catch (err) {
-      console.error("[useProductDetail] saveProduct → error", err);
-      toast.error("Failed to save product");
+    } catch {
+      toast.error(dict.productSaveFailed);
       return false;
     }
   }
