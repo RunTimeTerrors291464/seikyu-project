@@ -228,29 +228,40 @@ export default function ManagerSellingInvoicesPage() {
   function handleToggleExpandRow(rowId: string | number): void {
     const id = String(rowId);
 
-    setExpandedRowIds(function toggleExpanded(prev) {
-      const next = new Set(prev);
-
-      if (next.has(id)) {
+    if (expandedRowIds.has(id)) {
+      setExpandedRowIds(function collapseExpanded(prev) {
+        const next = new Set(prev);
         next.delete(id);
-        setReturnChildrenBySellingId(function dropCache(current) {
-          const copy = { ...current };
-          delete copy[id];
-          return copy;
-        });
-        setReturnChildrenLoading(function clearLoading(current) {
-          const copy = { ...current };
-          delete copy[id];
-          return copy;
-        });
         return next;
-      }
+      });
+      setReturnChildrenBySellingId(function dropCache(current) {
+        const copy = { ...current };
+        delete copy[id];
+        return copy;
+      });
+      setReturnChildrenLoading(function clearLoading(current) {
+        const copy = { ...current };
+        delete copy[id];
+        return copy;
+      });
+      return;
+    }
 
-      const row = rows.find((candidate) => candidate.id === id);
-      if (!row || row.returnCount <= 0) {
+    if (returnChildrenLoading[id]) {
+      return;
+    }
+
+    const row = rows.find((candidate) => candidate.id === id);
+    if (!row || row.returnCount <= 0) {
+      return;
+    }
+
+    setExpandedRowIds(function expandRow(prev) {
+      if (prev.has(id)) {
         return prev;
       }
 
+      const next = new Set(prev);
       next.add(id);
       setReturnChildrenLoading(function setLoading(current) {
         return { ...current, [id]: true };
@@ -288,6 +299,34 @@ export default function ManagerSellingInvoicesPage() {
 
       return next;
     });
+
+    setReturnChildrenLoading(function setLoading(current) {
+      return { ...current, [id]: true };
+    });
+
+    void (async function fetchReturns(): Promise<void> {
+      try {
+        const response = await getReturnSellingInvoiceList({
+          search: row.invoiceId ?? undefined,
+          searchBy: "sellingInvoiceId",
+          limit: RETURN_CHILDREN_LIMIT,
+          page: 1,
+        });
+
+        setReturnChildrenBySellingId(function mergeChildren(prev) {
+          return { ...prev, [id]: response.invoices };
+        });
+      } catch (error) {
+        console.error("Failed to fetch return selling invoices", error);
+        setReturnChildrenBySellingId(function setEmpty(prev) {
+          return { ...prev, [id]: [] };
+        });
+      } finally {
+        setReturnChildrenLoading(function finishLoading(prev) {
+          return { ...prev, [id]: false };
+        });
+      }
+    })();
   }
 
   const totalPages = total === 0 ? 1 : Math.ceil(total / rowsPerPage);

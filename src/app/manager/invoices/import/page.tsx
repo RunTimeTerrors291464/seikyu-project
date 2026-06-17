@@ -251,45 +251,58 @@ export default function ImportInvoicesListPage() {
   function handleToggleExpandRow(rowId: string | number): void {
     const id = String(rowId);
 
-    setExpandedRowIds(function toggleExpanded(prev) {
-      const next = new Set(prev);
-
-      if (next.has(id)) {
+    if (expandedRowIds.has(id)) {
+      setExpandedRowIds(function collapseExpanded(prev) {
+        const next = new Set(prev);
         next.delete(id);
-        setReturnChildrenByImportId(function dropCache(current) {
-          const copy = { ...current };
-          delete copy[id];
-          return copy;
-        });
-        setReturnChildrenLoading(function clearLoading(current) {
-          const copy = { ...current };
-          delete copy[id];
-          return copy;
-        });
         return next;
-      }
+      });
+      setReturnChildrenByImportId(function dropCache(current) {
+        const copy = { ...current };
+        delete copy[id];
+        return copy;
+      });
+      setReturnChildrenLoading(function clearLoading(current) {
+        const copy = { ...current };
+        delete copy[id];
+        return copy;
+      });
+      return;
+    }
 
-      const row = rows.find((candidate) => candidate.id === id);
-      if (!row || row.returnCount <= 0) {
+    if (returnChildrenLoading[id]) {
+      return;
+    }
+
+    const row = rows.find((candidate) => candidate.id === id);
+    if (!row || row.returnCount <= 0) {
+      return;
+    }
+
+    setExpandedRowIds(function expandRow(prev) {
+      if (prev.has(id)) {
         return prev;
       }
 
+      const next = new Set(prev);
       next.add(id);
-      setReturnChildrenLoading(function setLoading(current) {
-        return { ...current, [id]: true };
-      });
+      return next;
+    });
 
-      void (async function fetchReturns(): Promise<void> {
-        try {
-          const row = rows.find((candidate) => candidate.id === id);
-          const importInvoiceNo = row?.invoiceId?.trim() ?? "";
+    setReturnChildrenLoading(function setLoading(current) {
+      return { ...current, [id]: true };
+    });
 
-          if (!importInvoiceNo) {
-            setReturnChildrenByImportId(function setEmpty(prev) {
-              return { ...prev, [id]: [] };
-            });
-            return;
-          }
+    void (async function fetchReturns(): Promise<void> {
+      try {
+        const importInvoiceNo = row.invoiceId?.trim() ?? "";
+
+        if (!importInvoiceNo) {
+          setReturnChildrenByImportId(function setEmpty(prev) {
+            return { ...prev, [id]: [] };
+          });
+          return;
+        }
 
           const response = await getReturnImportInvoiceList({
             search: importInvoiceNo,
@@ -300,18 +313,20 @@ export default function ImportInvoicesListPage() {
             sortOrder: DEFAULT_RETURN_SORT_ORDER,
           });
 
-          setReturnChildrenByImportId(function mergeChildren(prev) {
-            return { ...prev, [id]: response.invoices };
-          });
-        } finally {
-          setReturnChildrenLoading(function finishLoading(prev) {
-            return { ...prev, [id]: false };
-          });
-        }
-      })();
-
-      return next;
-    });
+        setReturnChildrenByImportId(function mergeChildren(prev) {
+          return { ...prev, [id]: response.invoices };
+        });
+      } catch (error) {
+        console.error("Failed to fetch return import invoices", error);
+        setReturnChildrenByImportId(function setEmpty(prev) {
+          return { ...prev, [id]: [] };
+        });
+      } finally {
+        setReturnChildrenLoading(function finishLoading(prev) {
+          return { ...prev, [id]: false };
+        });
+      }
+    })();
   }
 
   const totalPages =
