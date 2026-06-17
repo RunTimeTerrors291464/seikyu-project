@@ -77,6 +77,12 @@ export default function useSkuCheck({
         return;
       }
 
+      // After line commit the raw SKU clears while debouncedSku can still hold the
+      // previous value; skip cache restore until the user types again.
+      if (isSkuInputEmpty(sku)) {
+        return;
+      }
+
       if (isSkuInputEmpty(debouncedSku)) {
         setProduct(null);
         setNotFound(false);
@@ -154,7 +160,7 @@ export default function useSkuCheck({
 
       void fetchSkuCheck();
     },
-    [debouncedSku, intent, skip],
+    [debouncedSku, intent, skip, sku],
   );
 
   return {
