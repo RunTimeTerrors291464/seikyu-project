@@ -441,9 +441,10 @@ curl -X POST http://localhost:3000/api/v2/admin/first-admin-account \
   -H "Content-Type: application/json" \
   -d '{
     "first_name": "Admin",
+    "middle_name": "",
     "last_name": "User",
     "username": "admin",
-    "password": "your_secure_password"
+    "password": "admin123"
   }'
 ```
 
