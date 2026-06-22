@@ -237,7 +237,7 @@ export class ProductsRepository {
         const nextVersion: number = currentVersion + 1;
 
         // Compute change events by comparing previous vs current snapshot.
-        const currentSnapshot: ProductSnapshotDto = this.productMapper.toProductSnapshotDto(updatedProductEntity);
+        const currentSnapshot: ProductSnapshotDto = this.productMapper.toProductSnapshotDto(productWithRelations);
         const events: ProductChangeEventDto[] = this.productMapper.toProductChangeEventDtos(previousSnapshot, currentSnapshot);
         const eventSummary: ProductChangedField[] = events.map(e => e.fieldName as ProductChangedField);
 
