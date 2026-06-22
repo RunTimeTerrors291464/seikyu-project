@@ -1,7 +1,7 @@
 "use client";
 
-import type { Accent } from "@/components/types/ui";
 import Button from "@/components/ui/Buttons";
+import type { Accent } from "@/components/types/ui";
 import DataTable from "@/components/ui/DataTable";
 import RuleInput from "@/components/ui/RuleInput";
 import TablePagination from "@/components/ui/TablePagination";
@@ -27,7 +27,7 @@ import {
   UNIVERSAL_NEW_SHORTCUT_ID,
   UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
 } from "@/lib/shortcuts/universalShortcut";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
+import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import { AtSign, Filter, Plus, RotateCcw, User as UserIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -44,16 +44,6 @@ const USER_LIST_SORT_FIELDS: readonly UserListSortBy[] = [
   "updatedAt",
   "isActive",
 ];
-
-function activeFilterAccent(value: ActiveFilter): Accent {
-  if (value === "true") {
-    return "success";
-  }
-  if (value === "false") {
-    return "danger";
-  }
-  return "neutral";
-}
 
 /**
  * Admin users list: search, filters, and user management backed by platform admin APIs.
@@ -164,8 +154,7 @@ export default function AdminUsersPage() {
     roleFilter.size === 0 &&
     sortBy === "createdAt" &&
     sortOrder === "desc" &&
-    page === 1 &&
-    showFilters === false;
+    page === 1;
 
   function handleResetFilters(): void {
     setSearch("");
@@ -175,7 +164,6 @@ export default function AdminUsersPage() {
     setSortBy("createdAt");
     setSortOrder("desc");
     setPage(1);
-    setShowFilters(false);
     setRuleInputResetKey((value) => value + 1);
   }
 
@@ -191,6 +179,17 @@ export default function AdminUsersPage() {
     });
     setPage(1);
   }
+
+  const statusFilterOptions = useMemo(
+    function buildStatusFilterOptions() {
+      return [
+        { value: "all" as const, label: dict.all },
+        { value: "true" as const, label: dict.active },
+        { value: "false" as const, label: dict.inactive },
+      ];
+    },
+    [dict],
+  );
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
@@ -266,35 +265,24 @@ export default function AdminUsersPage() {
 
       {showFilters && (
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted">{dict.status}</span>
-            <div className="flex flex-wrap gap-1">
-              {(
-                [
-                  { value: "all" as const, label: dict.all },
-                  { value: "true" as const, label: dict.active },
-                  { value: "false" as const, label: dict.inactive },
-                ] as const
-              ).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setActiveFilter(option.value);
-                    setPage(1);
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
-                    option.value,
-                    activeFilter,
-                    "all",
-                    activeFilterAccent,
-                  )}`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ListFilterSelectGroup
+            label={dict.status}
+            options={statusFilterOptions}
+            value={activeFilter}
+            onChange={(value) => {
+              setActiveFilter(value);
+              setPage(1);
+            }}
+            accentForValue={function activeAccent(optionValue): Accent {
+              if (optionValue === "true") {
+                return "success";
+              }
+              if (optionValue === "false") {
+                return "danger";
+              }
+              return "neutral";
+            }}
+          />
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted">{dict.rolesLabel}</span>

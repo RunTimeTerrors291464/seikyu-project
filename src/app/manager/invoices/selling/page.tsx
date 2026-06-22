@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import RuleInput from "@/components/ui/RuleInput";
 import InvoiceListExpandedReturnsPanel from "@/features/invoices/components/InvoiceListExpandedReturnsPanel";
-import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { SELLING_STATUS_ACCENT } from "@/features/invoices/components/SellingInvoiceStatusPill";
 import {
@@ -28,37 +28,13 @@ import { getReturnSellingInvoiceList } from "@/features/invoices/services/return
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
 import { returnSellingInvoiceListColumns } from "@/features/invoices/table/returnSellingInvoiceListColumns";
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
+import type { Accent } from "@/components/types/ui";
 import { useDict } from "@/lib/lang/DictProvider";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { Hash, Package, User as UserIcon } from "lucide-react";
 
 const RETURN_CHILDREN_LIMIT = 100;
 const DEFAULT_SORT_BY = "confirmedAt" as const;
 const DEFAULT_SEARCH_RULE = "invoiceId" as const;
-
-function getStatusFilterClass(
-  optionValue: SellingInvoiceStatusFilter,
-  statusFilter: SellingInvoiceStatusFilter,
-): string {
-  return getFilterPillClassName(
-    optionValue,
-    statusFilter,
-    "all",
-    (value) => SELLING_STATUS_ACCENT[value as SellingInvoiceStatus] ?? "neutral",
-  );
-}
-
-function getTaxFocusFilterClass(
-  optionValue: SellingInvoiceTaxFocusFilter,
-  taxFocusFilter: SellingInvoiceTaxFocusFilter,
-): string {
-  return getFilterPillClassName(
-    optionValue,
-    taxFocusFilter,
-    "all",
-    (value) => (value === "true" ? "success" : "danger"),
-  );
-}
 
 export default function ManagerSellingInvoicesPage() {
   const dict = useDict();
@@ -167,7 +143,6 @@ export default function ManagerSellingInvoicesPage() {
     isDefaultSort &&
     isDefaultReturnSort &&
     listBase.page === 1 &&
-    listBase.showFilters === false &&
     !returnExpansion.hasExpandedRows;
 
   function handleResetFilters(): void {
@@ -179,7 +154,6 @@ export default function ManagerSellingInvoicesPage() {
     resetSort();
     resetReturnSort();
     listBase.resetPagination();
-    listBase.setShowFilters(false);
     returnExpansion.resetExpansion();
     listBase.resetRuleInput();
   }
@@ -228,7 +202,7 @@ export default function ManagerSellingInvoicesPage() {
       isResetFilterDisabled={isResetFilterDisabled}
       filterGroups={
         <>
-          <InvoiceListFilterPillGroup
+          <ListFilterSelectGroup
             label={dict.status}
             options={statusOptions}
             value={statusFilter}
@@ -236,9 +210,16 @@ export default function ManagerSellingInvoicesPage() {
               setStatusFilter(value);
               listBase.resetPageOnFilterChange();
             }}
-            getOptionClassName={getStatusFilterClass}
+            accentForValue={function statusAccent(
+              optionValue,
+            ): Accent {
+              return (
+                SELLING_STATUS_ACCENT[optionValue as SellingInvoiceStatus] ??
+                "neutral"
+              );
+            }}
           />
-          <InvoiceListFilterPillGroup
+          <ListFilterSelectGroup
             label={dict.taxFocusLabel}
             options={taxFocusOptions}
             value={taxFocusFilter}
@@ -246,7 +227,9 @@ export default function ManagerSellingInvoicesPage() {
               setTaxFocusFilter(value);
               listBase.resetPageOnFilterChange();
             }}
-            getOptionClassName={getTaxFocusFilterClass}
+            accentForValue={function taxFocusAccent(optionValue): Accent {
+              return optionValue === "true" ? "success" : "danger";
+            }}
           />
         </>
       }

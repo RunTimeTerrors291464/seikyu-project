@@ -23,6 +23,10 @@ type SelectProps<V extends string = string> = {
   disabled?: boolean;
   error?: boolean;
   warning?: boolean;
+  size?: "default" | "sm";
+  /** Replaces the default shell colors (e.g. filter accent styling). */
+  triggerClassName?: string;
+  getOptionClassName?: (optionValue: V, isSelected: boolean) => string;
   className?: string;
 };
 
@@ -75,8 +79,12 @@ export default function Select<V extends string = string>({
   disabled = false,
   error = false,
   warning = false,
+  size = "default",
+  triggerClassName,
+  getOptionClassName,
   className,
 }: SelectProps<V>) {
+  const isCompact = size === "sm";
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
@@ -140,11 +148,14 @@ export default function Select<V extends string = string>({
     <div
       ref={rootRef}
       className={clsx(
-        "relative flex min-w-0 items-center gap-1",
-        SELECT_SURFACE,
-        controlShellClasses(error, warning),
-        !disabled && "hover:bg-hover",
-        disabled && "cursor-not-allowed bg-hover opacity-60",
+        "relative flex min-w-0 items-center gap-1 outline-none transition-colors duration-150",
+        isCompact ? "rounded-full" : "rounded-md",
+        triggerClassName ??
+          clsx(SELECT_SURFACE, controlShellClasses(error, warning)),
+        !triggerClassName && !disabled && "hover:bg-hover",
+        triggerClassName && !disabled && "hover:opacity-90",
+        disabled && "cursor-not-allowed opacity-60",
+        disabled && !triggerClassName && "bg-hover",
         className,
       )}
     >
@@ -167,8 +178,14 @@ export default function Select<V extends string = string>({
         disabled={disabled}
         onClick={handleToggle}
         className={clsx(
-          "flex min-w-0 flex-1 items-center justify-between gap-1 text-left text-xs text-text outline-none",
-          icon ? "py-1.5 pl-1 pr-2" : "px-2.5 py-1.5",
+          "flex min-w-0 flex-1 items-center justify-between gap-1 text-left text-xs outline-none",
+          icon
+            ? isCompact
+              ? "py-0.5 pl-1 pr-1.5"
+              : "py-1.5 pl-1 pr-2"
+            : isCompact
+              ? "px-2 py-0.5"
+              : "px-2.5 py-1.5",
           disabled && "cursor-not-allowed",
         )}
       >
@@ -177,7 +194,8 @@ export default function Select<V extends string = string>({
           aria-hidden
           strokeWidth={2.25}
           className={clsx(
-            "h-3.5 w-3.5 shrink-0 text-muted transition-transform duration-150",
+            "shrink-0 opacity-70 transition-transform duration-150",
+            isCompact ? "h-3 w-3" : "h-3.5 w-3.5",
             open && "rotate-180",
           )}
         />
@@ -190,11 +208,13 @@ export default function Select<V extends string = string>({
           id={listboxId}
           role="listbox"
           className={clsx(
-            "absolute left-0 right-0 top-full z-50 mt-1 max-h-60 min-w-full overflow-auto rounded-md border border-border bg-card py-1 shadow-md",
+            "absolute left-0 right-0 top-full z-50 mt-1 max-h-60 min-w-full overflow-auto border border-border bg-card p-1 shadow-md",
+            isCompact ? "rounded-lg" : "rounded-md py-1",
           )}
         >
           {options.map(function renderOptionRow(option) {
             const isSelected = option.value === value;
+            const optionClassName = getOptionClassName?.(option.value, isSelected);
             return (
               <li key={option.value} role="presentation" className="list-none">
                 <button
@@ -205,9 +225,19 @@ export default function Select<V extends string = string>({
                     handleSelectOption(option.value);
                   }}
                   className={clsx(
-                    "w-full px-3 py-2 text-left text-xs text-text outline-none transition-colors",
-                    "hover:bg-hover active:bg-active",
-                    isSelected && "bg-primary/10 font-medium text-text",
+                    "w-full text-left text-xs outline-none transition-opacity",
+                    optionClassName ??
+                      clsx(
+                        "px-3 py-2 text-text transition-colors",
+                        "hover:bg-hover active:bg-active",
+                        isSelected && "bg-primary/10 font-medium text-text",
+                      ),
+                    optionClassName &&
+                      clsx(
+                        "rounded-full border px-2.5 py-0.5",
+                        isCompact ? "my-0.5" : "my-1",
+                        "hover:opacity-100",
+                      ),
                   )}
                 >
                   {option.label}

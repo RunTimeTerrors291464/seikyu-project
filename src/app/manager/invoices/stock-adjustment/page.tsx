@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
-import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { STATUS_ACCENT } from "@/features/invoices/components/StockAdjustmentStatusPill";
 import {
@@ -27,7 +27,7 @@ import {
   UNIVERSAL_NEW_SHORTCUT_ID,
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
+import type { Accent } from "@/components/types/ui";
 import { Hash, Package, Plus, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -39,21 +39,6 @@ type StockAdjustmentSortBy =
 
 const DEFAULT_SORT_BY: StockAdjustmentSortBy = "createdAt";
 const DEFAULT_SEARCH_RULE = "invoiceId" as const;
-
-function getStatusFilterClass(
-  optionValue: StockAdjustmentInvoiceStatusFilter,
-  statusFilter: StockAdjustmentInvoiceStatusFilter,
-): string {
-  return getFilterPillClassName(
-    optionValue,
-    statusFilter,
-    "all",
-    (value) =>
-      value === "all"
-        ? "neutral"
-        : STATUS_ACCENT[value as "draft" | "confirmed"] ?? "neutral",
-  );
-}
 
 export default function StockAdjustmentInvoicesListPage() {
   const router = useRouter();
@@ -129,8 +114,7 @@ export default function StockAdjustmentInvoicesListPage() {
     statusFilter === "all" &&
     listBase.isDefaultRange &&
     isDefaultSort &&
-    listBase.page === 1 &&
-    listBase.showFilters === false;
+    listBase.page === 1;
 
   function handleResetFilters(): void {
     listBase.setSearch("");
@@ -139,7 +123,6 @@ export default function StockAdjustmentInvoicesListPage() {
     listBase.resetDateRange();
     resetSort();
     listBase.resetPagination();
-    listBase.setShowFilters(false);
     listBase.resetRuleInput();
   }
 
@@ -200,7 +183,7 @@ export default function StockAdjustmentInvoicesListPage() {
         ) : null
       }
       filterGroups={
-        <InvoiceListFilterPillGroup
+        <ListFilterSelectGroup
           label={dict.status}
           options={statusOptions}
           value={statusFilter}
@@ -208,7 +191,11 @@ export default function StockAdjustmentInvoicesListPage() {
             setStatusFilter(value);
             listBase.resetPageOnFilterChange();
           }}
-          getOptionClassName={getStatusFilterClass}
+          accentForValue={function statusAccent(optionValue): Accent {
+            return optionValue === "all"
+              ? "neutral"
+              : STATUS_ACCENT[optionValue as "draft" | "confirmed"] ?? "neutral";
+          }}
         />
       }
       filterGroupsLayout="stack"

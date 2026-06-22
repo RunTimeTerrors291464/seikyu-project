@@ -6,7 +6,7 @@ import KpiTile from "@/components/ui/KpiTile";
 import TablePagination from "@/components/ui/TablePagination";
 
 
-import { ProductStatusFilter, ProductStockFilter } from "@/components/types/ui";
+import { ProductStatusFilter, ProductStockFilter, type Accent } from "@/components/types/ui";
 import { PRODUCT_STATUS_OPTIONS, PRODUCT_STOCK_STATUS_OPTIONS } from "@/features/products/filters/productFilters";
 import { useDict } from "@/lib/lang/DictProvider";
 
@@ -33,7 +33,29 @@ import ProductTableHeader from "@/features/products/layout/ProductTableHeader";
 import { productColumns } from "@/features/products/table/productColumns";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
+import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
+
+type StockSelectValue = "all" | "0" | "1" | "2";
+type ActiveSelectValue = "all" | "true" | "false";
+
+function toStockSelectValue(value: ProductStockFilter): StockSelectValue {
+  return value === "all" ? "all" : String(value) as StockSelectValue;
+}
+
+function fromStockSelectValue(value: StockSelectValue): ProductStockFilter {
+  return value === "all" ? "all" : Number(value) as ProductStockFilter;
+}
+
+function toActiveSelectValue(value: ProductStatusFilter): ActiveSelectValue {
+  return value === "all" ? "all" : String(value) as ActiveSelectValue;
+}
+
+function fromActiveSelectValue(value: ActiveSelectValue): ProductStatusFilter {
+  if (value === "all") {
+    return "all";
+  }
+  return value === "true";
+}
 
 /* ============================= */
 /* PAGE */
@@ -150,8 +172,24 @@ export default function ProductInventoryPage() {
     table.resetQuery(); // must exist in hook
   }
 
-  /* ============================= */
-  /* UI */
+  const stockFilterOptions = useMemo(
+    () =>
+      PRODUCT_STOCK_STATUS_OPTIONS.map((option) => ({
+        value: toStockSelectValue(option.value),
+        label: dict[option.dictKey],
+      })),
+    [dict],
+  );
+
+  const activeFilterOptions = useMemo(
+    () =>
+      PRODUCT_STATUS_OPTIONS.map((option) => ({
+        value: toActiveSelectValue(option.value as ProductStatusFilter),
+        label: dict[option.dictKey],
+      })),
+    [dict],
+  );
+
   /* ============================= */
 
   return (
@@ -242,81 +280,60 @@ export default function ProductInventoryPage() {
       {showFilters && (
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-sm">
 
-          {/* STOCK */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">
-              {dict.stock}
-            </span>
+          <ListFilterSelectGroup
+            label={dict.stock}
+            options={stockFilterOptions}
+            value={toStockSelectValue(statusFilter)}
+            onChange={(value) => {
+              const nextValue = fromStockSelectValue(value);
+              setStatusFilter(nextValue);
 
-            <div className="flex gap-1">
-              {PRODUCT_STOCK_STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => {
-                    setStatusFilter(opt.value);
+              table.setFilters({
+                stockStatus:
+                  nextValue === "all" ? undefined : nextValue,
+              });
+            }}
+            accentForValue={function stockAccent(optionValue): Accent {
+              if (optionValue === "0") {
+                return "success";
+              }
+              if (optionValue === "1") {
+                return "warning";
+              }
+              if (optionValue === "2") {
+                return "danger";
+              }
+              return "neutral";
+            }}
+          />
 
-                    table.setFilters({
-                      stockStatus:
-                        opt.value === "all"
-                          ? undefined
-                          : opt.value,
-                    });
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
-                    opt.value,
-                    statusFilter,
-                    "all",
-                    (value) => {
-                      if (value === 0) {
-                        return "success";
-                      }
-                      if (value === 1) {
-                        return "warning";
-                      }
-                      return "danger";
-                    },
-                  )}`}
-                >
-                  {dict[opt.dictKey]}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ListFilterSelectGroup
+            label={dict.status}
+            options={activeFilterOptions}
+            value={toActiveSelectValue(activeFilter)}
+            onChange={(value) => {
+              const nextValue = fromActiveSelectValue(value);
+              setActiveFilter(nextValue);
 
-          {/* ACTIVE */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">
-              {dict.status}
-            </span>
-
-            <div className="flex gap-1">
-              {PRODUCT_STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => {
-                    setActiveFilter(opt.value as ProductStatusFilter);
-
-                    table.setFilters({
-                      isActive:
-                        opt.value === "all"
-                          ? "all"
-                          : opt.value === true
-                            ? "true"
-                            : "false",
-                    });
-                  }}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs transition-opacity ${getFilterPillClassName(
-                    opt.value,
-                    activeFilter,
-                    "all",
-                    (value) => (value ? "success" : "danger"),
-                  )}`}
-                >
-                  {dict[opt.dictKey]}
-                </button>
-              ))}
-            </div>
-          </div>
+              table.setFilters({
+                isActive:
+                  nextValue === "all"
+                    ? "all"
+                    : nextValue
+                      ? "true"
+                      : "false",
+              });
+            }}
+            accentForValue={function activeAccent(optionValue): Accent {
+              if (optionValue === "true") {
+                return "success";
+              }
+              if (optionValue === "false") {
+                return "danger";
+              }
+              return "neutral";
+            }}
+          />
         </div>
       )}
 

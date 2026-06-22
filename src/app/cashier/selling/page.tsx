@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
-import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { SELLING_STATUS_ACCENT } from "@/features/invoices/components/SellingInvoiceStatusPill";
 import {
@@ -32,40 +32,16 @@ import {
   UNIVERSAL_NEW_SHORTCUT_ID,
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
 import { Hash, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
+import type { Accent } from "@/components/types/ui";
 
 type SellingInvoiceSortBy = "invoiceId" | "totalSellingPrice" | "confirmedAt";
 
 const DEFAULT_SORT_BY: SellingInvoiceSortBy = "confirmedAt";
 const DEFAULT_SEARCH_RULE = "invoiceId" as const;
-
-function getStatusFilterClass(
-  optionValue: SellingInvoiceStatusFilter,
-  statusFilter: SellingInvoiceStatusFilter,
-): string {
-  return getFilterPillClassName(
-    optionValue,
-    statusFilter,
-    "all",
-    (value) => SELLING_STATUS_ACCENT[value as SellingInvoiceStatus] ?? "neutral",
-  );
-}
-
-function getTaxFocusFilterClass(
-  optionValue: SellingInvoiceTaxFocusFilter,
-  taxFocusFilter: SellingInvoiceTaxFocusFilter,
-): string {
-  return getFilterPillClassName(
-    optionValue,
-    taxFocusFilter,
-    "all",
-    (value) => (value === "true" ? "success" : "danger"),
-  );
-}
 
 export default function CashierSellingInvoicesPage() {
   const router = useRouter();
@@ -150,8 +126,7 @@ export default function CashierSellingInvoicesPage() {
     taxFocusFilter === "all" &&
     listBase.isDefaultRange &&
     isDefaultSort &&
-    listBase.page === 1 &&
-    listBase.showFilters === false;
+    listBase.page === 1;
 
   function handleResetFilters(): void {
     listBase.setSearch("");
@@ -161,7 +136,6 @@ export default function CashierSellingInvoicesPage() {
     listBase.resetDateRange();
     resetSort();
     listBase.resetPagination();
-    listBase.setShowFilters(false);
     listBase.resetRuleInput();
   }
 
@@ -209,7 +183,7 @@ export default function CashierSellingInvoicesPage() {
       }
       filterGroups={
         <>
-          <InvoiceListFilterPillGroup
+          <ListFilterSelectGroup
             label={dict.status}
             options={statusOptions}
             value={statusFilter}
@@ -217,9 +191,16 @@ export default function CashierSellingInvoicesPage() {
               setStatusFilter(value);
               listBase.resetPageOnFilterChange();
             }}
-            getOptionClassName={getStatusFilterClass}
+            accentForValue={function statusAccent(
+              optionValue,
+            ): Accent {
+              return (
+                SELLING_STATUS_ACCENT[optionValue as SellingInvoiceStatus] ??
+                "neutral"
+              );
+            }}
           />
-          <InvoiceListFilterPillGroup
+          <ListFilterSelectGroup
             label={dict.taxFocusLabel}
             options={taxFocusOptions}
             value={taxFocusFilter}
@@ -227,7 +208,9 @@ export default function CashierSellingInvoicesPage() {
               setTaxFocusFilter(value);
               listBase.resetPageOnFilterChange();
             }}
-            getOptionClassName={getTaxFocusFilterClass}
+            accentForValue={function taxFocusAccent(optionValue): Accent {
+              return optionValue === "true" ? "success" : "danger";
+            }}
           />
         </>
       }

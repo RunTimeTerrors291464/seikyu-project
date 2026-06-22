@@ -28,7 +28,7 @@ export function userRoleAccent(role: UserRoleCode): Accent {
 }
 
 /**
- * Class names for a role filter chip (same visual language as `getFilterPillClassName` options).
+ * Class names for a role filter chip (same visual language as filter select accents).
  *
  * @param role - Role code for this chip.
  * @param selected - Whether this role is included in the current filter.

@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
 import InvoiceListExpandedReturnsPanel from "@/features/invoices/components/InvoiceListExpandedReturnsPanel";
-import InvoiceListFilterPillGroup from "@/features/invoices/components/InvoiceListFilterPillGroup";
+import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { STATUS_ACCENT } from "@/features/invoices/components/ImportInvoiceStatusPill";
 import {
@@ -40,25 +40,13 @@ import {
   UNIVERSAL_NEW_SHORTCUT_ID,
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
-import { getFilterPillClassName } from "@/lib/ui/filterPillClassName";
+import type { Accent } from "@/components/types/ui";
 import { Hash, Plus, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const RETURN_CHILDREN_LIMIT = 100;
 const DEFAULT_SORT_BY: ImportInvoiceListSortBy = "createdAt";
 const DEFAULT_SEARCH_RULE = "invoiceId" as const;
-
-function getStatusFilterClass(
-  optionValue: ImportInvoiceStatusFilter,
-  statusFilter: ImportInvoiceStatusFilter,
-): string {
-  return getFilterPillClassName(
-    optionValue,
-    statusFilter,
-    "all",
-    (value) => STATUS_ACCENT[value as ImportInvoiceStatus] ?? "neutral",
-  );
-}
 
 export default function ImportInvoicesListPage() {
   const router = useRouter();
@@ -180,7 +168,6 @@ export default function ImportInvoicesListPage() {
     isDefaultSort &&
     isDefaultReturnSort &&
     listBase.page === 1 &&
-    listBase.showFilters === false &&
     !returnExpansion.hasExpandedRows;
 
   function handleResetFilters(): void {
@@ -191,7 +178,6 @@ export default function ImportInvoicesListPage() {
     resetSort();
     resetReturnSort();
     listBase.resetPagination();
-    listBase.setShowFilters(false);
     returnExpansion.resetExpansion();
     listBase.resetRuleInput();
   }
@@ -243,7 +229,7 @@ export default function ImportInvoicesListPage() {
         ) : null
       }
       filterGroups={
-        <InvoiceListFilterPillGroup
+        <ListFilterSelectGroup
           label={dict.status}
           options={statusOptions}
           value={statusFilter}
@@ -251,7 +237,9 @@ export default function ImportInvoicesListPage() {
             setStatusFilter(value);
             listBase.resetPageOnFilterChange();
           }}
-          getOptionClassName={getStatusFilterClass}
+          accentForValue={function statusAccent(optionValue): Accent {
+            return STATUS_ACCENT[optionValue as ImportInvoiceStatus] ?? "neutral";
+          }}
         />
       }
       filterGroupsLayout="stack"
