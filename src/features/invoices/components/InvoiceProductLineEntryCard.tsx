@@ -12,6 +12,7 @@ import {
 } from "@/features/invoices/lib/invoiceProductLineEntryShortcuts";
 import type { InvoiceLineEntryVariantConfig } from "@/features/invoices/types/invoiceLineEntryTypes";
 import { useDict } from "@/lib/lang/DictProvider";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import { isEmptyValue, isZeroValue } from "@/lib/numeric/fieldValueChecks";
 import { normalizeIntegerStringInput } from "@/lib/numeric/integerAndMoneyInputs";
 import { formatShortcutChordForDisplay } from "@/lib/shortcuts/formatShortcutChordForDisplay";
@@ -370,7 +371,7 @@ function InvoiceProductLineEntryCardInner<TLine, TVariantFields>(
           </Field>
           <Field label={dict.unit} icon={<Ruler className="h-3 w-3" />}>
             <Input
-              value={context.productUnit}
+              value={translateUnitName(context.productUnit, dict)}
               onChange={function noop(): void {
                 /* read-only */
               }}

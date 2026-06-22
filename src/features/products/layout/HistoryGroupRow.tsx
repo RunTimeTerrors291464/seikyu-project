@@ -3,7 +3,7 @@
 import { formatDate } from "@/components/types/ui";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
-  formatValue,
+  formatHistoryFieldValue,
   getChangeMeta,
   getDiffIcon,
   getFieldLabel,
@@ -331,8 +331,8 @@ export default function HistoryGroupRow({
                   return (
                     <li key={i} className="flex items-start gap-2">
                       {getDiffIcon(
-                        formatValue(e.previousValue),
-                        formatValue(e.newValue)
+                        formatHistoryFieldValue(e.fieldName, e.previousValue, dict),
+                        formatHistoryFieldValue(e.fieldName, e.newValue, dict)
                       )}
 
                       <span className="w-28 shrink-0 font-medium text-muted">
@@ -342,16 +342,16 @@ export default function HistoryGroupRow({
                       {e.previousValue ? (
                         <span className="text-muted">
                           <span className="line-through">
-                            {formatValue(e.previousValue)}
+                            {formatHistoryFieldValue(e.fieldName, e.previousValue, dict)}
                           </span>
                           <span className="mx-1">→</span>
                           <span className="font-medium text-text">
-                            {formatValue(e.newValue)}
+                            {formatHistoryFieldValue(e.fieldName, e.newValue, dict)}
                           </span>
                         </span>
                       ) : (
                         <span className="font-medium text-success">
-                          {formatValue(e.newValue)}
+                          {formatHistoryFieldValue(e.fieldName, e.newValue, dict)}
                         </span>
                       )}
                     </li>

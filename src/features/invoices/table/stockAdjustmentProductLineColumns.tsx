@@ -8,6 +8,7 @@
 import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import type { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import { isEmptyValue, isZeroValue } from "@/lib/numeric/fieldValueChecks";
 import { normalizeIntegerStringInput } from "@/lib/numeric/integerAndMoneyInputs";
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
@@ -103,7 +104,13 @@ export function stockAdjustmentProductColumns({
       header: dict.unit,
       icon: <Ruler className="h-3.5 w-3.5 text-muted" strokeWidth={2.5} />,
       accessor: function renderUnit(row) {
-        return <span className="text-text">{row.productUnit || "—"}</span>;
+        return (
+          <span className="text-text">
+            {row.productUnit
+              ? translateUnitName(row.productUnit, dict)
+              : "—"}
+          </span>
+        );
       },
       thClassName: "w-[100px]",
     },

@@ -18,6 +18,7 @@ import {
   Textarea,
 } from "@/components/ui/Fields";
 import { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import {
   finalizeMoneyStringTwoDecimalPlaces,
   normalizeIntegerStringInput,
@@ -198,7 +199,7 @@ export default function ProductDetailsCard({
         required
       >
         <SelectButton
-          value={product.productUnitName}
+          value={translateUnitName(product.productUnitName, dict)}
           placeholder={dict.selectUnit}
           disabled={isDisabled}
           onClick={() => setUnitOpen(true)}

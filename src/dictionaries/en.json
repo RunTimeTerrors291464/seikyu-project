@@ -473,5 +473,30 @@
     "DB_QUERY_ERROR": "Database query error.",
     "HTTP_EXCEPTION": "Request failed.",
     "UNKNOWN_ERROR": "Something went wrong. Please try again later."
+  },
+  "unitWords": {
+    "piece": "piece",
+    "pieces": "pieces",
+    "pair": "pair",
+    "pairs": "pairs",
+    "pack": "pack",
+    "box": "box",
+    "kg": "kg",
+    "roll": "roll",
+    "rolls": "rolls",
+    "metre": "metre",
+    "metres": "metres",
+    "meter": "meter",
+    "meters": "meters",
+    "db": "piece",
+    "darab": "piece",
+    "pár": "pair",
+    "cs": "pack",
+    "csomag": "pack",
+    "doboz": "box",
+    "dob": "box",
+    "tekercs": "roll",
+    "teker": "roll",
+    "m": "metre"
   }
 }

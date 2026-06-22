@@ -5,6 +5,7 @@ import type { Column } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Fields";
 import { StatusToggle } from "@/components/ui/StatusToggle";
 import { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayIndex";
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import clsx from "clsx";
@@ -97,7 +98,7 @@ export function unitColumns(
             )}
           >
             <span className="font-mono">
-              {u.unitName}
+              {translateUnitName(u.unitName, dict)}
             </span>
           </div>
         );

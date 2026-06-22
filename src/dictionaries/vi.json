@@ -473,5 +473,30 @@
     "DB_QUERY_ERROR": "Lỗi truy vấn cơ sở dữ liệu.",
     "HTTP_EXCEPTION": "Yêu cầu thất bại.",
     "UNKNOWN_ERROR": "Đã xảy ra lỗi. Vui lòng thử lại sau."
+  },
+  "unitWords": {
+    "piece": "cái",
+    "pieces": "cái",
+    "pair": "đôi",
+    "pairs": "đôi",
+    "pack": "gói",
+    "box": "hộp",
+    "kg": "kg",
+    "roll": "cuộn",
+    "rolls": "cuộn",
+    "metre": "mét",
+    "metres": "mét",
+    "meter": "mét",
+    "meters": "mét",
+    "db": "cái",
+    "darab": "cái",
+    "pár": "đôi",
+    "cs": "gói",
+    "csomag": "gói",
+    "doboz": "hộp",
+    "dob": "hộp",
+    "tekercs": "cuộn",
+    "teker": "cuộn",
+    "m": "mét"
   }
 }

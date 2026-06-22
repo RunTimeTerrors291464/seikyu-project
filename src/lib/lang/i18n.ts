@@ -4,7 +4,7 @@ import vi from "@/dictionaries/vi.json";
 
 export type Dictionary = typeof en;
 
-/** Top-level dictionary keys whose values are display strings (excludes nested objects like `apiErrors`). */
+/** Top-level dictionary keys whose values are display strings (excludes nested objects like `apiErrors`, `unitWords`). */
 export type DictionaryLabelKey = {
   [Key in keyof Dictionary]: Dictionary[Key] extends string ? Key : never;
 }[keyof Dictionary];

@@ -2,6 +2,7 @@
 
 import { FIELD_KEYS } from "@/components/types/ui";
 import { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import {
   ArrowLeftRight,
   DollarSign,
@@ -65,6 +66,23 @@ export function formatValue(
   }
 
   return String(value);
+}
+
+/**
+ * Formats a product history field value for display, translating unit names when applicable.
+ */
+export function formatHistoryFieldValue(
+  fieldName: string,
+  value: JsonValue | ProductHistoryNameItem | undefined,
+  dict: Dictionary,
+): string {
+  const formatted = formatValue(value);
+
+  if (fieldName === "productUnit") {
+    return translateUnitName(formatted, dict);
+  }
+
+  return formatted;
 }
 
 /* ============================= */

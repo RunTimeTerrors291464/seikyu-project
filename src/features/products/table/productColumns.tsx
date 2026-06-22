@@ -2,6 +2,7 @@ import type { Column } from "@/components/ui/DataTable";
 import ActivePill from "@/features/products/components/ActivePill";
 import StatusPill from "@/features/products/components/StockStatusPill";
 import { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import type { PaginatedRowIndexParams } from "@/lib/table/paginatedRowDisplayIndex";
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
@@ -57,8 +58,8 @@ export function productColumns(
       field: "productUnitName",
       sortable: true,
       icon: <Ruler className="h-3.5 w-3.5" />,
-      sortAccessor: (p) =>
-        p.productUnitName
+      accessor: (p) => translateUnitName(p.productUnitName, dict),
+      sortAccessor: (p) => translateUnitName(p.productUnitName, dict),
     },
 
     {

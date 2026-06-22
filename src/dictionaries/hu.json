@@ -473,5 +473,30 @@
     "DB_QUERY_ERROR": "Adatbazis-lekerdezesi hiba.",
     "HTTP_EXCEPTION": "A keres sikertelen.",
     "UNKNOWN_ERROR": "Valami hiba tortent. Kerjuk, probald ujra kesobb."
+  },
+  "unitWords": {
+    "piece": "db",
+    "pieces": "db",
+    "pair": "pár",
+    "pairs": "pár",
+    "pack": "cs",
+    "box": "doboz",
+    "kg": "kg",
+    "roll": "tekercs",
+    "rolls": "tekercs",
+    "metre": "m",
+    "metres": "m",
+    "meter": "m",
+    "meters": "m",
+    "db": "db",
+    "darab": "db",
+    "pár": "pár",
+    "cs": "cs",
+    "csomag": "cs",
+    "doboz": "doboz",
+    "dob": "doboz",
+    "tekercs": "tekercs",
+    "teker": "tekercs",
+    "m": "m"
   }
 }

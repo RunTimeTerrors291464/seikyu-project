@@ -6,6 +6,7 @@ import Select from "@/components/ui/Select";
 import { useDict, useUiLang } from "@/lib/lang/DictProvider";
 import type { Dictionary } from "@/lib/lang/i18n";
 import { getDictionary, getPrintLangCookie, type Lang } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Document, Font, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
 import clsx from "clsx";
@@ -461,12 +462,27 @@ export default function InvoicePrintPreviewPopup({
     [printDictionary, data, printLocaleTag],
   );
 
+  const printData = useMemo(
+    function translateLineUnitsForPrint(): InvoicePrintData {
+      return {
+        ...data,
+        lines: data.lines.map(function translateLineUnit(line) {
+          return {
+            ...line,
+            unit: translateUnitName(line.unit, printDictionary),
+          };
+        }),
+      };
+    },
+    [data, printDictionary],
+  );
+
   async function createInvoicePdfBlob(): Promise<Blob> {
     registerInvoicePdfFonts();
 
     return pdf(
       <InvoicePdfDocument
-        data={data}
+        data={printData}
         labels={labels}
         quantityLocaleTag={printLocaleTag}
         compactTable={compactTable}
@@ -571,7 +587,7 @@ export default function InvoicePrintPreviewPopup({
                 </tr>
               </thead>
               <tbody>
-                {data.lines.map(function renderLine(line, index) {
+                {printData.lines.map(function renderLine(line, index) {
                   return (
                     <tr key={`${line.sku}-${index}`}>
                       <td className="border border-border px-2 py-1 whitespace-nowrap">{index + 1}</td>

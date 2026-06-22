@@ -11,6 +11,7 @@ import ActivePill from "@/features/products/components/ActivePill";
 import StatusPill from "@/features/products/components/StockStatusPill";
 import type { Product } from "@/features/products/types/product";
 import type { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
@@ -152,6 +153,12 @@ export default function buildAddExistingProductsColumns(
       field: "productUnitName",
       sortable: true,
       icon: <Ruler className="h-3.5 w-3.5 text-muted" />,
+      accessor: function renderProductUnit(product): string {
+        return translateUnitName(product.productUnitName, dict);
+      },
+      sortAccessor: function sortProductUnit(product): string {
+        return translateUnitName(product.productUnitName, dict);
+      },
     },
     {
       id: "importPrice",

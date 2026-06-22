@@ -20,6 +20,7 @@ import {
 
 import { getProductCreateSkuFieldError } from "@/features/products/lib/productSkuFieldValidation";
 import { Dictionary } from "@/lib/lang/i18n";
+import { translateUnitName } from "@/lib/lang/translateUnitName";
 import {
   finalizeMoneyStringTwoDecimalPlaces,
   normalizeMoneyStringInput,
@@ -337,7 +338,7 @@ export default function AddNewProductForm({
         messageBesideLabel={true}
       >
         <SelectButton
-          value={values.productUnitName}
+          value={translateUnitName(values.productUnitName, dict)}
           placeholder={dict.selectUnit}
           onClick={() => setUnitOpen(true)}
         />
