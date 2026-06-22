@@ -441,9 +441,10 @@ curl -X POST http://localhost:3000/api/v2/admin/first-admin-account \
   -H "Content-Type: application/json" \
   -d '{
     "first_name": "Admin",
+    "middle_name": "",
     "last_name": "User",
     "username": "admin",
-    "password": "your_secure_password"
+    "password": "admin123"
   }'
 ```
 
@@ -713,6 +714,27 @@ All endpoints are prefixed with **`/api/v2`**.
 | `npm run migration:show` | Show migration status |
 | `npm run migration:create` | Create an empty migration file |
 | `npm run typeorm` | Generic TypeORM CLI passthrough |
+
+### Database Utilities
+
+| Script | Description |
+|--------|-------------|
+| `npm run db:export` | Export SQL dumps into `data/db-exports/<timestamp>/` (`full.sql`, `schema.sql`, `data.sql`) |
+| `npm run db:import -- --file <path-to-sql>` | Import a SQL dump into the configured database |
+| `npm run db:clear` | Truncate application tables for local reset/testing |
+
+Examples:
+
+```bash
+# Import a specific full dump
+npm run db:import -- --file data/db-exports/20260617-090339/full.sql
+
+# Import latest full.sql automatically
+npm run db:import
+
+# Drop/recreate public schema, then import
+npm run db:import -- --file data/db-exports/20260617-090339/full.sql --reset
+```
 
 ### Excel Import
 
