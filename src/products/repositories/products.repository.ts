@@ -8,6 +8,7 @@ import { ProductNamesEntity } from '../entities/productNames.entity';
 import { ProductsHistoryEntity } from '../entities/productsHistory.entity';
 import { ProductStockHistoryEntity } from '../entities/productStockHistory.entity';
 import { ProductOverviewEntity } from '../entities/productOverview.entity';
+import { ProductUnitsEntity } from '@src/productUnits/entities/productUnits.entity';
 
 // Import repositories.
 import { ProductRankingRepository } from '@src/dashboard/repositories/productRanking.repository';
@@ -203,6 +204,10 @@ export class ProductsRepository {
 
         // Merge product data into entity - ProductsEntity.
         this.productsRepository.merge(productEntity, productData);
+        // Sync the relation reference when productUnitId changes so TypeORM writes the correct FK column.
+        if (productData.productUnitId) {
+            productEntity.productUnit = { id: productData.productUnitId } as ProductUnitsEntity;
+        }
         const updatedProductEntity: ProductsEntity = await manager.save(ProductsEntity, productEntity);
 
         // Update product names if provided - ProductNamesEntity.
