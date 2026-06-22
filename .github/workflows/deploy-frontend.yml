@@ -28,7 +28,8 @@ jobs:
             cd ${{ secrets.EC2_PROJECT_PATH_FRONTEND }}
 
             echo ">>> Pulling latest code..."
-            git pull origin frontend
+            git fetch origin frontend
+            git reset --hard origin/frontend
 
             echo ">>> Installing dependencies..."
             npm ci
