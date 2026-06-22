@@ -67,11 +67,13 @@ export function isoToCalendarDate(iso: string): string {
 /**
  * Default list range as calendar dates for filter inputs.
  */
-export function getDefaultListCalendarDateRange(): {
+export function getDefaultListCalendarDateRange(
+  rangeDays?: number,
+): {
   fromDate: string;
   toDate: string;
 } {
-  const range = getDefaultListDateRange();
+  const range = getDefaultListDateRange(rangeDays);
   return {
     fromDate: isoToCalendarDate(range.fromDate),
     toDate: isoToCalendarDate(range.toDate),

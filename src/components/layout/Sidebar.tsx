@@ -21,6 +21,7 @@ import {
   ClipboardList,
   FileCheck2,
   FolderOpen,
+  LayoutDashboard,
   LogOut,
   PanelLeftClose,
   ReceiptText,
@@ -74,8 +75,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       defaultOpen: true,
       requiredRoles: [USER_ROLE_ADMIN],
       items: [
-        // { href: "/admin/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
-        // { href: "/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
+        { href: "/admin/dashboard", label: dict.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
         { href: "/admin/users", label: dict.usersNav, icon: <UserCog className="h-4 w-4" /> },
       ],
     },

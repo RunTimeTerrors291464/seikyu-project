@@ -20,12 +20,14 @@ export type InvoiceListDateRangeFilterState = {
 /**
  * Shared calendar-date state for invoice list pages (`fromDate` / `toDate` query params).
  */
-export function useInvoiceListDateRangeFilter(): InvoiceListDateRangeFilterState {
+export function useInvoiceListDateRangeFilter(
+  defaultRangeDays?: number,
+): InvoiceListDateRangeFilterState {
   const defaultRange = useMemo(
     function getDefaultRange() {
-      return getDefaultListCalendarDateRange();
+      return getDefaultListCalendarDateRange(defaultRangeDays);
     },
-    [],
+    [defaultRangeDays],
   );
 
   const [fromDate, setFromDate] = useState<string>(defaultRange.fromDate);
@@ -42,10 +44,10 @@ export function useInvoiceListDateRangeFilter(): InvoiceListDateRangeFilterState
     fromDate === defaultRange.fromDate && toDate === defaultRange.toDate;
 
   const resetDateRange = useCallback(function resetDateRange(): void {
-    const nextDefault = getDefaultListCalendarDateRange();
+    const nextDefault = getDefaultListCalendarDateRange(defaultRangeDays);
     setFromDate(nextDefault.fromDate);
     setToDate(nextDefault.toDate);
-  }, []);
+  }, [defaultRangeDays]);
 
   return {
     fromDate,
