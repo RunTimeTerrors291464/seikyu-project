@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy Backend to EC2
 
 on:
   push:
@@ -29,7 +29,8 @@ jobs:
             cd ${{ secrets.EC2_PROJECT_PATH_BACKEND }}
 
             echo "--- Pulling latest code ---"
-            git pull origin backend-v2
+            git fetch origin backend-v2
+            git reset --hard origin/backend-v2
 
             echo "--- Installing dependencies (including dev for build) ---"
             npm ci
