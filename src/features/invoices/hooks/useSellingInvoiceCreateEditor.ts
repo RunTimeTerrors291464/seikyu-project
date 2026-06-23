@@ -81,7 +81,7 @@ export function useSellingInvoiceCreateEditor(
         (product) => toNumberOrZero(product.quantity) <= 0,
       );
       if (hasInvalidQuantity) {
-        return INVOICE_DRAFT_ERRORS.importMissingQuantity;
+        return INVOICE_DRAFT_ERRORS.sellingMissingQuantity;
       }
       const hasEmptyTaxFocus = taxFocusChoice === null;
       if (hasEmptyTaxFocus) {
@@ -90,7 +90,7 @@ export function useSellingInvoiceCreateEditor(
 
       return null;
     },
-    [validationActive, products],
+    [validationActive, products, taxFocusChoice],
   );
 
   const totals = useMemo(

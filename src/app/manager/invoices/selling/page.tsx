@@ -98,7 +98,7 @@ export default function ManagerSellingInvoicesPage() {
     [dict],
   );
 
-  const { rows, total, loading } = useSellingInvoices({
+  const { rows, total, loading, error } = useSellingInvoices({
     page: listBase.page,
     limit: listBase.rowsPerPage,
     search: listBase.search || undefined,
@@ -246,6 +246,7 @@ export default function ManagerSellingInvoicesPage() {
       columns={columns}
       rows={rows}
       loading={loading}
+      error={error?.message}
       getRowId={(row) => row.id}
       sortField={sortBy}
       sortDirection={sortOrder}

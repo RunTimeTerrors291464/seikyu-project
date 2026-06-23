@@ -234,17 +234,23 @@ apiClient.interceptors.response.use(
     // ===============================
 
     if (status === 401 && !isAuthRoute && !originalRequest._retry) {
-      console.warn("🔒 ACCESS TOKEN EXPIRED → attempting refresh");
+      if (process.env.NODE_ENV === "development") {
+        console.warn("🔒 ACCESS TOKEN EXPIRED → attempting refresh");
+      }
 
       originalRequest._retry = true;
 
       // ⏳ queue requests while refreshing
       if (isRefreshing) {
-        console.log("⏳ Already refreshing → queue request");
+        if (process.env.NODE_ENV === "development") {
+          console.log("⏳ Already refreshing → queue request");
+        }
 
         return new Promise((resolve) => {
           subscribeTokenRefresh((token: string) => {
-            console.log("🔁 Retrying queued request →", originalRequest.url);
+            if (process.env.NODE_ENV === "development") {
+              console.log("🔁 Retrying queued request →", originalRequest.url);
+            }
             originalRequest.headers.Authorization = `Bearer ${token}`;
             resolve(apiClient(originalRequest));
           });
@@ -257,15 +263,21 @@ apiClient.interceptors.response.use(
 
         const refreshToken = localStorage.getItem("refresh_token");
 
-        console.log("🔑 Refresh token found:", !!refreshToken);
+        if (process.env.NODE_ENV === "development") {
+          console.log("🔑 Refresh token found:", !!refreshToken);
+        }
 
         if (!refreshToken) {
-          console.error("🚫 No refresh token → logout");
+          if (process.env.NODE_ENV === "development") {
+            console.error("🚫 No refresh token → logout");
+          }
           window.location.href = "/login";
           return Promise.reject(error);
         }
 
-        console.log("📡 Calling refresh API...");
+        if (process.env.NODE_ENV === "development") {
+          console.log("📡 Calling refresh API...");
+        }
 
         const res = await axios.post(
           `${publicApiBaseUrl}${publicApiBasePath}/auth/refresh-token`,
@@ -274,7 +286,9 @@ apiClient.interceptors.response.use(
 
         const newAccessToken = res.data.accessToken;
 
-        console.log("✅ REFRESH SUCCESS");
+        if (process.env.NODE_ENV === "development") {
+          console.log("✅ REFRESH SUCCESS");
+        }
 
         // update storage
         localStorage.setItem("access_token", newAccessToken);
@@ -291,16 +305,19 @@ apiClient.interceptors.response.use(
         // retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        console.log("🔁 Retrying original request →", originalRequest.url);
+        if (process.env.NODE_ENV === "development") {
+          console.log("🔁 Retrying original request →", originalRequest.url);
+        }
 
         return apiClient(originalRequest);
       } catch (refreshError: unknown) {
         const axiosLikeError = toAxiosLikeError(refreshError);
-        console.error("💥 REFRESH FAILED →", {
-          status: axiosLikeError.response?.status,
-        });
-
-        console.warn("🚪 Logging out user");
+        if (process.env.NODE_ENV === "development") {
+          console.error("💥 REFRESH FAILED →", {
+            status: axiosLikeError.response?.status,
+          });
+          console.warn("🚪 Logging out user");
+        }
 
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");

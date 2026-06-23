@@ -79,7 +79,7 @@ export default function StockAdjustmentInvoicesListPage() {
     [dict],
   );
 
-  const { rows, total, loading, refetch } = useStockAdjustmentInvoices({
+  const { rows, total, loading, error, refetch } = useStockAdjustmentInvoices({
     page: listBase.page,
     limit: listBase.rowsPerPage,
     search: listBase.search || undefined,
@@ -212,6 +212,7 @@ export default function StockAdjustmentInvoicesListPage() {
       columns={columns}
       rows={rows}
       loading={loading}
+      error={error?.message}
       getRowId={(row) => row.id}
       sortField={sortBy}
       sortDirection={sortOrder}

@@ -89,7 +89,7 @@ export default function CashierSellingInvoicesPage() {
     [dict],
   );
 
-  const { rows, total, loading, refetch } = useSellingInvoices({
+  const { rows, total, loading, error, refetch } = useSellingInvoices({
     page: listBase.page,
     limit: listBase.rowsPerPage,
     search: listBase.search || undefined,
@@ -227,6 +227,7 @@ export default function CashierSellingInvoicesPage() {
       columns={columns}
       rows={rows}
       loading={loading}
+      error={error?.message}
       getRowId={(row) => row.id}
       sortField={sortBy}
       sortDirection={sortOrder}

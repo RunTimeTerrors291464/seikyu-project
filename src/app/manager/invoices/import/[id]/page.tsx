@@ -11,9 +11,13 @@ import ImportInvoiceDraftWorkspace from "@/features/invoices/layout/ImportInvoic
 import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader";
 import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
 import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
-import InvoicePrintPreviewPopup, {
-    type InvoicePrintData,
-} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+import dynamic from "next/dynamic";
+import type { InvoicePrintData } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+
+const InvoicePrintPreviewPopup = dynamic(
+  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
+  { ssr: false },
+);
 import {
     ImportInvoiceResponseDto,
     confirmImportInvoice,

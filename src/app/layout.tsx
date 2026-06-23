@@ -2,6 +2,7 @@ import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { cookies } from "next/headers";
+import { Toaster } from "sonner";
 
 import { DictProvider } from "@/lib/lang/DictProvider";
 import { getDictionary, type Lang } from "@/lib/lang/i18n";
@@ -38,6 +39,7 @@ export default async function RootLayout({
             <AuthProvider>
               <LayoutWrapper>{children}</LayoutWrapper>
             </AuthProvider>
+            <Toaster richColors position="top-right" />
           </DictProvider>
         </ThemeProvider>
       </body>

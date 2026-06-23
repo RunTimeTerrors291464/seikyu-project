@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type PaginatedListResponse<TItem> = {
-  invoices: TItem[];
+  /** Primary item array — field name varies by endpoint (e.g. `invoices`, `users`). */
+  invoices?: TItem[];
   total: number;
   page: number;
   limit: number;
+  [key: string]: unknown;
 };
 
 export type PaginatedListQueryResult<TRow> = {
@@ -38,6 +40,8 @@ type UsePaginatedListQueryOptions<
 > = {
   query: TQuery;
   fetchList: (query: TQuery) => Promise<PaginatedListResponse<TDto>>;
+  /** Extracts the item array from the response. Defaults to `response.invoices ?? []`. */
+  getItems?: (response: PaginatedListResponse<TDto>) => TDto[];
   mapToRow: (dto: TDto) => TRow;
   getQueryDeps: (query: TQuery) => readonly unknown[];
   resolveErrorMessage?: (error: unknown) => string;
@@ -57,6 +61,7 @@ export function usePaginatedListQuery<
   const {
     query,
     fetchList,
+    getItems = (response) => response.invoices ?? [],
     mapToRow,
     getQueryDeps,
     resolveErrorMessage,
@@ -92,7 +97,7 @@ export function usePaginatedListQuery<
           }
 
           setState({
-            rows: response.invoices.map(mapToRow),
+            rows: getItems(response).map(mapToRow),
             total: response.total,
             page: response.page,
             limit: response.limit,

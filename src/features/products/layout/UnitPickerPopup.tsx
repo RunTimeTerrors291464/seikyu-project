@@ -15,6 +15,7 @@ import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { useProductUnit } from "../hooks/useProductUnit";
 import { ProductUnit } from "../services/product.unit.service";
 import { unitColumns } from "../table/unitColumns";
+import AddUnitPopup from "./AddUnitPopup";
 
 type Props = {
   open: boolean;
@@ -33,6 +34,10 @@ type Props = {
   onUnitServerStateChanged?: () => void;
 };
 
+/* ─────────────────────────────────────────────────────────
+   Main UnitPickerPopup
+   ───────────────────────────────────────────────────────── */
+
 export default function UnitPickerPopup({
   open,
   selectedUnitId,
@@ -44,7 +49,7 @@ export default function UnitPickerPopup({
   const dict = useDict();
 
   const [search, setSearch] = useState("");
-  const [adding, setAdding] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftMap, setDraftMap] = useState<Record<string, ProductUnit>>({});
@@ -53,9 +58,6 @@ export default function UnitPickerPopup({
 
   const [confirmingActiveUnit, setConfirmingActiveUnit] = useState<ProductUnit | null>(null);
   const [confirmingSaveUnit, setConfirmingSaveUnit] = useState<ProductUnit | null>(null);
-
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
 
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(30);
@@ -72,7 +74,7 @@ export default function UnitPickerPopup({
   const isDirty = useIsDirty<ProductUnit>();
   const formFieldsRef = useFocusFirstFormControlOnOpen({
     when: open,
-    bumpKey: adding ? 1 : 0,
+    bumpKey: 0,
   });
 
   useEffect(
@@ -82,7 +84,7 @@ export default function UnitPickerPopup({
       }
 
       setSearch("");
-      setAdding(false);
+      setAddOpen(false);
       setEditingId(null);
       setDraftMap({});
       setPage(1);
@@ -105,28 +107,11 @@ export default function UnitPickerPopup({
     setPage(1);
   }, [search]);
 
-  /* ───────── Add logic ───────── */
+  /* ───────── Add handler ───────── */
 
-  const trimmed = name.trim();
-
-  const isDuplicate = units.some(
-    (u) =>
-      (u.unitName || "")
-        .toLowerCase()
-        .trim() === trimmed.toLowerCase()
-  );
-
-  const canAdd = trimmed.length > 0 && !isDuplicate;
-
-  async function handleAdd() {
-    if (!canAdd) return;
-
+  async function handleAdd(name: string, desc: string) {
     const unit = await createUnit(name, desc);
-
-    setName("");
-    setDesc("");
-    setAdding(false);
-
+    setAddOpen(false);
     onSelect(unit);
     onClose();
   }
@@ -147,60 +132,22 @@ export default function UnitPickerPopup({
           </span>
 
           {/* CENTER: SEARCH */}
-          {!adding && (
-            <div className="w-xl" data-universal-search-root="">
-              <Input
-                value={search}
-                onChange={setSearch}
-                placeholder={dict.searchPlaceholder}
-              />
-            </div>
-          )}
+          <div className="w-xl" data-universal-search-root="">
+            <Input
+              value={search}
+              onChange={setSearch}
+              placeholder={dict.searchPlaceholder}
+            />
+          </div>
 
-          {/* RIGHT: Add / Adding */}
-          {adding ? (
-            <div className="flex flex-end items-center gap-2 animate-shoot">
-              <div className="flex gap-2" data-universal-search-root="">
-                <Input
-                  value={name}
-                  onChange={setName}
-                  placeholder={dict.name}
-                />
-
-                <Input
-                  value={desc}
-                  onChange={setDesc}
-                  placeholder={dict.description}
-                />
-              </div>
-
-              {canAdd && (
-                <Button onClick={handleAdd} accent="primary">
-                  {dict.add}
-                </Button>
-              )}
-
-              <Button
-                onClick={() => {
-                  setAdding(false);
-                  setName("");
-                  setDesc("");
-                }}
-                accent="danger"
-              >
-                {dict.cancel}
-              </Button>
-
-            </div>
-          ) : (
-            <Button
-              icon={<Plus className="h-3.5 w-3.5" />}
-              onClick={() => setAdding(true)}
-              accent="primary"
-            >
-              {dict.add}
-            </Button>
-          )}
+          {/* RIGHT: Add button */}
+          <Button
+            icon={<Plus className="h-3.5 w-3.5" />}
+            onClick={() => setAddOpen(true)}
+            accent="primary"
+          >
+            {dict.add}
+          </Button>
 
         </div>
 
@@ -229,7 +176,7 @@ export default function UnitPickerPopup({
               onEdit: (unit) => {
                 setEditingId(unit.id);
                 setDraftMap({
-                  [unit.id]: { ...unit }, // reset all drafts
+                  [unit.id]: { ...unit },
                 });
               },
 
@@ -326,7 +273,6 @@ export default function UnitPickerPopup({
                 <PowerCircle className="h-7 w-7 text-primary" />
               ) : (
                 <CircleOff className="h-3.5 w-3.5 text-danger" />
-
               )
             }
             accent={confirmingActiveUnit.isActive ? "neutral" : "danger"}
@@ -337,7 +283,6 @@ export default function UnitPickerPopup({
             onConfirm={async () => {
               const id = confirmingActiveUnit.id;
 
-              // Apply change to draft ONLY
               setDraftMap((prev) => ({
                 ...prev,
                 [id]: {
@@ -375,7 +320,6 @@ export default function UnitPickerPopup({
 
                 const hasFieldChanges = isDirty(original, confirmingSaveUnit);
 
-                // 1. ACTIVE CHANGE
                 if (hasActiveChange) {
                   if (confirmingSaveUnit.isActive) {
                     await activateUnit(confirmingSaveUnit.id);
@@ -384,7 +328,6 @@ export default function UnitPickerPopup({
                   }
                 }
 
-                // 2. FIELD CHANGE
                 if (hasFieldChanges) {
                   await updateUnit(
                     confirmingSaveUnit.id,
@@ -393,7 +336,6 @@ export default function UnitPickerPopup({
                   );
                 }
 
-                // cleanup
                 setDraftMap((prev) => {
                   const next = { ...prev };
                   delete next[confirmingSaveUnit.id];
@@ -420,6 +362,13 @@ export default function UnitPickerPopup({
           />
         )}
       </div>
+
+      <AddUnitPopup
+        open={addOpen}
+        units={units}
+        onClose={() => setAddOpen(false)}
+        onAdd={handleAdd}
+      />
     </Popup>
   );
 }

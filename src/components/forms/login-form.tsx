@@ -66,10 +66,7 @@ export default function LoginForm() {
         return;
       }
 
-      const home =
-        signedInUser.roles.length > 0
-          ? defaultHomePathForRoles(signedInUser.roles)
-          : "/admin/users";
+      const home = defaultHomePathForRoles(signedInUser.roles);
 
       router.push(home);
 

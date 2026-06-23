@@ -5,9 +5,13 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import CreateReturnSellingInvoicePopup from "@/features/invoices/layout/CreateReturnSellingInvoicePopup";
-import InvoicePrintPreviewPopup, {
-    type InvoicePrintData,
-} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+import dynamic from "next/dynamic";
+import type { InvoicePrintData } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+
+const InvoicePrintPreviewPopup = dynamic(
+  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
+  { ssr: false },
+);
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
 import SellingInvoiceReturnInvoicesCard from "@/features/invoices/layout/SellingInvoiceReturnInvoicesCard";

@@ -109,7 +109,7 @@ export default function ImportInvoicesListPage() {
     [dict],
   );
 
-  const { rows, total, loading, refetch } = useImportInvoices({
+  const { rows, total, loading, error, refetch } = useImportInvoices({
     page: listBase.page,
     limit: listBase.rowsPerPage,
     search: listBase.search || undefined,
@@ -256,6 +256,7 @@ export default function ImportInvoicesListPage() {
       columns={columns}
       rows={rows}
       loading={loading}
+      error={error?.message}
       getRowId={(row) => row.id}
       sortField={sortBy}
       sortDirection={sortOrder}

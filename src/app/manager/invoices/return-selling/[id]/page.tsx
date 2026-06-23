@@ -6,9 +6,13 @@ import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
 import { useReturnImportLinesEditor } from "@/features/invoices/hooks/useReturnImportLinesEditor";
-import InvoicePrintPreviewPopup, {
-  type InvoicePrintData,
-} from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+import dynamic from "next/dynamic";
+import type { InvoicePrintData } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
+
+const InvoicePrintPreviewPopup = dynamic(
+  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
+  { ssr: false },
+);
 import ReturnImportProductsCard from "@/features/invoices/layout/ReturnImportProductsCard";
 import ReturnSellingInvoiceHeader from "@/features/invoices/layout/ReturnSellingInvoiceHeader";
 import { buildReturnSellingProductRequest } from "@/features/invoices/lib/returnInvoiceReason";
