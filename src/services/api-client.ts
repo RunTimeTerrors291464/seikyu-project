@@ -3,7 +3,7 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import { clearAuthCookies } from "@/lib/auth/authCookies";
+import { clearStoredAuth } from "@/lib/auth/clearStoredAuth";
 
 const DEFAULT_PUBLIC_API_BASE_URL = "http://localhost:4000";
 const DEFAULT_API_VERSION_PATH_SEGMENT = "v2";
@@ -272,10 +272,7 @@ apiClient.interceptors.response.use(
           if (process.env.NODE_ENV === "development") {
             console.error("🚫 No refresh token → logout");
           }
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          localStorage.removeItem("user");
-          clearAuthCookies();
+          clearStoredAuth();
           window.location.href = "/login";
           return Promise.reject(error);
         }
@@ -324,10 +321,7 @@ apiClient.interceptors.response.use(
           console.warn("🚪 Logging out user");
         }
 
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user");
-        clearAuthCookies();
+        clearStoredAuth();
 
         window.location.href = "/login";
 
