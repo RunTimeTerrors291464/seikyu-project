@@ -64,6 +64,7 @@ export class CreateReturnImportInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to return. The same productId may appear multiple times; quantities are summed by productId.',
         type: [ReturnImportInvoiceProductRequestDto],
+        maxItems: 9999,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -81,6 +82,7 @@ export class CreateReturnImportInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(9999, { message: 'products must contain at most 9999 items.' })
     @ValidateNested({ each: true })
     @Type(() => ReturnImportInvoiceProductRequestDto)
     products: ReturnImportInvoiceProductRequestDto[];
@@ -108,6 +110,7 @@ export class EditReturnImportInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to return (replace existing ones). The same productId may appear multiple times; quantities are summed by productId.',
         type: [ReturnImportInvoiceProductRequestDto],
+        maxItems: 9999,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -125,6 +128,7 @@ export class EditReturnImportInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(9999, { message: 'products must contain at most 9999 items.' })
     @ValidateNested({ each: true })
     @Type(() => ReturnImportInvoiceProductRequestDto)
     products: ReturnImportInvoiceProductRequestDto[];

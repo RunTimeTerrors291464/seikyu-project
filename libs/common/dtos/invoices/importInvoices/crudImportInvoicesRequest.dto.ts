@@ -90,6 +90,7 @@ export class CreateImportInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to import. The same productId may appear multiple times when lines use different prices.',
         type: [ImportInvoiceProductRequestDto],
+        maxItems: 9999,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -113,6 +114,7 @@ export class CreateImportInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(9999, { message: 'products must contain at most 9999 items.' })
     @ValidateNested({ each: true })
     @Type(() => ImportInvoiceProductRequestDto)
     products: ImportInvoiceProductRequestDto[];
@@ -140,6 +142,7 @@ export class EditImportInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to import (replace existing ones). The same productId may appear multiple times when lines use different prices.',
         type: [ImportInvoiceProductRequestDto],
+        maxItems: 9999,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -163,6 +166,7 @@ export class EditImportInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
+    @ArrayMaxSize(9999, { message: 'products must contain at most 9999 items.' })
     @ValidateNested({ each: true })
     @Type(() => ImportInvoiceProductRequestDto)
     products: ImportInvoiceProductRequestDto[];
