@@ -43,9 +43,6 @@ export class ImportInvoiceService {
         private readonly dataSource: DataSource,
     ) { }
 
-    // --- Private variables ---
-    private static readonly _maxProductsPerImportInvoice = 64;
-
     // --- DRY methods ---
     // Calculate invoice totals from products.
     private calculateInvoiceTotals(products: Array<{ productId: string; quantity: number; importPrice: number }>) {
@@ -77,9 +74,6 @@ export class ImportInvoiceService {
     @HandleServiceError(ErrorCode.CREATE_DRAFT_IMPORT_INVOICE_SERVICE)
     async createDraftImportInvoice(dto: CreateImportInvoiceRequestDto, user: AccessTokenPayload): Promise<ImportInvoiceResponseDto> {
 
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > ImportInvoiceService._maxProductsPerImportInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_IMPORT_INVOICE_PRODUCTS, `Too many products in import invoice. Maximum is ${ImportInvoiceService._maxProductsPerImportInvoice}.`);
-
         const uniqueProductIds: string[] = [...new Set(dto.products.map((p) => p.productId))];
         if (uniqueProductIds.length > 0) await this.productsService.getProductsByIds(uniqueProductIds);
 
@@ -96,9 +90,6 @@ export class ImportInvoiceService {
     // Edit a draft import invoice.
     @HandleServiceError(ErrorCode.EDIT_DRAFT_IMPORT_INVOICE_SERVICE)
     async editDraftImportInvoice(dto: EditImportInvoiceRequestDto, user: AccessTokenPayload): Promise<ImportInvoiceResponseDto> {
-
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > ImportInvoiceService._maxProductsPerImportInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_IMPORT_INVOICE_PRODUCTS, `Too many products in import invoice. Maximum is ${ImportInvoiceService._maxProductsPerImportInvoice}.`);
 
         // Get invoice by ID.
         const invoice: ImportInvoiceEntity = await this.getInvoiceById(dto.id);

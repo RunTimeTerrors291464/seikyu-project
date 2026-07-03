@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, IsBoolean, ArrayMaxSize } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, ValidateNested, MaxLength, Min, MinLength, ValidateIf, IsIn, IsDateString, IsUUID, IsEnum, Max, Validate, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -94,7 +94,6 @@ export class CreateSellingInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to sell (cashier). The same productSku may appear multiple times when lines use different prices.',
         type: [SellingInvoiceProductRequestDto],
-        maxItems: 100,
         example: [
             {
                 productSku: '1234567890123',
@@ -118,7 +117,6 @@ export class CreateSellingInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
-    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => SellingInvoiceProductRequestDto)
     products: SellingInvoiceProductRequestDto[];
@@ -166,7 +164,6 @@ export class EditSellingInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products (replace existing lines). The same productSku may appear multiple times when lines use different prices.',
         type: [SellingInvoiceProductRequestDto],
-        maxItems: 100,
         example: [
             {
                 productSku: '1234567890123',
@@ -190,7 +187,6 @@ export class EditSellingInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
-    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => SellingInvoiceProductRequestDto)
     products: SellingInvoiceProductRequestDto[];

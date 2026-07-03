@@ -43,9 +43,6 @@ export class StockAdjustmentInvoiceService {
         private readonly dataSource: DataSource,
     ) { }
 
-    // --- Private variables ---
-    private static readonly _maxProductsPerStockAdjustmentInvoice = 64;
-
     // --- DRY methods ---
     // Calculate invoice totals from product lines (distinct product count and sum of quantities).
     private calculateInvoiceTotals(products: Array<{ quantity: number }>) {
@@ -77,9 +74,6 @@ export class StockAdjustmentInvoiceService {
     @HandleServiceError(ErrorCode.CREATE_DRAFT_STOCK_ADJUSTMENT_INVOICE_SERVICE)
     async createDraftStockAdjustmentInvoice(dto: CreateStockAdjustmentInvoiceRequestDto, user: AccessTokenPayload): Promise<StockAdjustmentInvoiceResponseDto> {
 
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > StockAdjustmentInvoiceService._maxProductsPerStockAdjustmentInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_STOCK_ADJUSTMENT_INVOICE_PRODUCTS, `Too many products in stock adjustment invoice. Maximum is ${StockAdjustmentInvoiceService._maxProductsPerStockAdjustmentInvoice}.`);
-
         // Check whether the productIds exist and are active.
         const productIds = dto.products.map((p) => p.productId);
         await this.ensureProductsExistAndActive(productIds);
@@ -102,9 +96,6 @@ export class StockAdjustmentInvoiceService {
     // Edit a draft stock adjustment invoice.
     @HandleServiceError(ErrorCode.EDIT_DRAFT_STOCK_ADJUSTMENT_INVOICE_SERVICE)
     async editDraftStockAdjustmentInvoice(dto: EditStockAdjustmentInvoiceRequestDto, user: AccessTokenPayload): Promise<StockAdjustmentInvoiceResponseDto> {
-
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > StockAdjustmentInvoiceService._maxProductsPerStockAdjustmentInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_STOCK_ADJUSTMENT_INVOICE_PRODUCTS, `Too many products in stock adjustment invoice. Maximum is ${StockAdjustmentInvoiceService._maxProductsPerStockAdjustmentInvoice}.`);
 
         // Get the stock adjustment invoice by id.
         const stockAdjustmentInvoice = await this.getStockAdjustmentInvoiceByIdOrThrow(dto.id);

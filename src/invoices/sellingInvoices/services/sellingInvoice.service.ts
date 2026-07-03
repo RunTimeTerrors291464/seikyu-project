@@ -40,9 +40,6 @@ export class SellingInvoiceService {
         private readonly dataSource: DataSource,
     ) { }
 
-    // --- Private variables ---
-    private static readonly _maxProductsPerSellingInvoice = 64;
-
     // --- DRY methods ---
     // Calculate invoice totals from products.
     private calculateInvoiceTotals(
@@ -109,9 +106,6 @@ export class SellingInvoiceService {
     // Create a new selling invoice.
     @HandleServiceError(ErrorCode.CREATE_SELLING_INVOICE_SERVICE)
     async createSellingInvoice(dto: CreateSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<SellingInvoiceResponseDto> {
-
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > SellingInvoiceService._maxProductsPerSellingInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_SELLING_INVOICE_PRODUCTS, `Too many products in selling invoice. Maximum is ${SellingInvoiceService._maxProductsPerSellingInvoice}.`);
 
         // Check whether the product SKU exists and active.
         const productSkus = dto.products.map((p) => p.productSku);

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
-import { Repository, In } from 'typeorm';
+import { EntityManager, Repository, In } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 // Import entities.
@@ -233,6 +233,48 @@ export class ProductRankingRepository {
             });
             return await transactionManager.save(ProductRankingDailyEntity, newRecord);
         }
+    }
+
+    // Upsert daily product ranking rows for many products in one batch (called inside stock update transactions) - ProductRankingDailyEntity.
+    async storeProductRankingDailyBulk(
+        transactionManager: EntityManager,
+        invoiceType: InvoiceType,
+        entries: Array<{ productId: string, quantity: number, totalPrice: number }>,
+    ): Promise<void> {
+        if (entries.length === 0) return;
+
+        const { day, month, year } = await this.getCurrentDate();
+
+        const existingRecords: ProductRankingDailyEntity[] = await transactionManager.find(ProductRankingDailyEntity, {
+            where: {
+                productId: In(entries.map((entry) => entry.productId)),
+                invoiceType,
+                day,
+                month,
+                year,
+            },
+        });
+        const recordsByProductId: Map<string, ProductRankingDailyEntity> = new Map(existingRecords.map((record) => [record.productId, record]));
+
+        const recordsToSave: ProductRankingDailyEntity[] = entries.map((entry) => {
+            const existingRecord = recordsByProductId.get(entry.productId);
+            if (existingRecord) {
+                existingRecord.quantity += entry.quantity;
+                existingRecord.totalPrice = Number(existingRecord.totalPrice) + entry.totalPrice;
+                return existingRecord;
+            }
+            return this.productRankingDailyRepository.create({
+                product: { id: entry.productId },
+                invoiceType,
+                quantity: entry.quantity,
+                totalPrice: entry.totalPrice,
+                day,
+                month,
+                year,
+            });
+        });
+
+        await transactionManager.save(ProductRankingDailyEntity, recordsToSave);
     }
 
     // Roll one calendar day's daily rankings into monthly aggregates - ProductRankingMonthlyEntity.

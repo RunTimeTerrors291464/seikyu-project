@@ -48,9 +48,6 @@ export class ReturnImportInvoiceService {
         private readonly dataSource: DataSource,
     ) { }
 
-    // --- Private variables ---
-    private static readonly _maxProductsPerReturnImportInvoice = 64;
-
     // --- DRY methods ---
     // Calculate invoice totals from resolved return products.
     private calculateInvoiceTotals(resolvedProducts: ResolvedReturnProductData[]) {
@@ -205,11 +202,6 @@ export class ReturnImportInvoiceService {
     @HandleServiceError(ErrorCode.CREATE_DRAFT_RETURN_IMPORT_INVOICE_SERVICE)
     async createDraftReturnImportInvoice(dto: CreateReturnImportInvoiceRequestDto, user: AccessTokenPayload): Promise<ReturnImportInvoiceResponseDto> {
 
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > ReturnImportInvoiceService._maxProductsPerReturnImportInvoice) {
-            throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_RETURN_IMPORT_INVOICE_PRODUCTS, `Too many products in return import invoice. Maximum is ${ReturnImportInvoiceService._maxProductsPerReturnImportInvoice}.`);
-        }
-
         // Get the original import invoice by id.
         const importInvoice = await this.getImportInvoiceById(dto.importInvoiceId);
 
@@ -240,11 +232,6 @@ export class ReturnImportInvoiceService {
     // Edit a draft return import invoice.
     @HandleServiceError(ErrorCode.EDIT_DRAFT_RETURN_IMPORT_INVOICE_SERVICE)
     async editDraftReturnImportInvoice(dto: EditReturnImportInvoiceRequestDto, user: AccessTokenPayload): Promise<ReturnImportInvoiceResponseDto> {
-
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > ReturnImportInvoiceService._maxProductsPerReturnImportInvoice) {
-            throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_RETURN_IMPORT_INVOICE_PRODUCTS, `Too many products in return import invoice. Maximum is ${ReturnImportInvoiceService._maxProductsPerReturnImportInvoice}.`);
-        }
 
         // Get the return import invoice by id.
         const returnImportInvoice = await this.getReturnImportInvoiceByIdOrThrow(dto.id);

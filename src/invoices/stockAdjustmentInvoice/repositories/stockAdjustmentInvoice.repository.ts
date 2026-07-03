@@ -7,7 +7,6 @@ import { StockAdjustmentInvoiceStatus } from '@libs/common/enums/invoiceStatus.e
 import { InvoiceType } from '@libs/common/enums/invoiceType.enum';
 
 // Import entities.
-import { ProductsEntity } from '@src/products/entities/products.entity';
 import { StockAdjustmentInvoiceEntity } from '../entities/stockAdjustmentInvoices.entity';
 import { StockAdjustmentInvoiceProductsEntity } from '../entities/stockAdjustmentInvoiceProducts.entity';
 
@@ -251,17 +250,17 @@ export class StockAdjustmentInvoiceRepository {
         lockedInvoice.confirmedAt = new Date();
         await manager.save(StockAdjustmentInvoiceEntity, lockedInvoice);
 
-        // Apply inventory for each line - ProductsEntity.
-        for (const line of lines) {
-            await this.productsRepository.updateInventoryStock(
-                { id: line.productId } as ProductsEntity,
-                line.quantity,
-                line.action,
-                InvoiceType.STOCK_ADJUSTMENT,
-                lockedInvoice.id,
-                manager,
-            );
-        }
+        // Apply inventory for all lines in one batched pass - ProductsEntity.
+        await this.productsRepository.updateInventoryStockBulk(
+            lines.map((line) => ({
+                productId: line.productId,
+                quantity: line.quantity,
+                action: line.action,
+            })),
+            InvoiceType.STOCK_ADJUSTMENT,
+            lockedInvoice.id,
+            manager,
+        );
 
         const invoiceWithRelations = await this.findOneStockAdjustmentInvoiceWithProductsAndUsernames(lockedInvoice.id, manager);
         return invoiceWithRelations || lockedInvoice;

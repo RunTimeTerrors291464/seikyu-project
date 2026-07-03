@@ -9,7 +9,6 @@ import { StockActionType } from '@libs/common/enums/stockActionType.enum';
 import { ReturnReason } from '@libs/common/enums/returnReasons.enum';
 
 // Import entities.
-import { ProductsEntity } from '@src/products/entities/products.entity';
 import { ReturnImportInvoiceEntity } from '../entities/returnImportInvoices.entity';
 import { ReturnImportInvoiceProductsEntity } from '../entities/returnImportInvoiceProducts.entity';
 import { ImportInvoiceEntity } from '../entities/importInvoices.entity';
@@ -329,18 +328,18 @@ export class ReturnImportInvoiceRepository {
         lockedImport.status = isFullyReturned ? ImportInvoiceStatus.RETURNED : ImportInvoiceStatus.PARTIALLY_RETURNED;
         await manager.save(ImportInvoiceEntity, lockedImport);
 
-        // Subtract inventory for each returned line - ProductsEntity.
-        for (const rp of lines) {
-            await this.productsRepository.updateInventoryStock(
-                { id: rp.productId } as ProductsEntity,
-                rp.returnQuantity,
-                StockActionType.SUBTRACT,
-                InvoiceType.RETURN_IMPORT,
-                lockedReturn.id,
-                manager,
-                Number(rp.totalReturnPrice),
-            );
-        }
+        // Subtract inventory for all returned lines in one batched pass - ProductsEntity.
+        await this.productsRepository.updateInventoryStockBulk(
+            lines.map((rp) => ({
+                productId: rp.productId,
+                quantity: rp.returnQuantity,
+                action: StockActionType.SUBTRACT,
+                rankingTotalPrice: Number(rp.totalReturnPrice),
+            })),
+            InvoiceType.RETURN_IMPORT,
+            lockedReturn.id,
+            manager,
+        );
 
         // Reload the return import invoice with products and usernames.
         const invoiceWithRelations = await this.findOneReturnImportInvoiceWithProductsAndUsernames(lockedReturn.id, manager);

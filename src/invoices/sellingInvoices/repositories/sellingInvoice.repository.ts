@@ -8,7 +8,6 @@ import { InvoiceType } from '@libs/common/enums/invoiceType.enum';
 import { StockActionType } from '@libs/common/enums/stockActionType.enum';
 
 // Import entities.
-import { ProductsEntity } from '@src/products/entities/products.entity';
 import { SellingInvoiceEntity } from '../entities/sellingInvoices.entity';
 import { SellingInvoiceProductsEntity } from '../entities/sellingInvoiceProducts.entity';
 
@@ -161,18 +160,18 @@ export class SellingInvoiceRepository {
         );
         await manager.save(SellingInvoiceProductsEntity, products);
 
-        // Subtract inventory per line - ProductsEntity.
-        for (const item of calculatedTotals.resolvedProducts) {
-            await this.productsRepository.updateInventoryStock(
-                { id: item.productId } as ProductsEntity,
-                item.quantity,
-                StockActionType.SUBTRACT,
-                InvoiceType.SELLING,
-                savedInvoice.id,
-                manager,
-                item.totalProductPrice,
-            );
-        }
+        // Subtract inventory for all lines in one batched pass - ProductsEntity.
+        await this.productsRepository.updateInventoryStockBulk(
+            calculatedTotals.resolvedProducts.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                action: StockActionType.SUBTRACT,
+                rankingTotalPrice: item.totalProductPrice,
+            })),
+            InvoiceType.SELLING,
+            savedInvoice.id,
+            manager,
+        );
 
         const invoiceWithRelations = await this.findOneSellingInvoiceWithProductsAndUsernames(savedInvoice.id, manager);
 

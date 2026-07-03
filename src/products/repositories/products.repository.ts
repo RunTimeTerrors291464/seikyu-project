@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EntityManager, Repository, In, SelectQueryBuilder } from 'typeorm';
+import { EntityManager, EntityNotFoundError, Repository, In, SelectQueryBuilder } from 'typeorm';
 
 // Import entities.
 import { InjectRepository } from '@nestjs/typeorm';
@@ -34,6 +34,14 @@ import { InvoiceType } from '@libs/common/enums/invoiceType.enum';
 
 // Import search helpers.
 import { buildWildcardIlikePattern, WILDCARD_ILIKE_ESCAPE_SQL } from '@libs/common/utils/wildcardIlikeSearch.util';
+
+// One invoice line to apply against inventory stock.
+export interface InventoryStockBulkItem {
+    productId: string;
+    quantity: number;
+    action: StockActionType;
+    rankingTotalPrice?: number;
+}
 
 @Injectable()
 export class ProductsRepository {
@@ -96,19 +104,6 @@ export class ProductsRepository {
         if (histories.length > 16) {
             const toDelete: ProductsHistoryEntity[] = histories.slice(0, histories.length - 16);
             await manager.remove(ProductsHistoryEntity, toDelete);
-        }
-    }
-
-    // Clean up old product stock history if exceeding 64 records.
-    private async cleanupOldProductStockHistory(productId: string, manager: EntityManager): Promise<void> {
-        const stockHistories: ProductStockHistoryEntity[] = await manager.find(ProductStockHistoryEntity, {
-            where: { product: { id: productId } },
-            order: { createdAt: 'DESC' },
-        });
-
-        if (stockHistories.length > 64) {
-            const toDelete: ProductStockHistoryEntity[] = stockHistories.slice(64);
-            await manager.remove(ProductStockHistoryEntity, toDelete);
         }
     }
 
@@ -273,84 +268,137 @@ export class ProductsRepository {
     // Update the inventory stock of a product.
     async updateInventoryStock(productEntity: ProductsEntity, quantity: number, action: StockActionType, invoiceType: InvoiceType, invoiceId: string, manager: EntityManager, rankingTotalPrice?: number): Promise<ProductsEntity> {
 
-        // Lock the product entity with pessimistic write lock to prevent race condition.
-        const lockedProduct: ProductsEntity = await manager.findOneOrFail(ProductsEntity, {
-            where: { id: productEntity.id },
-            lock: { mode: 'pessimistic_write' },
-        });
-
-        // Get the inventory stock before any changes.
-        const beforeInventoryStock: number = lockedProduct.inventoryStock;
-        const beforeStockStatus: StockStatus = lockedProduct.stockStatus;
-
-        // Update product stock based on action type.
-        if (action === StockActionType.ADD) lockedProduct.inventoryStock += quantity;
-        else if (action === StockActionType.SUBTRACT) lockedProduct.inventoryStock -= quantity;
-
-        // Get the inventory stock after changes.
-        const afterInventoryStock: number = lockedProduct.inventoryStock;
-
-        // Update stock status based on inventory level.
-        if (lockedProduct.inventoryStock <= 0) lockedProduct.stockStatus = StockStatus.OUT_OF_STOCK;
-        else if (lockedProduct.reorderThreshold !== null && lockedProduct.inventoryStock <= lockedProduct.reorderThreshold) lockedProduct.stockStatus = StockStatus.REORDER_THRESHOLD_REACHED;
-        else lockedProduct.stockStatus = StockStatus.IN_STOCK;
-
-        // Save the updated product entity - ProductsEntity.
-        await manager.save(ProductsEntity, lockedProduct);
-
-        // Load product with all relations for return value.
-        const productWithRelations: ProductsEntity = await manager.findOne(ProductsEntity, {
-            where: { id: lockedProduct.id },
-            relations: ['productUnit', 'productNames'],
-        }) || lockedProduct;
-
-        // --- Stock history methods ---
-        // Create product stock history record - ProductStockHistoryEntity.
-        const history = this.productStockHistoryRepository.create({
-            product: { id: lockedProduct.id },
-            quantityType: action,
-            quantity: quantity,
+        const [updatedProduct] = await this.updateInventoryStockBulk(
+            [{ productId: productEntity.id, quantity, action, rankingTotalPrice }],
             invoiceType,
             invoiceId,
-            beforeInventoryStock,
-            afterInventoryStock,
-        });
-        await manager.save(ProductStockHistoryEntity, history);
+            manager,
+        );
 
-        // Clean up old product stock history records if exceeding 64.
-        await this.cleanupOldProductStockHistory(lockedProduct.id, manager);
+        // Load product with all relations for return value.
+        const productWithRelations: ProductsEntity | null = await manager.findOne(ProductsEntity, {
+            where: { id: updatedProduct.id },
+            relations: ['productUnit', 'productNames'],
+        });
+
+        return productWithRelations || updatedProduct;
+    }
+
+    // Update the inventory stock of many invoice lines in one batched pass.
+    async updateInventoryStockBulk(
+        items: InventoryStockBulkItem[],
+        invoiceType: InvoiceType,
+        invoiceId: string,
+        manager: EntityManager,
+    ): Promise<ProductsEntity[]> {
+        if (items.length === 0) return [];
+
+        // Lock all involved product rows in one query, ordered by id to avoid deadlocks between concurrent invoices.
+        const uniqueProductIds: string[] = [...new Set(items.map((item) => item.productId))].sort();
+        const lockedProducts: ProductsEntity[] = await manager
+            .createQueryBuilder(ProductsEntity, 'products')
+            .where('products.id IN (:...ids)', { ids: uniqueProductIds })
+            .orderBy('products.id', 'ASC')
+            .setLock('pessimistic_write')
+            .getMany();
+
+        const productsById: Map<string, ProductsEntity> = new Map(lockedProducts.map((product) => [product.id, product]));
+        const missingProductId: string | undefined = uniqueProductIds.find((id) => !productsById.has(id));
+        if (missingProductId) throw new EntityNotFoundError(ProductsEntity, { where: { id: missingProductId } });
+
+        // Snapshot the initial stock and status per product before any changes.
+        const initialStockById: Map<string, number> = new Map(lockedProducts.map((product) => [product.id, product.inventoryStock]));
+        const initialStatusById: Map<string, StockStatus> = new Map(lockedProducts.map((product) => [product.id, product.stockStatus]));
+
+        // Apply lines in order, chaining before/after stock per history record - ProductStockHistoryEntity.
+        const historyRows: Partial<ProductStockHistoryEntity>[] = [];
+        for (const item of items) {
+            const product: ProductsEntity = productsById.get(item.productId)!;
+            const beforeInventoryStock: number = product.inventoryStock;
+
+            if (item.action === StockActionType.ADD) product.inventoryStock += item.quantity;
+            else if (item.action === StockActionType.SUBTRACT) product.inventoryStock -= item.quantity;
+
+            historyRows.push({
+                productId: product.id,
+                quantityType: item.action,
+                quantity: item.quantity,
+                invoiceType,
+                invoiceId,
+                beforeInventoryStock,
+                afterInventoryStock: product.inventoryStock,
+            });
+        }
+
+        // Update stock status based on final inventory level.
+        for (const product of lockedProducts) {
+            if (product.inventoryStock <= 0) product.stockStatus = StockStatus.OUT_OF_STOCK;
+            else if (product.reorderThreshold !== null && product.inventoryStock <= product.reorderThreshold) product.stockStatus = StockStatus.REORDER_THRESHOLD_REACHED;
+            else product.stockStatus = StockStatus.IN_STOCK;
+        }
+
+        // Save all updated product entities in one flush - ProductsEntity.
+        await manager.save(ProductsEntity, lockedProducts, { reload: false });
+
+        // --- Stock history methods ---
+        // Insert all product stock history records in one statement - ProductStockHistoryEntity.
+        await manager.insert(ProductStockHistoryEntity, historyRows);
+
+        // Clean up old product stock history records if exceeding 64, one query for all affected products.
+        await manager.query(`
+            DELETE FROM product_stock_history
+            WHERE id IN (
+                SELECT id FROM (
+                    SELECT id, ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY created_at DESC, id DESC) AS rn
+                    FROM product_stock_history
+                    WHERE product_id = ANY($1::uuid[])
+                ) ranked
+                WHERE ranked.rn > 64
+            )
+        `, [uniqueProductIds]);
 
         // --- Overview methods ---
         const overviewUpdates: Array<{ fieldName: string, isIncrease: boolean, quantity: number }> = [];
+        let inventoryValueDelta: number = 0;
 
-        // Queue stock status count changes if status changed.
-        if (beforeStockStatus !== lockedProduct.stockStatus) {
-            if (beforeStockStatus === StockStatus.IN_STOCK) overviewUpdates.push({ fieldName: 'inStock', isIncrease: false, quantity: 1 });
-            else if (beforeStockStatus === StockStatus.REORDER_THRESHOLD_REACHED) overviewUpdates.push({ fieldName: 'lowStock', isIncrease: false, quantity: 1 });
-            else if (beforeStockStatus === StockStatus.OUT_OF_STOCK) overviewUpdates.push({ fieldName: 'outOfStock', isIncrease: false, quantity: 1 });
+        for (const product of lockedProducts) {
+            // Queue stock status count changes if status changed (per-line transitions telescope to initial -> final).
+            const beforeStockStatus: StockStatus = initialStatusById.get(product.id)!;
+            if (beforeStockStatus !== product.stockStatus) {
+                if (beforeStockStatus === StockStatus.IN_STOCK) overviewUpdates.push({ fieldName: 'inStock', isIncrease: false, quantity: 1 });
+                else if (beforeStockStatus === StockStatus.REORDER_THRESHOLD_REACHED) overviewUpdates.push({ fieldName: 'lowStock', isIncrease: false, quantity: 1 });
+                else if (beforeStockStatus === StockStatus.OUT_OF_STOCK) overviewUpdates.push({ fieldName: 'outOfStock', isIncrease: false, quantity: 1 });
 
-            if (lockedProduct.stockStatus === StockStatus.IN_STOCK) overviewUpdates.push({ fieldName: 'inStock', isIncrease: true, quantity: 1 });
-            else if (lockedProduct.stockStatus === StockStatus.REORDER_THRESHOLD_REACHED) overviewUpdates.push({ fieldName: 'lowStock', isIncrease: true, quantity: 1 });
-            else if (lockedProduct.stockStatus === StockStatus.OUT_OF_STOCK) overviewUpdates.push({ fieldName: 'outOfStock', isIncrease: true, quantity: 1 });
+                if (product.stockStatus === StockStatus.IN_STOCK) overviewUpdates.push({ fieldName: 'inStock', isIncrease: true, quantity: 1 });
+                else if (product.stockStatus === StockStatus.REORDER_THRESHOLD_REACHED) overviewUpdates.push({ fieldName: 'lowStock', isIncrease: true, quantity: 1 });
+                else if (product.stockStatus === StockStatus.OUT_OF_STOCK) overviewUpdates.push({ fieldName: 'outOfStock', isIncrease: true, quantity: 1 });
+            }
+
+            inventoryValueDelta += Number(product.importPrice) * (product.inventoryStock - initialStockById.get(product.id)!);
         }
 
         // Queue inventory value delta change.
-        const inventoryValueDelta: number = Number(lockedProduct.importPrice) * (afterInventoryStock - beforeInventoryStock);
         overviewUpdates.push({ fieldName: 'inventoryValue', isIncrease: inventoryValueDelta >= 0, quantity: Math.abs(inventoryValueDelta) });
 
         await this.updateProductOverview(overviewUpdates, manager);
 
         // --- Update the productRankingDaily entity ---
-        const totalPrice: number = rankingTotalPrice ?? Number(lockedProduct.sellingPrice) * quantity;
-        await this.productRankingRepository.storeProductRankingDaily(
+        const rankingByProductId: Map<string, { quantity: number, totalPrice: number }> = new Map();
+        for (const item of items) {
+            const product: ProductsEntity = productsById.get(item.productId)!;
+            const totalPrice: number = item.rankingTotalPrice ?? Number(product.sellingPrice) * item.quantity;
+            const aggregate = rankingByProductId.get(item.productId) ?? { quantity: 0, totalPrice: 0 };
+            aggregate.quantity += item.quantity;
+            aggregate.totalPrice += totalPrice;
+            rankingByProductId.set(item.productId, aggregate);
+        }
+        await this.productRankingRepository.storeProductRankingDailyBulk(
             manager,
-            lockedProduct.id,
             invoiceType,
-            quantity,
-            totalPrice
+            [...rankingByProductId].map(([productId, aggregate]) => ({ productId, ...aggregate })),
         );
 
-        return productWithRelations;
+        return lockedProducts;
     }
 
     // Deactivate or activate a product.

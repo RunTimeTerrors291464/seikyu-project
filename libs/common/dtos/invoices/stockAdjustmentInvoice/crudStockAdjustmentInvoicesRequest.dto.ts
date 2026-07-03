@@ -108,7 +108,6 @@ export class CreateStockAdjustmentInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to adjust. Each productId must appear at most once.',
         type: [StockAdjustmentInvoiceProductRequestDto],
-        maxItems: 100,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -125,7 +124,6 @@ export class CreateStockAdjustmentInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
-    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => StockAdjustmentInvoiceProductRequestDto)
     @ArrayUnique((item: StockAdjustmentInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })
@@ -155,7 +153,6 @@ export class EditStockAdjustmentInvoiceRequestDto {
     @ApiProperty({
         description: 'List of products to adjust (replace existing lines). Each productId must appear at most once.',
         type: [StockAdjustmentInvoiceProductRequestDto],
-        maxItems: 100,
         example: [
             {
                 productId: '550e8400-e29b-41d4-a716-446655440000',
@@ -172,7 +169,6 @@ export class EditStockAdjustmentInvoiceRequestDto {
     })
     @IsNotEmpty()
     @IsArray()
-    @ArrayMaxSize(100, { message: 'products must contain at most 100 items.' })
     @ValidateNested({ each: true })
     @Type(() => StockAdjustmentInvoiceProductRequestDto)
     @ArrayUnique((item: StockAdjustmentInvoiceProductRequestDto) => item.productId, { message: 'Each productId must appear only once in the list.' })

@@ -8,7 +8,6 @@ import { InvoiceType } from '@libs/common/enums/invoiceType.enum';
 import { StockActionType } from '@libs/common/enums/stockActionType.enum';
 
 // Import entities.
-import { ProductsEntity } from '@src/products/entities/products.entity';
 import { ImportInvoiceEntity } from '../entities/importInvoices.entity';
 import { ImportInvoiceProductsEntity } from '../entities/importInvocieProducts.entity';
 
@@ -234,18 +233,18 @@ export class ImportInvoiceRepository {
 
         await manager.save(ImportInvoiceEntity, lockedInvoice);
 
-        // Update the inventory stock of the products - ProductsEntity.
-        for (const product of products) {
-            await this.productsRepository.updateInventoryStock(
-                { id: product.productId } as ProductsEntity,
-                product.quantity,
-                StockActionType.ADD,
-                InvoiceType.IMPORT,
-                lockedInvoice.id,
-                manager,
-                Number(product.totalImportPrice),
-            );
-        }
+        // Update the inventory stock of all products in one batched pass - ProductsEntity.
+        await this.productsRepository.updateInventoryStockBulk(
+            products.map((product) => ({
+                productId: product.productId,
+                quantity: product.quantity,
+                action: StockActionType.ADD,
+                rankingTotalPrice: Number(product.totalImportPrice),
+            })),
+            InvoiceType.IMPORT,
+            lockedInvoice.id,
+            manager,
+        );
 
         const invoiceWithRelations = await this.findOneInvoiceWithProductsAndUsernames(lockedInvoice.id, manager);
 

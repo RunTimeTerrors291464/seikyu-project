@@ -48,9 +48,6 @@ export class ReturnSellingInvoiceService {
         private readonly dataSource: DataSource,
     ) { }
 
-    // --- Private variables ---
-    private static readonly _maxProductsPerReturnSellingInvoice = 64;
-
     // --- DRY methods ---
     // Calculate invoice totals from resolved return products.
     private calculateInvoiceTotals(resolvedProducts: ResolvedReturnSellingProductData[]) {
@@ -203,9 +200,6 @@ export class ReturnSellingInvoiceService {
     @HandleServiceError(ErrorCode.CREATE_DRAFT_RETURN_SELLING_INVOICE_SERVICE)
     async createDraftReturnSellingInvoice(dto: CreateReturnSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<ReturnSellingInvoiceResponseDto> {
 
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > ReturnSellingInvoiceService._maxProductsPerReturnSellingInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_RETURN_SELLING_INVOICE_PRODUCTS, `Too many products in return selling invoice. Maximum is ${ReturnSellingInvoiceService._maxProductsPerReturnSellingInvoice}.`);
-
         // Get the original selling invoice by id.
         const sellingInvoice = await this.getSellingInvoiceById(dto.sellingInvoiceId);
 
@@ -234,9 +228,6 @@ export class ReturnSellingInvoiceService {
     // Edit a draft return selling invoice.
     @HandleServiceError(ErrorCode.EDIT_DRAFT_RETURN_SELLING_INVOICE_SERVICE)
     async editDraftReturnSellingInvoice(dto: EditReturnSellingInvoiceRequestDto, user: AccessTokenPayload): Promise<ReturnSellingInvoiceResponseDto> {
-
-        // Check if the number of products exceeds the limit.
-        if (dto.products.length > ReturnSellingInvoiceService._maxProductsPerReturnSellingInvoice) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_RETURN_SELLING_INVOICE_PRODUCTS, `Too many products in return selling invoice. Maximum is ${ReturnSellingInvoiceService._maxProductsPerReturnSellingInvoice}.`);
 
         // Get the return selling invoice by id.
         const returnSellingInvoice = await this.getReturnSellingInvoiceByIdOrThrow(dto.id);
