@@ -4,13 +4,7 @@ import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
 import KpiTile from "@/components/ui/KpiTile";
-import dynamic from "next/dynamic";
 import type { InvoicePrintData } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
-
-const InvoicePrintPreviewPopup = dynamic(
-  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
-  { ssr: false },
-);
 import SellingInvoiceDetailProductsCard from "@/features/invoices/layout/SellingInvoiceDetailProductsCard";
 import SellingInvoiceHeader from "@/features/invoices/layout/SellingInvoiceHeader";
 import {
@@ -21,8 +15,14 @@ import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const InvoicePrintPreviewPopup = dynamic(
+  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
+  { ssr: false },
+);
 
 export default function CashierSellingInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -103,7 +103,13 @@ export default function CashierSellingInvoiceDetailPage() {
     totalProducts: invoice.totalProducts,
     totalQuantity: invoice.totalQuantity,
     totalAmount: invoice.totalSellingPrice,
+    showDiscount: true,
     lines: invoice.products.map(function toPrintLine(product) {
+      const effectiveDiscount =
+      product.productDiscount > 0
+        ? product.productDiscount
+        : (invoice.invoiceDiscount ?? 0);
+
       return {
         sku: product.productSku,
         name: product.productName,
@@ -112,6 +118,7 @@ export default function CashierSellingInvoiceDetailPage() {
         unitPrice: product.sellingPrice,
         lineTotal: product.totalSellingPrice,
         notes: product.notes,
+        discount: effectiveDiscount,
       };
     }),
   };
@@ -245,6 +252,7 @@ export default function CashierSellingInvoiceDetailPage() {
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
         data={printData}
+        compactTable={true}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);
         }}

@@ -21,6 +21,7 @@ export type InvoicePrintLine = {
   unitPrice: number;
   lineTotal: number;
   notes: string | null;
+  discount?: number;
 };
 
 export type InvoicePrintData = {
@@ -35,6 +36,7 @@ export type InvoicePrintData = {
   totalQuantity: number;
   totalAmount: number;
   showLineNotes?: boolean;
+  showDiscount?: boolean;
   lines: InvoicePrintLine[];
 };
 
@@ -196,8 +198,9 @@ const pdfColumnStylesWithNotes = {
   colSku: { width: 72 },
   colName: { flex: 1 },
   colUnit: { width: 54 },
-  colQty: { width: 48 },
+  colQty: { width: 52 },
   colUnitPrice: { width: 64 },
+  colDiscount: { width: 52 },
   colTotal: { width: 64 },
   colNote: { flex: 1 },
 } as const;
@@ -207,8 +210,9 @@ const pdfColumnStylesWithoutNotes = {
   colSku: { width: 74 },
   colName: { flex: 1 },
   colUnit: { width: 72 },
-  colQty: { width: 72 },
+  colQty: { width: 52 },
   colUnitPrice: { width: 64 },
+  colDiscount: { width: 52 },
   colTotal: { width: 64 },
 } as const;
 
@@ -250,6 +254,7 @@ type InvoicePdfLabels = {
   totalPriceLabel: string;
   noteLabel: string;
   noNote: string;
+  discountLabel: string;
 };
 
 const PRINT_LOCALE: Record<Lang, string> = {
@@ -317,6 +322,7 @@ function buildInvoicePdfLabels(
     totalPriceLabel: printDictionary.totalPriceLabel,
     noteLabel: printDictionary.noteLabel,
     noNote: printDictionary.noLineNote,
+    discountLabel: printDictionary.productDiscountLabel,
   };
 }
 
@@ -331,6 +337,7 @@ function InvoicePdfDocument({
   quantityLocaleTag: string;
   compactTable?: boolean;
 }) {
+  const hasDiscount = Boolean(data.showDiscount);
   const hasNotes = Boolean(data.showLineNotes);
   const styles = useMemo(
     function buildPdfStyles() {
@@ -365,6 +372,11 @@ function InvoicePdfDocument({
             <Text style={[styles.cellHeader, styles.colName]}>{labels.productName}</Text>
             <Text style={[styles.cellHeader, styles.colQty]}>{labels.quantityLabel}</Text>
             <Text style={[styles.cellHeader, styles.colUnit]}>{labels.unit}</Text>
+            {hasDiscount && (
+              <Text style={[styles.cellHeader, styles.colDiscount, styles.alignRight]}>
+                {labels.discountLabel}
+              </Text>
+            )}
             <Text style={[styles.cellHeader, styles.colUnitPrice, styles.alignRight]}>
               {labels.unitPriceLabel}
             </Text>
@@ -395,6 +407,11 @@ function InvoicePdfDocument({
                   {line.quantity.toLocaleString(quantityLocaleTag)}
                 </Text>
                 <Text style={[styles.cell, styles.colUnit]}>{line.unit}</Text>
+                {hasDiscount && (
+                  <Text style={[styles.cell, styles.colDiscount, styles.alignRight]}>
+                    {formatPriceNumber(line.discount ?? 0)}%
+                  </Text>
+                )}
                 <Text style={[styles.cell, styles.colUnitPrice, styles.alignRight]}>
                   {formatPriceNumber(line.unitPrice)}
                 </Text>
@@ -579,6 +596,11 @@ export default function InvoicePrintPreviewPopup({
                   <th className="border border-border px-2 py-1 text-left">{labels.productName}</th>
                   <th className="border border-border px-2 py-1 text-left">{labels.quantityLabel}</th>
                   <th className="border border-border px-2 py-1 text-left">{labels.unit}</th>
+                  {data.showDiscount && (
+                    <th className="border border-border px-2 py-1 text-right w-[52px]">
+                      {labels.discountLabel}
+                    </th>
+                  )}
                   <th className="border border-border px-2 py-1 text-right">{labels.unitPriceLabel}</th>
                   <th className="border border-border px-2 py-1 text-right">{labels.totalPriceLabel}</th>
                   {data.showLineNotes && (
@@ -597,6 +619,11 @@ export default function InvoicePrintPreviewPopup({
                         {line.quantity.toLocaleString(printLocaleTag)}
                       </td>
                       <td className="border border-border px-2 py-1">{line.unit}</td>
+                      {data.showDiscount && (
+                        <td className="border border-border px-2 py-1 text-right">
+                          {formatPriceNumber(line.discount ?? 0)}%
+                        </td>
+                      )}
                       <td className="border border-border px-2 py-1 text-right">{formatPriceNumber(line.unitPrice)}</td>
                       <td className="border border-border px-2 py-1 text-right">{formatPriceNumber(line.lineTotal)}</td>
                       {data.showLineNotes && (

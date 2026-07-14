@@ -11,25 +11,19 @@ import ImportInvoiceDraftWorkspace from "@/features/invoices/layout/ImportInvoic
 import ImportInvoiceHeader from "@/features/invoices/layout/ImportInvoiceHeader";
 import ImportInvoiceProductsCard from "@/features/invoices/layout/ImportInvoiceProductsCard";
 import ImportInvoiceReturnInvoicesCard from "@/features/invoices/layout/ImportInvoiceReturnInvoicesCard";
-import dynamic from "next/dynamic";
 import type { InvoicePrintData } from "@/features/invoices/layout/InvoicePrintPreviewPopup";
-
-const InvoicePrintPreviewPopup = dynamic(
-  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
-  { ssr: false },
-);
 import {
-    ImportInvoiceResponseDto,
-    confirmImportInvoice,
-    deleteImportInvoiceDrafts,
-    editImportInvoiceDraft,
-    getImportInvoiceById,
+  ImportInvoiceResponseDto,
+  confirmImportInvoice,
+  deleteImportInvoiceDrafts,
+  editImportInvoiceDraft,
+  getImportInvoiceById,
 } from "@/features/invoices/services/importInvoice.service";
 import {
-    EditableImportInvoiceProduct,
-    importCreateLinesToRequest,
-    importLineDtoToEditable,
-    toNumberOrZero,
+  EditableImportInvoiceProduct,
+  importCreateLinesToRequest,
+  importLineDtoToEditable,
+  toNumberOrZero,
 } from "@/features/invoices/types/importInvoiceDetail";
 import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDraftNavigationGuard } from "@/lib/hooks/useDraftNavigationGuard";
@@ -38,8 +32,14 @@ import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflow
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const InvoicePrintPreviewPopup = dynamic(
+  () => import("@/features/invoices/layout/InvoicePrintPreviewPopup"),
+  { ssr: false },
+);
 
 export default function ImportInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -476,6 +476,7 @@ export default function ImportInvoiceDetailPage() {
       <InvoicePrintPreviewPopup
         open={printPopupOpen}
         data={printData}
+        compactTable={true}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);
         }}
