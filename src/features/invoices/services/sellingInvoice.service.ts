@@ -1,5 +1,6 @@
 import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
 import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
+import { clearProductSkuLookupCache } from "@/features/products/services/product.service";
 import apiClient from "@/services/api-client";
 
 export type SellingInvoiceStatus =
@@ -138,5 +139,6 @@ export async function createSellingInvoice(
     payload,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }

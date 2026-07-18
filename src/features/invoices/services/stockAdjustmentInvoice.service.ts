@@ -1,5 +1,6 @@
 import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
 import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
+import { clearProductSkuLookupCache } from "@/features/products/services/product.service";
 import apiClient from "@/services/api-client";
 
 export type StockAdjustmentInvoiceStatus = "draft" | "confirmed";
@@ -144,6 +145,7 @@ export async function editStockAdjustmentInvoiceDraft(
     payload,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }
 
@@ -155,6 +157,7 @@ export async function createStockAdjustmentInvoiceDraft(
     payload,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }
 
@@ -165,6 +168,7 @@ export async function confirmStockAdjustmentInvoice(
     `/invoices/stock-adjustment/${id}/confirm`,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }
 
@@ -174,4 +178,5 @@ export async function deleteStockAdjustmentInvoiceDrafts(
   await apiClient.delete("/invoices/stock-adjustment", {
     data: { ids },
   });
+  clearProductSkuLookupCache();
 }

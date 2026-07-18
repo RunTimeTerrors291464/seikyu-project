@@ -1,5 +1,10 @@
 import apiClient from "@/services/api-client";
 import {
+  productSkuLookupCache,
+  type ProductSkuLookupCacheHit,
+} from "@/features/products/lib/productSkuLookupCache";
+import { isProductSkuNotFoundError } from "@/lib/sku/productSkuApiErrors";
+import {
   CreateProductPayload,
   GetProductHistoryListResponse,
   GetProductStockHistoryResponse,
@@ -26,14 +31,32 @@ export async function getProductById(id: string) {
 /* ============================= */
 /* GET PRODUCT BY SKU */
 /* ============================= */
-export async function getProductBySku(sku: string) {
-  try {
-    const res = await apiClient.get(`/products/sku/${sku}`);
+export async function getProductBySku(sku: string): Promise<Product | null> {
+  return productSkuLookupCache.get(sku, async function fetchProductBySku(key) {
+    try {
+      const res = await apiClient.get<Product>(
+        `/products/sku/${encodeURIComponent(key)}`,
+      );
+      return res.data;
+    } catch (error: unknown) {
+      if (isProductSkuNotFoundError(error)) {
+        return null;
+      }
+      throw error;
+    }
+  });
+}
 
-    return res.data;
-  } catch (error: unknown) {
-    throw error;
-  }
+/** Returns an unexpired shared SKU result without issuing a request. */
+export function peekProductBySku(
+  sku: string,
+): ProductSkuLookupCacheHit | null {
+  return productSkuLookupCache.peek(sku);
+}
+
+/** Clears all SKU lookup results after catalog or inventory mutations. */
+export function clearProductSkuLookupCache(): void {
+  productSkuLookupCache.clear();
 }
 
 /* ============================= */
@@ -43,15 +66,9 @@ export async function getProductBySku(sku: string) {
 export async function updateProduct(
   payload: Partial<Product> & { id: string }
 ) {
-
-  try {
-
-    const res = await apiClient.patch("/products", payload);
-
-    return res.data;
-  } catch (error: unknown) {
-    throw error;
-  }
+  const res = await apiClient.patch("/products", payload);
+  clearProductSkuLookupCache();
+  return res.data;
 }
 
 /* ============================= */
@@ -270,11 +287,13 @@ export async function getProductStockHistory(
 /* ============================= */
 export const deactivateProduct = async (id: string) => {
   const res = await apiClient.patch(`/products/activation/${id}/deactivate`);
+  clearProductSkuLookupCache();
   return res.data;
 };
 
 export const activateProduct = async (id: string) => {
   const res = await apiClient.patch(`/products/activation/${id}/activate`);
+  clearProductSkuLookupCache();
   return res.data;
 };
 
@@ -282,11 +301,7 @@ export const activateProduct = async (id: string) => {
 /* CREATE / ADD */
 /* ============================= */
 export async function createProduct(payload: CreateProductPayload) {
-  try {
-    const res = await apiClient.post("/products", payload);
-
-    return res.data;
-  } catch (error: unknown) {
-    throw error;
-  }
+  const res = await apiClient.post("/products", payload);
+  clearProductSkuLookupCache();
+  return res.data;
 }

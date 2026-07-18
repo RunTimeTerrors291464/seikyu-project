@@ -1,5 +1,6 @@
 import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
 import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
+import { clearProductSkuLookupCache } from "@/features/products/services/product.service";
 import apiClient from "@/services/api-client";
 
 export type ReturnSellingInvoiceStatus = "draft" | "confirmed";
@@ -203,6 +204,7 @@ export async function createReturnSellingDraft(
   );
 
   invalidateReturnSellingInvoiceListCache();
+  clearProductSkuLookupCache();
 
   return response.data;
 }
@@ -216,6 +218,7 @@ export async function editReturnSellingDraft(
   );
 
   invalidateReturnSellingInvoiceListCache();
+  clearProductSkuLookupCache();
 
   return response.data;
 }
@@ -226,6 +229,7 @@ export async function deleteReturnSellingDrafts(ids: string[]): Promise<void> {
   });
 
   invalidateReturnSellingInvoiceListCache();
+  clearProductSkuLookupCache();
 }
 
 export async function confirmReturnSellingInvoice(
@@ -236,6 +240,7 @@ export async function confirmReturnSellingInvoice(
   );
 
   invalidateReturnSellingInvoiceListCache();
+  clearProductSkuLookupCache();
 
   return response.data;
 }

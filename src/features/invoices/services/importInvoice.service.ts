@@ -1,5 +1,6 @@
 import { cleanInvoiceListParams } from "@/lib/datetime/cleanInvoiceListParams";
 import { mergeDefaultListDateRange } from "@/lib/datetime/listDateRange";
+import { clearProductSkuLookupCache } from "@/features/products/services/product.service";
 import apiClient from "@/services/api-client";
 
 export type ImportInvoiceStatus =
@@ -154,6 +155,7 @@ export async function editImportInvoiceDraft(
     payload,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }
 
@@ -165,6 +167,7 @@ export async function createImportInvoiceDraft(
     payload,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }
 
@@ -175,6 +178,7 @@ export async function confirmImportInvoice(
     `/invoices/import/${id}/confirm`,
   );
 
+  clearProductSkuLookupCache();
   return response.data;
 }
 
@@ -184,4 +188,5 @@ export async function deleteImportInvoiceDrafts(
   await apiClient.delete("/invoices/import", {
     data: { ids },
   });
+  clearProductSkuLookupCache();
 }
