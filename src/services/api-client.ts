@@ -58,7 +58,12 @@ const apiClient = axios.create({
 // ===============================
 
 let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+type RefreshSubscriber = {
+  onSuccess: (token: string) => void;
+  onFailure: (error: unknown) => void;
+};
+
+let refreshSubscribers: RefreshSubscriber[] = [];
 type AxiosLikeError = {
   response?: {
     status?: number;
@@ -148,12 +153,17 @@ function toAxiosLikeError(error: unknown): AxiosLikeError {
   return {};
 }
 
-function subscribeTokenRefresh(cb: (token: string) => void) {
-  refreshSubscribers.push(cb);
+function subscribeTokenRefresh(subscriber: RefreshSubscriber): void {
+  refreshSubscribers.push(subscriber);
 }
 
-function onRefreshed(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token));
+function resolveRefreshSubscribers(token: string): void {
+  refreshSubscribers.forEach(({ onSuccess }) => onSuccess(token));
+  refreshSubscribers = [];
+}
+
+function rejectRefreshSubscribers(error: unknown): void {
+  refreshSubscribers.forEach(({ onFailure }) => onFailure(error));
   refreshSubscribers = [];
 }
 
@@ -209,6 +219,10 @@ apiClient.interceptors.response.use(
     const originalRequest =
       error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
     const status = error.response?.status;
 
     if (process.env.NODE_ENV === "development") {
@@ -247,13 +261,18 @@ apiClient.interceptors.response.use(
           console.log("⏳ Already refreshing → queue request");
         }
 
-        return new Promise((resolve) => {
-          subscribeTokenRefresh((token: string) => {
-            if (process.env.NODE_ENV === "development") {
-              console.log("🔁 Retrying queued request →", originalRequest.url);
-            }
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            resolve(apiClient(originalRequest));
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh({
+            onSuccess(token: string): void {
+              if (process.env.NODE_ENV === "development") {
+                console.log("🔁 Retrying queued request →", originalRequest.url);
+              }
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            },
+            onFailure(refreshError: unknown): void {
+              reject(refreshError);
+            },
           });
         });
       }
@@ -274,6 +293,7 @@ apiClient.interceptors.response.use(
           }
           clearStoredAuth();
           window.location.href = "/login";
+          rejectRefreshSubscribers(error);
           return Promise.reject(error);
         }
 
@@ -302,7 +322,11 @@ apiClient.interceptors.response.use(
           window.location.protocol === "https:" ? "; Secure" : ""
         }`;
 
-        onRefreshed(newAccessToken);
+        // Mark the refresh cycle complete before retrying requests. Otherwise a
+        // new 401 while the original retry is in flight could subscribe to an
+        // already-drained queue and never settle.
+        isRefreshing = false;
+        resolveRefreshSubscribers(newAccessToken);
 
         // retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -321,6 +345,7 @@ apiClient.interceptors.response.use(
           console.warn("🚪 Logging out user");
         }
 
+        rejectRefreshSubscribers(refreshError);
         clearStoredAuth();
 
         window.location.href = "/login";

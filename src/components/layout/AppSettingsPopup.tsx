@@ -13,7 +13,7 @@ import {
 import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type AppSettingsPopupProps = {
   open: boolean;
@@ -44,15 +44,8 @@ export default function AppSettingsPopup({
       : "system";
 
   const activeLang = useUiLang();
-  const [activePrintLang, setActivePrintLang] = useState<Lang>(activeLang);
-
-  useEffect(
-    function syncPrintLangFromCookieWhenOpen(): void {
-      if (open) {
-        setActivePrintLang(getPrintLangCookie() ?? activeLang);
-      }
-    },
-    [open, activeLang],
+  const [activePrintLang, setActivePrintLang] = useState<Lang>(
+    () => getPrintLangCookie() ?? activeLang,
   );
 
   return (

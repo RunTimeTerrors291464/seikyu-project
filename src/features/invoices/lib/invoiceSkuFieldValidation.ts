@@ -108,7 +108,7 @@ export function getInvoiceSkuFieldError(
  * @returns True when lookup finished and the product can be added to the invoice.
  */
 export function isInvoiceSkuResolved(state: InvoiceSkuLookupState): boolean {
-  const { sku, skuDebouncing, skuChecking, resolvedProduct, excludedProductIds } =
+  const { skuDebouncing, skuChecking, resolvedProduct, excludedProductIds } =
     state;
 
   return (

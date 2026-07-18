@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type TooltipProps = {
@@ -34,7 +34,7 @@ export default function Tooltip({
     if (timerRef.current) window.clearTimeout(timerRef.current);
   }, []);
 
-  function updatePosition() {
+  const updatePosition = useCallback(function updatePosition(): void {
     const trigger = triggerRef.current;
     const tooltip = tooltipRef.current;
 
@@ -73,7 +73,7 @@ export default function Tooltip({
     );
 
     setCoords({ top, left });
-  }
+  }, [align, offset, side]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -90,7 +90,7 @@ export default function Tooltip({
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
-  }, [open, side, align, offset, content]);
+  }, [open, updatePosition]);
 
   return (
 

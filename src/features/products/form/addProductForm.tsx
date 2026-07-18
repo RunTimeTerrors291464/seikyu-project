@@ -7,8 +7,8 @@ import {
   Package,
   Ruler,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 
 import {
   Field,
@@ -69,7 +69,7 @@ export default function AddNewProductForm({
   onSubmit,
   onDirtyChange,
 }: Props) {
-  const { setValue, watch, handleSubmit, getValues } =
+  const { control, setValue, handleSubmit, getValues } =
     useForm<FormValues>({
       defaultValues: {
         sku: "",
@@ -83,7 +83,7 @@ export default function AddNewProductForm({
       },
     });
 
-  const values = watch();
+  const values = useWatch({ control }) as FormValues;
 
   /**
    * Computes whether the form differs from its initial empty state, and reports it upward.
@@ -126,26 +126,7 @@ export default function AddNewProductForm({
   /* FIELD VALIDATION */
   /* ============================= */
 
-  const skuDuplicateCheckState = {
-    skuDebouncing,
-    skuChecking,
-    skuDuplicate,
-  };
-
-  const validateField = (
-    field: keyof FormValues,
-    value: string,
-    options?: { validateRequired?: boolean },
-  ) => {
-    const error = getFieldError(field, value, options);
-
-    setErrors((prev) => ({
-      ...prev,
-      [field]: error,
-    }));
-  };
-
-  const getFieldError = (
+  const getFieldError = useCallback((
     field: keyof FormValues,
     value: string,
     options?: { validateRequired?: boolean },
@@ -154,7 +135,11 @@ export default function AddNewProductForm({
       case "sku":
         return getProductCreateSkuFieldError(
           value,
-          skuDuplicateCheckState,
+          {
+            skuDebouncing,
+            skuChecking,
+            skuDuplicate,
+          },
           dict,
           {
             showEmptyError:
@@ -193,26 +178,27 @@ export default function AddNewProductForm({
       default:
         return "";
     }
+  }, [dict, skuDebouncing, skuChecking, skuDuplicate, touched.sku]);
+
+  const validateField = (
+    field: keyof FormValues,
+    value: string,
+    options?: { validateRequired?: boolean },
+  ) => {
+    const error = getFieldError(field, value, options);
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: error,
+    }));
   };
 
-  useEffect(() => {
-    const shouldValidateSku = touched.sku || values.sku.length > 0;
-    if (!shouldValidateSku) return;
-
-    const nextSkuError = getFieldError("sku", values.sku, {
-      validateRequired: touched.sku === true,
-    });
-    setErrors((previousErrors) => ({
-      ...previousErrors,
-      sku: nextSkuError,
-    }));
-  }, [
-    values.sku,
-    touched.sku,
-    skuDebouncing,
-    skuChecking,
-    skuDuplicate,
-  ]);
+  const skuFieldError =
+    touched.sku || values.sku.length > 0
+      ? getFieldError("sku", values.sku, {
+          validateRequired: touched.sku === true,
+        })
+      : errors.sku;
 
   /* ============================= */
   /* WARNING */
@@ -281,7 +267,7 @@ export default function AddNewProductForm({
       <Field
         label={dict.sku}
         icon={<Barcode className="h-3 w-3" />}
-        error={errors.sku}
+        error={skuFieldError}
         hint={getSkuCheckingHint(values.sku, skuDebouncing, skuChecking, dict.checkingSku)}
         required
         messageBesideLabel={true}

@@ -87,14 +87,7 @@ export function useProductRanking(
     },
     [
       dict,
-      query?.dateType,
-      query?.endDate,
-      query?.invoiceType,
-      query?.limit,
-      query?.page,
-      query?.search,
-      query?.sortOrder,
-      query?.startDate,
+      query,
       refreshKey,
     ],
   );

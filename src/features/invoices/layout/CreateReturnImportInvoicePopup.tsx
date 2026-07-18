@@ -55,7 +55,7 @@ export default function CreateReturnImportInvoicePopup({
     useState<boolean>(false);
   const [clearAllConfirmOpen, setClearAllConfirmOpen] =
     useState<boolean>(false);
-  const nowText = useMemo(() => new Date().toISOString(), [open]);
+  const nowText = useMemo(() => new Date().toISOString(), []);
   const sourceProductsRef = useRef<ImportInvoiceProductDto[]>(sourceProducts);
   sourceProductsRef.current = sourceProducts;
 

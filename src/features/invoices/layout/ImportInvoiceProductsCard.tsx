@@ -12,7 +12,7 @@ import { useDict } from "@/lib/lang/DictProvider";
 import { formatShortcutChordForDisplay } from "@/lib/shortcuts/formatShortcutChordForDisplay";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import { useInvoiceDraftTableRowNavigation } from "../hooks/useInvoiceDraftTableRowNavigation";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
 import { INVOICE_DRAFT_TABLE_ROW_DOWN_CHORD, INVOICE_DRAFT_TABLE_ROW_UP_CHORD, INVOICE_DRAFT_TABLE_SELECT_FIRST_KEY_CHORD } from "../lib/invoiceDraftTableShortcuts";
@@ -82,15 +82,7 @@ export default function ImportInvoiceProductsCard({
   const [openAddProductPopup, setOpenAddProductPopup] = useState<boolean>(false);
   const [openCreateAndAddPopup, setOpenCreateAndAddPopup] = useState<boolean>(false);
   const tableScopeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(
-    function clearSelectionWhenNotDraft(): void {
-      if (!canEditDraft) {
-        setSelectedIds(new Set());
-      }
-    },
-    [canEditDraft],
-  );
+  const lastCatalogAddedLineIdRef = useRef<string | null>(null);
 
   const selectedCount = selectedIds.size;
 
@@ -153,24 +145,13 @@ export default function ImportInvoiceProductsCard({
       return productToEditableImportLine(product, dict.unnamed);
     });
     onChangeProducts([...nextProducts, ...products]);
-    if (readOnlyTable) {
-      entryCardRef?.current?.focusSku();
-      return;
-    }
-    scheduleFocusLastInvoiceLineQuantity(
-      [nextProducts[0]!.localId],
-      tableScopeRef.current,
-    );
+    lastCatalogAddedLineIdRef.current = nextProducts[0]!.localId;
   }
 
   function handleAddSingleProduct(product: Product): void {
     const line = productToEditableImportLine(product, dict.unnamed);
     onChangeProducts([line, ...products]);
-    if (readOnlyTable) {
-      entryCardRef?.current?.focusSku();
-      return;
-    }
-    scheduleFocusLastInvoiceLineQuantity([line.localId], tableScopeRef.current);
+    lastCatalogAddedLineIdRef.current = line.localId;
   }
 
   function handleCreateAndAddProduct(product: EditableImportInvoiceProduct): void {
@@ -181,6 +162,24 @@ export default function ImportInvoiceProductsCard({
     }
     scheduleFocusLastInvoiceLineQuantity([product.localId], tableScopeRef.current);
   }
+
+  const restoreFocusAfterCatalogDismiss = useCallback(
+    function restoreFocusAfterCatalogDismiss(): void {
+      window.requestAnimationFrame(function restoreFocusAfterCatalogUnmount(): void {
+        if (readOnlyTable) {
+          entryCardRef?.current?.focusSku();
+          return;
+        }
+
+        const addedLineId = lastCatalogAddedLineIdRef.current;
+        lastCatalogAddedLineIdRef.current = null;
+        if (addedLineId) {
+          scheduleFocusLastInvoiceLineQuantity([addedLineId], tableScopeRef.current);
+        }
+      });
+    },
+    [entryCardRef, readOnlyTable],
+  );
 
   const allSelected = filteredProducts.length > 0 &&
     filteredProducts.every((product) => selectedIds.has(product.localId));
@@ -349,6 +348,7 @@ export default function ImportInvoiceProductsCard({
         onClose={function closeAddProductPopup(): void {
           setOpenAddProductPopup(false);
         }}
+        onDismiss={restoreFocusAfterCatalogDismiss}
         onOpenRequest={function openAddProductPopupFromShortcut(): void {
           setOpenAddProductPopup(true);
         }}

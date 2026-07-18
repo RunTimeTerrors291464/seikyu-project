@@ -132,11 +132,11 @@ function cleanParams(params: ProductQuery): Record<string, string | number> {
 /* ============================= */
 
 export const productService = {
-  async getProducts(params: ProductQuery) {
+  async getProducts(params: ProductQuery, signal?: AbortSignal) {
     try {
       const res = await apiClient.get<ProductListResponse>(
         "/products",
-        { params: cleanParams(params) }
+        { params: cleanParams(params), signal }
       );
 
       return res.data;

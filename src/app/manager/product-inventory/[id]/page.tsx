@@ -162,6 +162,7 @@ export default function ProductInventoryDetailPage() {
         )}
       >
         <ProductDetailsCard
+          key={`${product.id}:${product.updatedAt}`}
           product={product}
           update={update}
           dict={dict}

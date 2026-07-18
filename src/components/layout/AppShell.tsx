@@ -4,9 +4,31 @@ import { useDict } from "@/lib/lang/DictProvider";
 import ShortcutProvider from "@/lib/shortcuts/ShortcutProvider";
 import useShortcut from "@/lib/shortcuts/useShortcut";
 import { ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 const SIDEBAR_TOGGLE_CHORD = { code: "Backslash", mod: true } as const;
+
+function subscribeToClientMount(): () => void {
+  return () => {};
+}
+
+function getStoredSidebarOpen(): boolean {
+  try {
+    const sidebarOpenRaw = localStorage.getItem("app-shell:sidebar-open");
+    if (sidebarOpenRaw !== null) {
+      return sidebarOpenRaw === "1";
+    }
+
+    const sidebarCollapsedRaw = localStorage.getItem("app-shell:sidebar-collapsed");
+    if (sidebarCollapsedRaw !== null) {
+      return sidebarCollapsedRaw !== "1";
+    }
+  } catch {
+    // Storage access can be unavailable in privacy-restricted browsers.
+  }
+
+  return true;
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -18,14 +40,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
 function AppShellWithShortcuts({ children }: { children: React.ReactNode }) {
   const dict = useDict();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [hasMounted, setHasMounted] = useState(false);
+  const hasMounted = useSyncExternalStore(
+    subscribeToClientMount,
+    () => true,
+    () => false,
+  );
+  const [sidebarOpenOverride, setSidebarOpenOverride] = useState<boolean | null>(null);
+  const isSidebarOpen = sidebarOpenOverride ?? (hasMounted ? getStoredSidebarOpen() : true);
 
   const handleToggleSidebarShortcut = useCallback(function handleToggleSidebarShortcut(): void {
-    setIsSidebarOpen(function toggleSidebar(previous) {
-      return !previous;
-    });
-  }, []);
+    setSidebarOpenOverride(!isSidebarOpen);
+  }, [isSidebarOpen]);
 
   useShortcut({
     id: "app-shell.toggle-sidebar",
@@ -34,22 +59,6 @@ function AppShellWithShortcuts({ children }: { children: React.ReactNode }) {
     handler: handleToggleSidebarShortcut,
     allowInEditable: false,
   });
-
-  useEffect(() => {
-    setHasMounted(true);
-    try {
-      const sidebarOpenRaw = localStorage.getItem("app-shell:sidebar-open");
-      if (sidebarOpenRaw !== null) {
-        setIsSidebarOpen(sidebarOpenRaw === "1");
-        return;
-      }
-
-      const sidebarCollapsedRaw = localStorage.getItem("app-shell:sidebar-collapsed");
-      if (sidebarCollapsedRaw !== null) {
-        setIsSidebarOpen(sidebarCollapsedRaw !== "1");
-      }
-    } catch { }
-  }, []);
 
   useEffect(() => {
     if (!hasMounted) return;
@@ -63,7 +72,7 @@ function AppShellWithShortcuts({ children }: { children: React.ReactNode }) {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={function onCloseSidebar() {
-          setIsSidebarOpen(false);
+          setSidebarOpenOverride(false);
         }}
       />
       <div className="flex h-screen w-full flex-col overflow-auto scrollbar-thin scrollbar-thumb-neutral-400 print:h-auto print:overflow-visible">
@@ -73,7 +82,7 @@ function AppShellWithShortcuts({ children }: { children: React.ReactNode }) {
               aria-label="Expand sidebar"
               className="sidebar-reopen-handle mt-6 h-8 w-3 shrink-0 self-start text-muted print:hidden"
               onClick={function onExpandSidebarClick() {
-                setIsSidebarOpen(true);
+                setSidebarOpenOverride(true);
               }}
               type="button"
             >

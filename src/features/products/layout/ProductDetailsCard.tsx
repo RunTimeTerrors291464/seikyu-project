@@ -35,20 +35,14 @@ import UnitPickerPopup from "./UnitPickerPopup";
 /**
  * Holds the last saved reorder threshold for stock accent/label only.
  *
- * Updates when the product row is loaded or refreshed from the server
- * (`id` / `updatedAt`), not when the user edits the reorder field locally.
+ * The parent remounts this card when the product row is refreshed from the
+ * server, so the initial state remains stable while the user edits locally.
  *
  * @param product - Current product from the detail form.
  * @returns Reorder threshold to use when comparing against `inventoryStock`.
  */
 function useReorderThresholdBaseline(product: Product): number {
-  const [baseline, setBaseline] = useState(
-    () => product.reorderThreshold ?? 0
-  );
-
-  useEffect(() => {
-    setBaseline(product.reorderThreshold ?? 0);
-  }, [product.id, product.updatedAt]);
+  const [baseline] = useState(() => product.reorderThreshold ?? 0);
 
   return baseline;
 }
@@ -86,14 +80,6 @@ export default function ProductDetailsCard({
   const [sellingPriceText, setSellingPriceText] = useState(() =>
     moneyDraftFromProductNumber(product.sellingPrice),
   );
-
-  useEffect(() => {
-    setImportPriceText(moneyDraftFromProductNumber(product.importPrice));
-  }, [product.id, product.updatedAt]);
-
-  useEffect(() => {
-    setSellingPriceText(moneyDraftFromProductNumber(product.sellingPrice));
-  }, [product.id, product.updatedAt]);
 
   const isDisabled = disabled || !product.isActive;
 

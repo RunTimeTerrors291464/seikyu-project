@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Fields";
 import { useDict } from "@/lib/lang/DictProvider";
 import { getDictionary } from "@/lib/lang/i18n";
 import { Check, Pencil, Plus, Settings, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 type UnitWordRow = {
   key: string;
@@ -34,9 +34,17 @@ type Props = {
 };
 
 export default function UnitWordsManagerPopup({ open, onClose }: Props) {
+  if (!open) {
+    return null;
+  }
+
+  return <UnitWordsManagerPopupContent onClose={onClose} />;
+}
+
+function UnitWordsManagerPopupContent({ onClose }: Pick<Props, "onClose">) {
   const dict = useDict();
 
-  const [rows, setRows] = useState<UnitWordRow[]>([]);
+  const [rows, setRows] = useState<UnitWordRow[]>(buildInitialRows);
   const [search, setSearch] = useState("");
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -44,18 +52,6 @@ export default function UnitWordsManagerPopup({ open, onClose }: Props) {
 
   const [addingNew, setAddingNew] = useState(false);
   const [newDraft, setNewDraft] = useState<UnitWordRow>(EMPTY_ROW);
-
-  useEffect(() => {
-    if (open) {
-      setRows(buildInitialRows());
-    } else {
-      setSearch("");
-      setEditingKey(null);
-      setEditDraft(EMPTY_ROW);
-      setAddingNew(false);
-      setNewDraft(EMPTY_ROW);
-    }
-  }, [open]);
 
   /* ───────── Filtering ───────── */
 
@@ -143,7 +139,7 @@ export default function UnitWordsManagerPopup({ open, onClose }: Props) {
   }
 
   return (
-    <Popup open={open} onClose={onClose}>
+    <Popup open onClose={onClose}>
       <div className="flex flex-col w-[680px] max-w-[90vw] max-h-[75vh]">
 
         {/* HEADER */}

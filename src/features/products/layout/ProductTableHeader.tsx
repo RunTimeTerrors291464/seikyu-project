@@ -33,7 +33,6 @@ type Props = {
   toggleFilters: () => void;
   resetSearch: () => void;
 
-  onExport?: () => void;
   onAddProduct?: () => void;
 
   isDirty?: boolean;
@@ -47,7 +46,6 @@ export default function ProductTableHeader({
   setSearchRule,
   toggleFilters,
   resetSearch,
-  onExport,
   onAddProduct,
   isDirty
 }: Props) {

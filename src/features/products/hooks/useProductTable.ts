@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type SortDirection = "asc" | "desc";
 
@@ -13,7 +13,7 @@ type BaseQuery = {
 };
 
 type UseProductTableProps<T, Q extends BaseQuery> = {
-  fetcher: (query: Q) => Promise<{
+  fetcher: (query: Q, signal?: AbortSignal) => Promise<{
     products: T[];
     total: number;
   }>;
@@ -51,25 +51,37 @@ export function useProductTable<T, Q extends BaseQuery>({
       return;
     }
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     async function load() {
       setLoading(true);
 
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
       try {
-        const res = await fetcher(query);
+        const res = await fetcher(query, controller.signal);
+        if (controller.signal.aborted) {
+          return;
+        }
         setData(res.products);
         setTotal(res.total);
       } catch (err) {
+        if (controller.signal.aborted) {
+          return;
+        }
         console.error("[useProductTable] fetch error", err);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
-    load();
+    void load();
+
+    return () => {
+      controller?.abort();
+    };
   }, [enabled, query, fetcher, refreshKey]);
 
   /* ============================= */
@@ -101,7 +113,7 @@ export function useProductTable<T, Q extends BaseQuery>({
     });
   };
 
-  const setFilters = (filters: Partial<Q>) => {
+  const setFilters = useCallback((filters: Partial<Q>) => {
     setQuery((prev) => {
       const next: Partial<Q> = { ...prev };
       let changed = false;
@@ -121,7 +133,7 @@ export function useProductTable<T, Q extends BaseQuery>({
       next.page = 1;
       return next as Q;
     });
-  };
+  }, []);
 
   const resetQuery = () => {
     setQuery(initialQuery);

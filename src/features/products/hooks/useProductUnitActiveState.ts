@@ -29,7 +29,6 @@ export function useProductUnitActiveState(
 
   useEffect(() => {
     if (!productUnitId) {
-      setIsActive(null);
       return;
     }
 
@@ -90,5 +89,5 @@ export function useProductUnitActiveState(
     };
   }, [productUnitId, productUnitName, refreshKey, refreshNonce]);
 
-  return isActive;
+  return productUnitId ? isActive : null;
 }

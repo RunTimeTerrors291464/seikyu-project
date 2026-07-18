@@ -9,7 +9,7 @@ import { useDict } from "@/lib/lang/DictProvider";
 import { formatShortcutChordForDisplay } from "@/lib/shortcuts/formatShortcutChordForDisplay";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState, type RefObject } from "react";
+import { useCallback, useMemo, useState, type RefObject } from "react";
 import type { InvoiceProductLineEntryCardHandle } from "../components/InvoiceProductLineEntryCard";
 import { useInvoiceDraftTableRowNavigation } from "../hooks/useInvoiceDraftTableRowNavigation";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
@@ -150,7 +150,6 @@ export default function SellingInvoiceProductsCard({
       return catalogProductToEditableSellingCreateLine(product, dict.unnamed);
     });
     onChangeProducts([...nextProducts, ...products]);
-    entryCardRef?.current?.focusSku();
   }
 
   function handleAddSingleProduct(product: Product): void {
@@ -159,8 +158,16 @@ export default function SellingInvoiceProductsCard({
     }
     const line = catalogProductToEditableSellingCreateLine(product, dict.unnamed);
     onChangeProducts([line, ...products]);
-    entryCardRef?.current?.focusSku();
   }
+
+  const restoreEntrySkuFocus = useCallback(
+    function restoreEntrySkuFocus(): void {
+      window.requestAnimationFrame(function focusEntrySkuAfterCatalogDismiss(): void {
+        entryCardRef?.current?.focusSku();
+      });
+    },
+    [entryCardRef],
+  );
 
   const allSelected =
     filteredProducts.length > 0 &&
@@ -304,6 +311,7 @@ export default function SellingInvoiceProductsCard({
         onClose={function closeAddProductPopup(): void {
           setOpenAddProductPopup(false);
         }}
+        onDismiss={restoreEntrySkuFocus}
         onOpenRequest={function openAddProductPopupFromShortcut(): void {
           setOpenAddProductPopup(true);
         }}

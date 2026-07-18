@@ -9,7 +9,7 @@ import { useDict } from "@/lib/lang/DictProvider";
 import clsx from "clsx";
 import { Hash, Package, Plus, Trash2 } from "lucide-react";
 import { scheduleFocusLastInvoiceLineQuantity } from "@/features/invoices/lib/focusInvoiceLineQuantityInput";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useSkuNameRuleFilter } from "../hooks/useSkuNameRuleFilter";
 import { stockAdjustmentProductColumns } from "../table/stockAdjustmentProductLineColumns";
 import {
@@ -49,15 +49,6 @@ export default function StockAdjustmentProductsCard({
   } = useSkuNameRuleFilter(products);
   const [openAddProductPopup, setOpenAddProductPopup] = useState<boolean>(false);
   const tableScopeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(
-    function clearSelectionWhenNotDraft(): void {
-      if (!canEditDraft) {
-        setSelectedIds(new Set());
-      }
-    },
-    [canEditDraft],
-  );
 
   const selectedCount = selectedIds.size;
 

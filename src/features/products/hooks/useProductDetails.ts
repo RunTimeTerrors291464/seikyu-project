@@ -195,7 +195,7 @@ export function useProductDetail(
     return () => {
       isMounted = false;
     };
-  }, [id, loadHistory]);
+  }, [id, loadHistory, dict.productLoadFailed]);
 
 
 

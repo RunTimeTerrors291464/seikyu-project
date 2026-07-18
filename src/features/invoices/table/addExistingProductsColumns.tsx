@@ -14,7 +14,6 @@ import type { Dictionary } from "@/lib/lang/i18n";
 import { translateUnitName } from "@/lib/lang/translateUnitName";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Barcode, CircleEllipsis, CirclePower, DollarSign, Edit2, Ruler } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
 
 export type AddExistingProductsColumnPreset = "full" | "selling";
 
@@ -24,7 +23,11 @@ type BuildAddExistingProductsColumnsParams = {
   selectableRows: Product[];
   excludedProductIds: Set<string>;
   selectedProductIds: Set<string>;
-  setSelectedProductIds: Dispatch<SetStateAction<Set<string>>>;
+  onToggleProductSelection: (product: Product, selected: boolean) => void;
+  onToggleVisibleProductSelection: (
+    products: Product[],
+    selected: boolean,
+  ) => void;
   isProductSelectable: (product: Product) => boolean;
   /** When set, fixes product name column width (e.g. 160 for cashier selling add-products popup). */
   productNameColumnWidthPx?: number;
@@ -50,7 +53,8 @@ export default function buildAddExistingProductsColumns(
     selectableRows,
     excludedProductIds,
     selectedProductIds,
-    setSelectedProductIds,
+    onToggleProductSelection,
+    onToggleVisibleProductSelection,
     isProductSelectable,
     productNameColumnWidthPx,
     columnPreset = "full",
@@ -63,19 +67,12 @@ export default function buildAddExistingProductsColumns(
       icon: (
         <input
           type="checkbox"
-          checked={allSelectableChecked}
-          onChange={function handleToggleAll(event): void {
-            if (!event.target.checked) {
-              setSelectedProductIds(new Set());
-              return;
-            }
-            setSelectedProductIds(
-              new Set(
-                selectableRows.map(function mapIds(product): string {
-                  return product.id;
-                }),
-              ),
-            );
+            checked={allSelectableChecked}
+            onChange={function handleToggleAll(event): void {
+              onToggleVisibleProductSelection(
+                selectableRows,
+                event.target.checked,
+              );
           }}
           className="h-4 w-4 rounded border-border"
           disabled={selectableRows.length === 0}
@@ -92,20 +89,11 @@ export default function buildAddExistingProductsColumns(
             checked={selectedProductIds.has(product.id) && !isDisabled}
             disabled={isDisabled}
             onChange={function handleToggleOne(event): void {
-              setSelectedProductIds(function applyNextSelection(previous) {
-                if (event.target.checked && !isProductSelectable(product)) {
-                  return previous;
-                }
+              if (event.target.checked && !isProductSelectable(product)) {
+                return;
+              }
 
-                const next = new Set(previous);
-                if (event.target.checked) {
-                  next.add(product.id);
-                  return next;
-                }
-
-                next.delete(product.id);
-                return next;
-              });
+              onToggleProductSelection(product, event.target.checked);
             }}
             className="h-4 w-4 rounded border-border disabled:cursor-not-allowed"
             aria-label={dict.select}

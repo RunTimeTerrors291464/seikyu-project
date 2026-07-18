@@ -48,11 +48,37 @@ export default function RuleInput({
   /* ───────── Sync ───────── */
 
   useEffect(() => {
-    if (rule !== undefined) setSelectedRule(rule);
+    if (rule === undefined) {
+      return;
+    }
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setSelectedRule(rule);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [rule]);
 
   useEffect(() => {
-    if (value !== undefined) setInputValue(value);
+    if (value === undefined) {
+      return;
+    }
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setInputValue(value);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [value]);
 
   /* ───────── Outside click ───────── */

@@ -309,12 +309,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       </div>
 
-      <AppSettingsPopup
-        open={settingsOpen}
-        onClose={() => {
-          setSettingsOpen(false);
-        }}
-      />
+      {settingsOpen ? (
+        <AppSettingsPopup
+          open
+          onClose={() => {
+            setSettingsOpen(false);
+          }}
+        />
+      ) : null}
 
       <ConfirmPopup
         open={logoutConfirmOpen}

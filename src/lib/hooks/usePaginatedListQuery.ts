@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useState } from "react";
 
 export type PaginatedListResponse<TItem> = {
   /** Primary item array — field name varies by endpoint (e.g. `invoices`, `users`). */
@@ -80,54 +80,57 @@ export function usePaginatedListQuery<
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
   const queryDeps = getQueryDeps(query);
+  const queryDepsKey = JSON.stringify(queryDeps);
 
-  useEffect(
-    function loadPaginatedList(): () => void {
-      let isMounted = true;
+  const loadPaginatedList = useEffectEvent(
+    async function loadPaginatedList(isMounted: () => boolean): Promise<void> {
+      setLoading(true);
+      setError(null);
 
-      async function load(): Promise<void> {
-        setLoading(true);
-        setError(null);
+      try {
+        const response = await fetchList(query);
 
-        try {
-          const response = await fetchList(query);
+        if (!isMounted()) {
+          return;
+        }
 
-          if (!isMounted) {
-            return;
-          }
+        setState({
+          rows: getItems(response).map(mapToRow),
+          total: response.total,
+          page: response.page,
+          limit: response.limit,
+        });
+      } catch (unknownError) {
+        if (!isMounted()) {
+          return;
+        }
 
-          setState({
-            rows: getItems(response).map(mapToRow),
-            total: response.total,
-            page: response.page,
-            limit: response.limit,
-          });
-        } catch (unknownError) {
-          if (!isMounted) {
-            return;
-          }
+        const message =
+          resolveErrorMessage?.(unknownError) ??
+          (unknownError instanceof Error
+            ? unknownError.message
+            : fallbackErrorMessage);
 
-          const message =
-            resolveErrorMessage?.(unknownError) ??
-            (unknownError instanceof Error
-              ? unknownError.message
-              : fallbackErrorMessage);
-
-          setError(new Error(message));
-        } finally {
-          if (isMounted) {
-            setLoading(false);
-          }
+        setError(new Error(message));
+      } finally {
+        if (isMounted()) {
+          setLoading(false);
         }
       }
+    },
+  );
 
-      void load();
+  useEffect(
+    function startPaginatedListLoad(): () => void {
+      let isMounted = true;
+
+      void loadPaginatedList(() => isMounted);
 
       return function cleanup(): void {
         isMounted = false;
       };
     },
-    [...queryDeps, refreshKey],
+    [queryDepsKey, refreshKey],
   );
 
   const refetch = useCallback(function refetch(): void {

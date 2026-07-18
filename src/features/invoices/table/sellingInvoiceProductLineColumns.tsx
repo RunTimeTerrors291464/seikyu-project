@@ -19,11 +19,8 @@ import {
   normalizeMoneyStringInput,
 } from "@/lib/numeric/integerAndMoneyInputs";
 import {
-  Barcode,
   DollarSign,
   MessageSquare,
-  Package,
-  Ruler,
   Sigma,
 } from "lucide-react";
 import { rowIndexColumn } from "@/lib/table/rowIndexColumn";

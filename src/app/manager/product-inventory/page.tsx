@@ -106,6 +106,7 @@ export default function ProductInventoryPage() {
 
     initialQuery: initialTableQuery,
   });
+  const setProductTableFilters = table.setFilters;
 
   const currentFilters = {
     search,
@@ -153,11 +154,11 @@ export default function ProductInventoryPage() {
   }, []);
 
   useEffect(() => {
-    table.setFilters({
+    setProductTableFilters({
       search: search || undefined,
       searchBy: search ? searchRule : undefined,
     });
-  }, [search, searchRule]);
+  }, [search, searchRule, setProductTableFilters]);
 
   /* ============================= */
   /* RESET HANDLER (FIXED) */

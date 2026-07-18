@@ -51,7 +51,7 @@ export default function AddStockAdjustmentInvoicePopup({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const nowText = useMemo(() => new Date().toISOString(), [open]);
+  const nowText = useMemo(() => new Date().toISOString(), []);
   const previousProductCountRef = useRef<number>(0);
 
   const isDraftDirty = useMemo(
@@ -159,8 +159,6 @@ export default function AddStockAdjustmentInvoicePopup({
     setErrorMessage("");
     setConfirmAction("create");
   }
-
-  const noteWarning = createAttempted && !notes.trim();
 
   const productsCardDangerAccent =
     createAttempted && products.length === 0;

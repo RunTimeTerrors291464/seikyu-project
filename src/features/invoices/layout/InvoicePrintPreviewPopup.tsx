@@ -11,7 +11,7 @@ import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { Document, Font, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
 import clsx from "clsx";
 import { Download, Languages, Printer, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 export type InvoicePrintLine = {
   sku: string;
@@ -451,17 +451,28 @@ export default function InvoicePrintPreviewPopup({
   onClose,
   compactTable = false,
 }: InvoicePrintPreviewPopupProps) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <InvoicePrintPreviewPopupContent
+      data={data}
+      onClose={onClose}
+      compactTable={compactTable}
+    />
+  );
+}
+
+function InvoicePrintPreviewPopupContent({
+  data,
+  onClose,
+  compactTable = false,
+}: Omit<InvoicePrintPreviewPopupProps, "open">) {
   const dict = useDict();
   const uiLang = useUiLang();
-  const [printLang, setPrintLang] = useState<Lang>(uiLang);
-
-  useEffect(
-    function syncPrintLangWhenPopupOpens(): void {
-      if (open) {
-        setPrintLang(getPrintLangCookie() ?? uiLang);
-      }
-    },
-    [open, uiLang],
+  const [printLang, setPrintLang] = useState<Lang>(
+    () => getPrintLangCookie() ?? uiLang,
   );
 
   const printLocaleTag = getPrintLocaleTag(printLang);
@@ -530,7 +541,7 @@ export default function InvoicePrintPreviewPopup({
   }
 
   return (
-    <Popup open={open} onClose={onClose}>
+    <Popup open onClose={onClose}>
       <div className="flex w-auto max-w-[92vw] h-[90vh] flex-col overflow-auto">
         <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">

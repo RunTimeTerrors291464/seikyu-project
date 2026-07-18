@@ -87,7 +87,7 @@ The root page (`src/app/page.tsx`) redirects authenticated users to their role h
    - `access_token` (and related data) in **localStorage** for API calls.
    - `access_token` and `user_roles` in **HTTP cookies** (`path=/`, `SameSite=Lax`, `Secure` when on HTTPS) so **Next.js middleware** can gate routes and enforce role access.
 3. **Hydration** — `AuthProvider` runs `loadUserFromStorage` on mount so a full page refresh does not drop client auth state when the cookie still exists. Existing sessions re-sync auth cookies from localStorage on load.
-4. **Middleware** — `src/middleware.ts` redirects unauthenticated users to `/login`, sends authenticated users away from auth pages to their role home, and blocks `/admin`, `/manager`, and `/cashier` routes when the signed-in user lacks the required role (admins inherit manager and cashier access).
+4. **Middleware** — `src/middleware.ts` redirects unauthenticated users to `/login`, sends authenticated users away from auth pages to their role home, and blocks `/admin`, `/manager`, and `/cashier` routes when the signed-in user lacks the required role (admins inherit manager and cashier access). This is a navigation guard only: the API must enforce authorization. For server-side route authorization, replace the browser-writable auth cookies with a backend-issued HttpOnly signed session or verify the JWT in middleware using a configured key.
 5. **Client guard** — `useAuthWatcher` syncs token absence with `/login` and bounces logged-in users off auth pages to the role-appropriate home.
 6. **Refresh** — `api-client.ts` implements a refresh-token queue on 401 responses (see that file for the full flow and dev-only logging).
 

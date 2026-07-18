@@ -17,7 +17,6 @@ export default function PriceTrendSection() {
     toDate,
     setFromDate,
     setToDate,
-    listDateRange,
   } = useInvoiceListDateRangeFilter(PRICE_TREND_DEFAULT_RANGE_DAYS);
 
   const priceTrendQuery = useMemo(
@@ -32,7 +31,7 @@ export default function PriceTrendSection() {
         endDate: range.endDate,
       };
     },
-    [fromDate, listDateRange.fromDate, listDateRange.toDate, toDate],
+    [fromDate, toDate],
   );
 
   const { columns, loading, error } = usePriceTrend(priceTrendQuery);

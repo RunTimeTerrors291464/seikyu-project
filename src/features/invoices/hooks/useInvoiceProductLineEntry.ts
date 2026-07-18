@@ -25,7 +25,7 @@ import type {
   InvoiceLineEntryVariantConfig,
 } from "../types/invoiceLineEntryTypes";
 
-type UseInvoiceProductLineEntryOptions<TLine, TVariantFields> = {
+type UseInvoiceProductLineEntryOptions<TLine> = {
   excludedProductIds: Set<string>;
   lineFieldValidationActive: boolean;
   lineCommitAttempted: boolean;
@@ -46,7 +46,7 @@ type UseInvoiceProductLineEntryOptions<TLine, TVariantFields> = {
  */
 export function useInvoiceProductLineEntry<TLine, TVariantFields>(
   config: InvoiceLineEntryVariantConfig<TLine, TVariantFields>,
-  options: UseInvoiceProductLineEntryOptions<TLine, TVariantFields>,
+  options: UseInvoiceProductLineEntryOptions<TLine>,
 ): {
   context: InvoiceLineEntryContext<TVariantFields>;
   isEditMode: boolean;
@@ -122,27 +122,38 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
     : currentSkuLookupProduct;
 
   useEffect(
-    function syncEditSourceLine(): void {
+    function syncEditSourceLine() {
       if (parsedEditState == null) {
         editSourceLineRef.current = null;
         return;
       }
 
-      editSourceLineRef.current = editSourceLine;
-      setSku(parsedEditState.sku);
-      setQuantity(parsedEditState.quantity);
-      setNotes(parsedEditState.notes);
-      setVariantFields({
-        ...config.getDefaultVariantFields(),
-        ...parsedEditState.variantFields,
+      let cancelled = false;
+      queueMicrotask(function hydrateEditSourceLine(): void {
+        if (cancelled) {
+          return;
+        }
+
+        editSourceLineRef.current = editSourceLine;
+        setSku(parsedEditState.sku);
+        setQuantity(parsedEditState.quantity);
+        setNotes(parsedEditState.notes);
+        setVariantFields({
+          ...config.getDefaultVariantFields(),
+          ...parsedEditState.variantFields,
+        });
+        setTouched(true);
       });
-      setTouched(true);
+
+      return function cancelEditSourceLineHydration(): void {
+        cancelled = true;
+      };
     },
-    [editSourceLine, parsedEditState],
+    [config, editSourceLine, parsedEditState],
   );
 
   useEffect(
-    function hydrateVariantFieldsWhenProductResolves(): void {
+    function hydrateVariantFieldsWhenProductResolves() {
       if (isEditMode) {
         lastHydratedProductIdRef.current = null;
         return;
@@ -158,25 +169,47 @@ export function useInvoiceProductLineEntry<TLine, TVariantFields>(
       }
 
       lastHydratedProductIdRef.current = currentSkuLookupProduct.id;
-      setVariantFields({
-        ...config.getDefaultVariantFields(),
-        ...config.hydrateVariantFieldsFromProduct(currentSkuLookupProduct),
+      let cancelled = false;
+      queueMicrotask(function hydrateResolvedProduct(): void {
+        if (cancelled) {
+          return;
+        }
+
+        setVariantFields({
+          ...config.getDefaultVariantFields(),
+          ...config.hydrateVariantFieldsFromProduct!(currentSkuLookupProduct),
+        });
       });
+
+      return function cancelResolvedProductHydration(): void {
+        cancelled = true;
+      };
     },
     [config, currentSkuLookupProduct, isEditMode],
   );
 
   useEffect(
-    function clearLineFieldsWhenProductUnresolved(): void {
+    function clearLineFieldsWhenProductUnresolved() {
       if (isEditMode || resolvedProduct != null) {
         return;
       }
 
-      setQuantity("");
-      setNotes("");
-      lastHydratedProductIdRef.current = null;
-      setVariantFields(config.getDefaultVariantFields());
-      clearLineCommitAttempt();
+      let cancelled = false;
+      queueMicrotask(function clearUnresolvedProductFields(): void {
+        if (cancelled) {
+          return;
+        }
+
+        setQuantity("");
+        setNotes("");
+        lastHydratedProductIdRef.current = null;
+        setVariantFields(config.getDefaultVariantFields());
+        clearLineCommitAttempt();
+      });
+
+      return function cancelUnresolvedProductFieldClear(): void {
+        cancelled = true;
+      };
     },
     [clearLineCommitAttempt, config, isEditMode, resolvedProduct],
   );

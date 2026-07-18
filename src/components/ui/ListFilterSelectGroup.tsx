@@ -79,6 +79,7 @@ export default function ListFilterSelectGroup<T extends string>({
                 optionValue: T,
                 _isSelected: boolean,
               ): string {
+                void _isSelected;
                 return getOptionClassName(optionValue, value);
               }
         }

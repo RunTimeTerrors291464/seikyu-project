@@ -30,6 +30,14 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(home, req.url));
   }
 
+  // A role context is required for every protected route. This prevents a
+  // missing or malformed client cookie from being treated as unrestricted.
+  // The API must still enforce authorization because browser cookies are not
+  // a cryptographic source of identity.
+  if (token && roles.length === 0 && !isAuthPage) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   if (token && roles.length > 0 && !userMayAccessPath(roles, pathname)) {
     return NextResponse.redirect(
       new URL(defaultHomePathForRoles(roles), req.url),

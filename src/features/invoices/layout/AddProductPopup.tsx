@@ -31,6 +31,8 @@ import AddExistingProductsPopup from "./AddExistingProductsPopup";
 type AddProductPopupProps = {
   open: boolean;
   onClose: () => void;
+  /** Called after this catalog popup (or its bulk picker) has been dismissed. */
+  onDismiss?: () => void;
   onOpenRequest: () => void;
   /** When true, Ctrl+. opens this popup (while it and the bulk picker are closed). */
   newShortcutEnabled?: boolean;
@@ -51,6 +53,7 @@ type AddProductPopupProps = {
 export default function AddProductPopup({
   open,
   onClose,
+  onDismiss,
   onOpenRequest,
   newShortcutEnabled = false,
   excludedProductIds,
@@ -134,6 +137,7 @@ export default function AddProductPopup({
   function handleClose(): void {
     resetSkuForm();
     onClose();
+    onDismiss?.();
   }
 
   function handleSkuChange(value: string): void {
@@ -161,6 +165,7 @@ export default function AddProductPopup({
     onConfirmAdd(resolvedProduct);
     resetSkuForm();
     onClose();
+    onDismiss?.();
   }
 
   function handleOpenBulkPicker(): void {
@@ -176,10 +181,12 @@ export default function AddProductPopup({
   function handleBulkConfirm(products: Product[]): void {
     onConfirmAddMultiple(products);
     setOpenBulkPicker(false);
+    onDismiss?.();
   }
 
   function handleBulkClose(): void {
     setOpenBulkPicker(false);
+    onDismiss?.();
   }
 
   if (!open && !bulkPickerOpen) {

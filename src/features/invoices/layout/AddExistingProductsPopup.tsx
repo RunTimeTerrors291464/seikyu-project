@@ -16,7 +16,7 @@ import type { Product } from "@/features/products/types/product";
 import useFocusFirstFormControlOnOpen from "@/lib/hooks/useFocusFirstFormControlOnOpen";
 import { useDict } from "@/lib/lang/DictProvider";
 import { Barcode, Filter, Package, RotateCcw, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 type AddExistingProductsPopupProps = {
   open: boolean;
@@ -46,7 +46,9 @@ export default function AddExistingProductsPopup({
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<ProductStockFilter>("all");
   const [activeFilter, setActiveFilter] = useState<ProductStatusFilter>("all");
-  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [selectedProductsById, setSelectedProductsById] = useState<
+    Map<string, Product>
+  >(new Map());
 
   const initialTableQuery: ProductQuery = {
     page: 1,
@@ -66,20 +68,63 @@ export default function AddExistingProductsPopup({
 
   const formFieldsRef = useFocusFirstFormControlOnOpen({ when: open });
 
-  useEffect(function clearSelectionOnClose(): void {
-    if (!open) {
-      setSelectedProductIds(new Set());
-    }
-  }, [open]);
-
   /**
    * Returns whether a product can be selected in this popup.
    *
    * Inactive products and already-excluded products must never be selectable.
    */
-  function isProductSelectable(product: Product): boolean {
+  const isProductSelectable = useCallback(function isProductSelectable(product: Product): boolean {
     return !excludedProductIds.has(product.id) && product.isActive;
-  }
+  }, [excludedProductIds]);
+
+  const selectedProductIds = useMemo(
+    function getSelectedProductIds(): Set<string> {
+      return new Set(selectedProductsById.keys());
+    },
+    [selectedProductsById],
+  );
+
+  const selectedProducts = useMemo(
+    function getSelectedProducts(): Product[] {
+      return Array.from(selectedProductsById.values()).filter(isProductSelectable);
+    },
+    [isProductSelectable, selectedProductsById],
+  );
+
+  const toggleProductSelection = useCallback(
+    function toggleProductSelection(product: Product, selected: boolean): void {
+      setSelectedProductsById(function updateSelectedProducts(previous) {
+        const next = new Map(previous);
+        if (selected) {
+          next.set(product.id, product);
+        } else {
+          next.delete(product.id);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const toggleVisibleProductSelection = useCallback(
+    function toggleVisibleProductSelection(
+      products: Product[],
+      selected: boolean,
+    ): void {
+      setSelectedProductsById(function updateVisibleSelectedProducts(previous) {
+        const next = new Map(previous);
+        products.forEach(function updateProduct(product): void {
+          if (selected) {
+            next.set(product.id, product);
+          } else {
+            next.delete(product.id);
+          }
+        });
+        return next;
+      });
+    },
+    [],
+  );
 
   const selectableRows = useMemo(
     function getSelectableRows(): Product[] {
@@ -87,7 +132,7 @@ export default function AddExistingProductsPopup({
         return isProductSelectable(product);
       });
     },
-    [excludedProductIds, table.data],
+    [isProductSelectable, table.data],
   );
 
   const allSelectableChecked = useMemo(
@@ -102,15 +147,6 @@ export default function AddExistingProductsPopup({
     [selectableRows, selectedProductIds],
   );
 
-  const selectedProducts = useMemo(
-    function getSelectedProducts(): Product[] {
-      return table.data.filter(function filterSelected(product): boolean {
-        return selectedProductIds.has(product.id) && isProductSelectable(product);
-      });
-    },
-    [excludedProductIds, selectedProductIds, table.data],
-  );
-
   const columns = useMemo(
     function getColumns() {
       return buildAddExistingProductsColumns({
@@ -119,7 +155,8 @@ export default function AddExistingProductsPopup({
         selectableRows,
         excludedProductIds,
         selectedProductIds,
-        setSelectedProductIds,
+        onToggleProductSelection: toggleProductSelection,
+        onToggleVisibleProductSelection: toggleVisibleProductSelection,
         isProductSelectable,
         productNameColumnWidthPx,
         columnPreset: productPickerColumnPreset,
@@ -131,15 +168,16 @@ export default function AddExistingProductsPopup({
       selectableRows,
       excludedProductIds,
       selectedProductIds,
-      setSelectedProductIds,
       isProductSelectable,
+      toggleProductSelection,
+      toggleVisibleProductSelection,
       productNameColumnWidthPx,
       productPickerColumnPreset,
     ],
   );
 
   function handleDeleteSelected(): void {
-    setSelectedProductIds(new Set());
+    setSelectedProductsById(new Map());
   }
 
   /**
@@ -153,7 +191,7 @@ export default function AddExistingProductsPopup({
     }
 
     onConfirmSelect(selectedProducts);
-    setSelectedProductIds(new Set());
+    setSelectedProductsById(new Map());
     onClose();
   }
 

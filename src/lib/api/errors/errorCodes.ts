@@ -1,4 +1,3 @@
-/* eslint-disable */
 /** Auto-generated from src/generated/api-error-codes.json — do not edit manually. */
 
 export const ERROR_CODE = {

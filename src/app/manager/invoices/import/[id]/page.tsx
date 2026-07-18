@@ -115,7 +115,7 @@ export default function ImportInvoiceDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [invoiceId, dict.somethingWentWrong]);
+  }, [invoiceId, dict]);
 
   const canEditDraft = invoice?.status === "draft";
   const canReturn =
