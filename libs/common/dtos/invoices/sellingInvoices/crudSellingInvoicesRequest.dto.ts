@@ -308,3 +308,18 @@ export class GetListOfSellingInvoiceRequestDto {
     @Validate(InvoiceDateRangeConstraint, [180])
     toDate: string;
 }
+
+// Delete selling invoices request DTO.
+export class DeleteSellingInvoicesRequestDto {
+    @ApiProperty({
+        description: 'Selling invoice UUIDs to delete. Deleted invoices are hidden together with their return selling invoices and cannot be restored.',
+        type: [String],
+        maxItems: 100,
+        example: ['550e8400-e29b-41d4-a716-446655440000'],
+    })
+    @IsNotEmpty()
+    @IsArray()
+    @ArrayMaxSize(100, { message: 'ids must contain at most 100 items.' })
+    @IsUUID('4', { each: true })
+    ids: string[];
+}

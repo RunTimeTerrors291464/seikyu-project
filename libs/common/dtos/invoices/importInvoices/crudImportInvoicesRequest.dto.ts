@@ -277,7 +277,7 @@ export class GetListOfImportInvoiceRequestDto {
 
 export class DeleteDraftImportInvoicesRequestDto {
     @ApiProperty({
-        description: 'Draft import invoice UUIDs to delete',
+        description: 'Import invoice UUIDs to delete. Drafts are removed permanently; confirmed invoices are hidden together with their return import invoices and cannot be restored.',
         type: [String],
         maxItems: 100,
         example: ['550e8400-e29b-41d4-a716-446655440000'],

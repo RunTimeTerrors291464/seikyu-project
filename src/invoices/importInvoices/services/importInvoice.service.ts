@@ -112,22 +112,34 @@ export class ImportInvoiceService {
         return this.importInvoiceMapper.toImportInvoiceResponseDto(savedInvoice);
     }
 
-    // Delete draft import invoice.
+    // Delete import invoices.
+    // Draft invoices are removed permanently; confirmed ones are soft deleted, which also hides
+    // their return import invoices. Soft deleted invoices cannot be restored.
     @HandleServiceError(ErrorCode.DELETE_DRAFT_IMPORT_INVOICE_SERVICE)
-    async deleteDraftImportInvoice(ids: string[], user: AccessTokenPayload): Promise<boolean> {
+    async deleteImportInvoices(ids: string[], user: AccessTokenPayload): Promise<boolean> {
+
+        const draftIds: string[] = [];
+        const confirmedIds: string[] = [];
 
         // Loop through IDs.
         for (const id of ids) {
             // Get invoice by ID.
             const invoice = await this.getInvoiceById(id);
 
-            // Check if invoice is draft and user has permission to delete.
-            if (invoice.status !== ImportInvoiceStatus.DRAFT) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NOT_DRAFT, 'Invoice is not in draft status.');
-            if (invoice.draftBy !== user.id) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NO_PERMISSION_DRAFT, 'User has no permission to delete this invoice.');
+            if (invoice.status === ImportInvoiceStatus.DRAFT) {
+                // Check if user has permission to delete the draft.
+                if (invoice.draftBy !== user.id) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NO_PERMISSION_DRAFT, 'User has no permission to delete this invoice.');
+                draftIds.push(id);
+            } else {
+                confirmedIds.push(id);
+            }
         }
 
-        // Delete the invoice.
-        await this.dataSource.transaction((manager) => this.importInvoiceRepository.deleteDraftImportInvoice(ids, manager));
+        // Delete the invoices.
+        await this.dataSource.transaction(async (manager) => {
+            await this.importInvoiceRepository.deleteDraftImportInvoice(draftIds, manager);
+            await this.importInvoiceRepository.softDeleteImportInvoices(confirmedIds, manager);
+        });
         return true;
     }
 

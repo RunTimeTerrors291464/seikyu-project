@@ -58,7 +58,8 @@ export class ImportInvoiceRepository {
         const queryBuilder = repo
             .createQueryBuilder('invoice')
             .leftJoinAndSelect('invoice.importInvoiceProducts', 'products')
-            .where('invoice.id = :id', { id });
+            .where('invoice.id = :id', { id })
+            .andWhere('invoice.isDeleted = false');
         this.appendDraftAndConfirmedUserJoins(queryBuilder);
         return queryBuilder.getOne();
     }
@@ -259,8 +260,18 @@ export class ImportInvoiceRepository {
     // Get import invoices by ids.
     async getImportInvoicesByIds(ids: string[]): Promise<ImportInvoiceEntity[]> {
         return await this.importInvoiceRepository.find({
-            where: { id: In(ids) },
+            where: { id: In(ids), isDeleted: false },
         });
+    }
+
+    // Soft delete import invoices. The rows stay in the database but are hidden from every read
+    // path, together with their return import invoices. There is no endpoint to restore them.
+    async softDeleteImportInvoices(ids: string[], manager: EntityManager): Promise<boolean> {
+        if (ids.length === 0) return true;
+
+        await manager.update(ImportInvoiceEntity, { id: In(ids) }, { isDeleted: true });
+
+        return true;
     }
 
     // Get a list of import invoices.
@@ -273,6 +284,9 @@ export class ImportInvoiceRepository {
         const qb = this.importInvoiceRepository.createQueryBuilder('invoice');
 
         // --- 1. FILTER ---
+        // Soft deleted invoices are never listed and cannot be opted back in.
+        qb.andWhere('invoice.isDeleted = false');
+
         if (status !== undefined) {
             qb.andWhere('invoice.status = :status', { status });
         }

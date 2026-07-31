@@ -57,7 +57,8 @@ export class StockAdjustmentInvoiceRepository {
         const queryBuilder = repo
             .createQueryBuilder('invoice')
             .leftJoinAndSelect('invoice.stockAdjustmentInvoiceProducts', 'products')
-            .where('invoice.id = :id', { id });
+            .where('invoice.id = :id', { id })
+            .andWhere('invoice.isDeleted = false');
         this.appendDraftAndConfirmedUserJoins(queryBuilder);
         return queryBuilder.getOne();
     }
@@ -275,8 +276,18 @@ export class StockAdjustmentInvoiceRepository {
     async getStockAdjustmentInvoicesByIds(ids: string[]): Promise<StockAdjustmentInvoiceEntity[]> {
         if (ids.length === 0) return [];
         return this.stockAdjustmentInvoiceRepository.find({
-            where: { id: In(ids) },
+            where: { id: In(ids), isDeleted: false },
         });
+    }
+
+    // Soft delete stock adjustment invoices. The rows stay in the database but are hidden from
+    // every read path. There is no endpoint to restore them.
+    async softDeleteStockAdjustmentInvoices(ids: string[], manager: EntityManager): Promise<boolean> {
+        if (ids.length === 0) return true;
+
+        await manager.update(StockAdjustmentInvoiceEntity, { id: In(ids) }, { isDeleted: true });
+
+        return true;
     }
 
     // Get a list of stock adjustment invoices.
@@ -289,6 +300,9 @@ export class StockAdjustmentInvoiceRepository {
         const qb = this.stockAdjustmentInvoiceRepository.createQueryBuilder('invoice');
 
         // --- 1. FILTER ---
+        // Soft deleted invoices are never listed and cannot be opted back in.
+        qb.andWhere('invoice.isDeleted = false');
+
         if (status !== undefined) {
             qb.andWhere('invoice.status = :status', { status });
         }

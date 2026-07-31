@@ -124,19 +124,30 @@ export class StockAdjustmentInvoiceService {
         return this.stockAdjustmentInvoicesMapper.toStockAdjustmentInvoiceResponseDto(savedInvoice);
     }
 
-    // Delete draft stock adjustment invoices.
+    // Delete stock adjustment invoices.
+    // Draft invoices are removed permanently; confirmed ones are soft deleted and cannot be restored.
     @HandleServiceError(ErrorCode.DELETE_DRAFT_STOCK_ADJUSTMENT_INVOICE_SERVICE)
-    async deleteDraftStockAdjustmentInvoice(ids: string[], user: AccessTokenPayload): Promise<boolean> {
+    async deleteStockAdjustmentInvoices(ids: string[], user: AccessTokenPayload): Promise<boolean> {
+
+        const draftIds: string[] = [];
+        const confirmedIds: string[] = [];
 
         // Loop through IDs.
         for (const id of ids) {
             const invoice = await this.getStockAdjustmentInvoiceByIdOrThrow(id);
 
-            if (invoice.status !== StockAdjustmentInvoiceStatus.DRAFT) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NOT_DRAFT, 'Stock adjustment invoice is not in draft status.');
-            if (invoice.draftBy !== user.id) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NO_PERMISSION_DRAFT, 'User has no permission to delete this invoice.');
+            if (invoice.status === StockAdjustmentInvoiceStatus.DRAFT) {
+                if (invoice.draftBy !== user.id) throw new CustomException(HttpStatus.BAD_REQUEST, ErrorCode.INVOICE_NO_PERMISSION_DRAFT, 'User has no permission to delete this invoice.');
+                draftIds.push(id);
+            } else {
+                confirmedIds.push(id);
+            }
         }
 
-        await this.dataSource.transaction((manager) => this.stockAdjustmentInvoiceRepository.deleteDraftStockAdjustmentInvoice(ids, manager));
+        await this.dataSource.transaction(async (manager) => {
+            await this.stockAdjustmentInvoiceRepository.deleteDraftStockAdjustmentInvoice(draftIds, manager);
+            await this.stockAdjustmentInvoiceRepository.softDeleteStockAdjustmentInvoices(confirmedIds, manager);
+        });
         return true;
     }
 

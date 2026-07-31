@@ -47,6 +47,10 @@ export class ImportInvoiceEntity {
     @Column({ name: 'confirmed_at', type: 'timestamp', nullable: true })
     confirmedAt: Date | null;
 
+    // Soft delete flag. Deleted invoices are hidden from every read path and cannot be restored.
+    @Column({ name: 'is_deleted', type: 'boolean', default: false })
+    isDeleted: boolean;
+
     @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
     createdAt: Date;
 

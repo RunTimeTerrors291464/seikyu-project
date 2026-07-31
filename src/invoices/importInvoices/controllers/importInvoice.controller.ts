@@ -71,19 +71,19 @@ export class ImportInvoiceController {
         return await this.importInvoiceService.editDraftImportInvoice(dto, user);
     }
 
-    // Delete draft import invoices.
+    // Delete import invoices (drafts permanently, confirmed ones hidden).
     // DELETE /api/v2/invoices/import
     @Delete()
     @Roles(Role.MANAGER)
-    @ApiOperation({ summary: '[MANAGER] Delete draft import invoices' })
+    @ApiOperation({ summary: '[MANAGER] Delete import invoices. Drafts are removed permanently; confirmed invoices are hidden together with their return import invoices and cannot be restored.' })
     @ApiBody({ type: DeleteDraftImportInvoicesRequestDto })
-    @ApiResponse({ status: 200, description: 'The draft import invoices have been deleted successfully.' })
+    @ApiResponse({ status: 200, description: 'The import invoices have been deleted successfully.' })
     @HttpCode(HttpStatus.OK)
-    async deleteDraftImportInvoice(
+    async deleteImportInvoices(
         @Body() body: DeleteDraftImportInvoicesRequestDto,
         @CurrentUser() user: AccessTokenPayload,
     ): Promise<boolean> {
-        return await this.importInvoiceService.deleteDraftImportInvoice(body.ids, user);
+        return await this.importInvoiceService.deleteImportInvoices(body.ids, user);
     }
 
     // Confirm a draft import invoice.

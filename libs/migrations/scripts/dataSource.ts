@@ -22,6 +22,9 @@ export default new DataSource({
     database: process.env.DB_DATABASE,
     entities: [],
     migrations: [path.join(__dirname, '../src/*.{ts,js}')],
+    // One transaction per migration instead of a single transaction wrapping all of them, so a
+    // migration can opt out with `transaction = false` and run CREATE INDEX CONCURRENTLY.
+    migrationsTransactionMode: 'each',
     synchronize: false,
     logging: true,
     ssl: sslOptions,

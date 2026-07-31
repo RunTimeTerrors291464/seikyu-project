@@ -68,7 +68,8 @@ export class ReturnImportInvoiceRepository {
             .leftJoinAndSelect('invoice.returnImportInvoiceProducts', 'products')
             .leftJoinAndSelect('products.importInvoiceProduct', 'importInvoiceProduct')
             .leftJoinAndSelect('invoice.importInvoice', 'importInvoice')
-            .where('invoice.id = :id', { id });
+            .where('invoice.id = :id', { id })
+            .andWhere('importInvoice.isDeleted = false');
         this.appendDraftAndConfirmedUserJoins(queryBuilder);
         return queryBuilder.getOne();
     }
@@ -268,6 +269,10 @@ export class ReturnImportInvoiceRepository {
         // Ensure the return belongs to this import invoice.
         if (lockedReturn.importInvoiceId !== lockedImport.id) return null;
 
+        // Re-check under the row lock: the import invoice may have been soft deleted between the
+        // service reading it and this transaction acquiring the lock.
+        if (lockedImport.isDeleted) return null;
+
         // Load return lines with import product FK - ReturnImportInvoiceProductsEntity.
         let lines = lockedReturn.returnImportInvoiceProducts;
         const mustLoadLines = !lines?.length || !lines[0].importInvoiceProduct;
@@ -362,6 +367,10 @@ export class ReturnImportInvoiceRepository {
         qb.leftJoin('invoice.importInvoice', 'importInv');
 
         // --- 1. FILTER ---
+        // Return invoices have no soft delete flag of their own: they are hidden as soon as their
+        // original import invoice is soft deleted.
+        qb.andWhere('importInv.isDeleted = false');
+
         if (status !== undefined) {
             qb.andWhere('invoice.status = :status', { status });
         }

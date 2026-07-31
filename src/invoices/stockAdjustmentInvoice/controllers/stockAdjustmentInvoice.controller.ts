@@ -71,19 +71,19 @@ export class StockAdjustmentInvoiceController {
         return await this.stockAdjustmentInvoiceService.editDraftStockAdjustmentInvoice(dto, user);
     }
 
-    // Delete draft stock adjustment invoices.
+    // Delete stock adjustment invoices (drafts permanently, confirmed ones hidden).
     // DELETE /api/v2/invoices/stock-adjustment
     @Delete()
     @Roles(Role.MANAGER)
-    @ApiOperation({ summary: '[MANAGER] Delete draft stock adjustment invoices' })
+    @ApiOperation({ summary: '[MANAGER] Delete stock adjustment invoices. Drafts are removed permanently; confirmed invoices are hidden and cannot be restored.' })
     @ApiBody({ type: DeleteDraftStockAdjustmentInvoicesRequestDto })
-    @ApiResponse({ status: 200, description: 'The draft stock adjustment invoices have been deleted successfully.' })
+    @ApiResponse({ status: 200, description: 'The stock adjustment invoices have been deleted successfully.' })
     @HttpCode(HttpStatus.OK)
-    async deleteDraftStockAdjustmentInvoice(
+    async deleteStockAdjustmentInvoices(
         @Body() body: DeleteDraftStockAdjustmentInvoicesRequestDto,
         @CurrentUser() user: AccessTokenPayload,
     ): Promise<boolean> {
-        await this.stockAdjustmentInvoiceService.deleteDraftStockAdjustmentInvoice(body.ids, user);
+        await this.stockAdjustmentInvoiceService.deleteStockAdjustmentInvoices(body.ids, user);
         return true;
     }
 

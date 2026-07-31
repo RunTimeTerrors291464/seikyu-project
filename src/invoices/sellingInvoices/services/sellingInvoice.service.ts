@@ -122,6 +122,24 @@ export class SellingInvoiceService {
         return this.sellingInvoicesMapper.toSellingInvoiceResponseDto(savedInvoice);
     }
 
+    // Delete selling invoices.
+    // Selling invoices are always confirmed on creation, so they are only ever soft deleted, which
+    // also hides their return selling invoices. Soft deleted invoices cannot be restored.
+    @HandleServiceError(ErrorCode.DELETE_SELLING_INVOICE_SERVICE)
+    async deleteSellingInvoices(ids: string[]): Promise<boolean> {
+
+        // Loop through IDs to make sure they all exist and are not already deleted.
+        for (const id of ids) {
+            await this.getInvoiceById(id);
+        }
+
+        // Soft delete the invoices.
+        await this.dataSource.transaction((manager) =>
+            this.sellingInvoiceRepository.softDeleteSellingInvoices(ids, manager),
+        );
+        return true;
+    }
+
     // Get selling invoice by ID.
     @HandleServiceError(ErrorCode.GET_SELLING_INVOICE_BY_ID_SERVICE)
     async getSellingInvoiceById(id: string): Promise<SellingInvoiceResponseDto> {

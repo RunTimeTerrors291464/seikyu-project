@@ -285,7 +285,7 @@ export class GetListOfStockAdjustmentInvoiceRequestDto {
 
 export class DeleteDraftStockAdjustmentInvoicesRequestDto {
     @ApiProperty({
-        description: 'Draft stock adjustment invoice UUIDs to delete',
+        description: 'Stock adjustment invoice UUIDs to delete. Drafts are removed permanently; confirmed invoices are hidden and cannot be restored.',
         type: [String],
         maxItems: 100,
         example: ['550e8400-e29b-41d4-a716-446655440000'],

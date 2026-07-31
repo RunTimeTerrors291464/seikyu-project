@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
 
 // Import swagger.
 import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
@@ -22,6 +22,7 @@ import { SellingInvoiceService } from '../services/sellingInvoice.service';
 import {
     CreateSellingInvoiceRequestDto,
     GetListOfSellingInvoiceRequestDto,
+    DeleteSellingInvoicesRequestDto,
 } from '@libs/common/dtos/invoices/sellingInvoices/crudSellingInvoicesRequest.dto';
 import {
     SellingInvoiceResponseDto,
@@ -54,11 +55,23 @@ export class SellingInvoiceController {
         return await this.sellingInvoiceService.createSellingInvoice(dto, user);
     }
 
+    // Delete selling invoices (hidden, never removed).
+    // DELETE /api/v2/invoices/selling
+    @Delete()
+    @Roles(Role.MANAGER)
+    @ApiOperation({ summary: '[MANAGER] Delete selling invoices. They are hidden together with their return selling invoices and cannot be restored.' })
+    @ApiBody({ type: DeleteSellingInvoicesRequestDto })
+    @ApiResponse({ status: 200, description: 'The selling invoices have been deleted successfully.' })
+    @HttpCode(HttpStatus.OK)
+    async deleteSellingInvoices(@Body() body: DeleteSellingInvoicesRequestDto): Promise<boolean> {
+        return await this.sellingInvoiceService.deleteSellingInvoices(body.ids);
+    }
+
     // Get a list of selling invoices.
     // GET /api/v2/invoices/selling
     @Get()
-    @Roles(Role.MANAGER, Role.CASHIER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER, CASHIER, ADMIN] Get a list of selling invoices' })
+    @Roles(Role.MANAGER, Role.ADMIN)
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a list of selling invoices' })
     @ApiResponse({ status: 200, description: 'A list of selling invoices has been retrieved successfully.', type: GetListOfSellingInvoicesResponseDto })
     @HttpCode(HttpStatus.OK)
     async getListOfSellingInvoices(@Query() dto: GetListOfSellingInvoiceRequestDto): Promise<GetListOfSellingInvoicesResponseDto> {
@@ -68,8 +81,8 @@ export class SellingInvoiceController {
     // Get a selling invoice by ID.
     // GET /api/v2/invoices/selling/:id
     @Get(':id')
-    @Roles(Role.MANAGER, Role.CASHIER, Role.ADMIN)
-    @ApiOperation({ summary: '[MANAGER, CASHIER, ADMIN] Get a selling invoice by ID' })
+    @Roles(Role.MANAGER, Role.ADMIN)
+    @ApiOperation({ summary: '[MANAGER, ADMIN] Get a selling invoice by ID' })
     @ApiParam({ name: 'id', description: 'The UUID of the selling invoice', example: '550e8400-e29b-41d4-a716-446655440000' })
     @ApiResponse({ status: 200, description: 'A selling invoice has been retrieved successfully.', type: SellingInvoiceResponseDto })
     @HttpCode(HttpStatus.OK)
