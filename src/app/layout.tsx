@@ -8,6 +8,8 @@ import { DictProvider } from "@/lib/lang/DictProvider";
 import { getDictionary, type Lang } from "@/lib/lang/i18n";
 
 import AuthProvider from "@/components/layout/AuthProvider";
+import { FeatureFlagsProvider } from "@/lib/config/FeatureFlagsProvider";
+import { isCashierInvoiceHideEnabled } from "@/lib/config/featureFlags";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ export default async function RootLayout({
   const lang = (cookieStore.get("lang")?.value || "en") as Lang;
 
   const dict = getDictionary(lang);
+  const cashierInvoiceHide = isCashierInvoiceHideEnabled();
 
   return (
     <html lang={lang} suppressHydrationWarning>
@@ -35,12 +38,14 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DictProvider dict={dict} lang={lang}>
-            <AuthProvider>
-              <LayoutWrapper>{children}</LayoutWrapper>
-            </AuthProvider>
-            <Toaster richColors position="top-right" />
-          </DictProvider>
+          <FeatureFlagsProvider cashierInvoiceHide={cashierInvoiceHide}>
+            <DictProvider dict={dict} lang={lang}>
+              <AuthProvider>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </AuthProvider>
+              <Toaster richColors position="top-right" />
+            </DictProvider>
+          </FeatureFlagsProvider>
         </ThemeProvider>
       </body>
     </html>

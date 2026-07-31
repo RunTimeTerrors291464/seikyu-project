@@ -182,7 +182,7 @@ export async function confirmImportInvoice(
   return response.data;
 }
 
-export async function deleteImportInvoiceDrafts(
+export async function deleteImportInvoices(
   ids: string[],
 ): Promise<void> {
   await apiClient.delete("/invoices/import", {
@@ -190,3 +190,6 @@ export async function deleteImportInvoiceDrafts(
   });
   clearProductSkuLookupCache();
 }
+
+/** Backward-compatible detail-page name; the endpoint now accepts every invoice status. */
+export const deleteImportInvoiceDrafts = deleteImportInvoices;

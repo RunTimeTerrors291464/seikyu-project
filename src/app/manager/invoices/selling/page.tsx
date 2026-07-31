@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo, useState } from "react";
 
+import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
+import BulkDeleteInvoicesPopup from "@/features/invoices/components/BulkDeleteInvoicesPopup";
 import InvoiceListExpandedReturnsPanel from "@/features/invoices/components/InvoiceListExpandedReturnsPanel";
 import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
@@ -23,21 +25,41 @@ import {
   SellingInvoiceRow,
   useSellingInvoices,
 } from "@/features/invoices/hooks/useSellingInvoices";
+import { useInvoiceListSelection } from "@/features/invoices/hooks/useInvoiceListSelection";
+import AddSellingInvoicePopup from "@/features/invoices/layout/AddSellingInvoicePopup";
 import type { ReturnSellingInvoiceWithoutProductsDto } from "@/features/invoices/services/returnSellingInvoice.service";
-import { getReturnSellingInvoiceList } from "@/features/invoices/services/returnSellingInvoice.service";
+import {
+  deleteReturnSellingDrafts,
+  getReturnSellingInvoiceList,
+} from "@/features/invoices/services/returnSellingInvoice.service";
 import type { SellingInvoiceStatus } from "@/features/invoices/services/sellingInvoice.service";
+import { deleteSellingInvoices } from "@/features/invoices/services/sellingInvoice.service";
+import { invoiceListSelectionColumn } from "@/features/invoices/table/invoiceListSelectionColumn";
 import { returnSellingInvoiceListColumns } from "@/features/invoices/table/returnSellingInvoiceListColumns";
 import { sellingInvoiceColumns } from "@/features/invoices/table/sellingInvoiceColumns";
 import type { Accent } from "@/components/types/ui";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
+import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
 import { useDict } from "@/lib/lang/DictProvider";
-import { Hash, Package, User as UserIcon } from "lucide-react";
+import {
+  UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+  UNIVERSAL_NEW_SHORTCUT_CHORD,
+  UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+  UNIVERSAL_NEW_SHORTCUT_ID,
+} from "@/lib/shortcuts/universalShortcut";
+import useShortcut from "@/lib/shortcuts/useShortcut";
+import { Hash, Package, Plus, Trash2, User as UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const RETURN_CHILDREN_LIMIT = 100;
 const DEFAULT_SORT_BY = "confirmedAt" as const;
 const DEFAULT_SEARCH_RULE = "invoiceId" as const;
 
 export default function ManagerSellingInvoicesPage() {
+  const router = useRouter();
   const dict = useDict();
+  const canManage = useMayUseManagerWorkflowControls();
   const listBase = useInvoiceListPageBase();
   const [searchRule, setSearchRule] = useState<
     "invoiceId" | "userId" | "productId"
@@ -46,6 +68,11 @@ export default function ManagerSellingInvoicesPage() {
     useState<SellingInvoiceStatusFilter>("all");
   const [taxFocusFilter, setTaxFocusFilter] =
     useState<SellingInvoiceTaxFocusFilter>("all");
+  const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
+  const [deletePopupOpen, setDeletePopupOpen] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const sellingSelection = useInvoiceListSelection();
+  const returnSelection = useInvoiceListSelection();
   const { sortBy, sortOrder, handleSort, resetSort, isDefaultSort } =
     useInvoiceListSort(
       DEFAULT_SORT_BY,
@@ -61,25 +88,43 @@ export default function ManagerSellingInvoicesPage() {
     isDefaultReturnSort,
   } = useReturnChildSort("createdAt", "desc");
 
-  const columns = useMemo(
-    () =>
-      sellingInvoiceColumns(dict, {
-        detailBasePath: "/manager/invoices/selling",
-        pagination: { page: listBase.page, rowsPerPage: listBase.rowsPerPage },
-      }),
-    [dict, listBase.page, listBase.rowsPerPage],
-  );
   const returnColumns = useMemo(
-    () =>
-      returnSellingInvoiceListColumns(
+    function buildReturnColumns() {
+      const baseColumns = returnSellingInvoiceListColumns(
         dict,
         {
           page: 1,
           rowsPerPage: RETURN_CHILDREN_LIMIT,
         },
         false,
-      ),
-    [dict],
+      );
+
+      if (!canManage) {
+        return baseColumns;
+      }
+
+      return [
+        invoiceListSelectionColumn<ReturnSellingInvoiceWithoutProductsDto>({
+          dict,
+          rows: [],
+          selectedIds: returnSelection.selectedIds,
+          getRowId: (row) => row.id,
+          onToggleOne: returnSelection.toggleOne,
+          onToggleMany: returnSelection.toggleMany,
+          isRowSelectable: (row) => row.status === "draft",
+          getDisabledReason: () => dict.onlyDraftReturnInvoicesCanBeDeleted,
+          showSelectAll: false,
+        }),
+        ...baseColumns,
+      ];
+    },
+    [
+      canManage,
+      dict,
+      returnSelection.selectedIds,
+      returnSelection.toggleMany,
+      returnSelection.toggleOne,
+    ],
   );
   const statusOptions = useMemo(
     function buildStatusOptions() {
@@ -98,7 +143,7 @@ export default function ManagerSellingInvoicesPage() {
     [dict],
   );
 
-  const { rows, total, loading, error } = useSellingInvoices({
+  const { rows, total, loading, error, refetch } = useSellingInvoices({
     page: listBase.page,
     limit: listBase.rowsPerPage,
     search: listBase.search || undefined,
@@ -110,6 +155,41 @@ export default function ManagerSellingInvoicesPage() {
     fromDate: listBase.listDateRange.fromDate,
     toDate: listBase.listDateRange.toDate,
   });
+
+  const columns = useMemo(
+    function buildColumns() {
+      const baseColumns = sellingInvoiceColumns(dict, {
+        detailBasePath: "/manager/invoices/selling",
+        pagination: { page: listBase.page, rowsPerPage: listBase.rowsPerPage },
+      });
+
+      if (!canManage) {
+        return baseColumns;
+      }
+
+      return [
+        invoiceListSelectionColumn<SellingInvoiceRow>({
+          dict,
+          rows,
+          selectedIds: sellingSelection.selectedIds,
+          getRowId: (row) => row.id,
+          onToggleOne: sellingSelection.toggleOne,
+          onToggleMany: sellingSelection.toggleMany,
+        }),
+        ...baseColumns,
+      ];
+    },
+    [
+      canManage,
+      dict,
+      listBase.page,
+      listBase.rowsPerPage,
+      rows,
+      sellingSelection.selectedIds,
+      sellingSelection.toggleMany,
+      sellingSelection.toggleOne,
+    ],
+  );
 
   const fetchReturnChildren = useCallback(async function fetchReturnChildren(
     invoiceNumber: string,
@@ -133,7 +213,25 @@ export default function ManagerSellingInvoicesPage() {
     fetchChildren: fetchReturnChildren,
   });
 
+  const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
+    _event: KeyboardEvent,
+  ): void {
+    void _event;
+    setAddInvoicePopupOpen(true);
+  }, []);
+
+  useShortcut({
+    id: UNIVERSAL_NEW_SHORTCUT_ID,
+    chord: UNIVERSAL_NEW_SHORTCUT_CHORD,
+    label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
+    handler: handleUniversalNewShortcut,
+    allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
+    enabled: canManage && !addInvoicePopupOpen && !deletePopupOpen,
+  });
+
   const totalPages = total === 0 ? 1 : Math.ceil(total / listBase.rowsPerPage);
+  const selectedCount =
+    sellingSelection.selectedIds.size + returnSelection.selectedIds.size;
   const isResetFilterDisabled =
     listBase.search.length === 0 &&
     searchRule === DEFAULT_SEARCH_RULE &&
@@ -156,6 +254,45 @@ export default function ManagerSellingInvoicesPage() {
     listBase.resetPagination();
     returnExpansion.resetExpansion();
     listBase.resetRuleInput();
+  }
+
+  async function handleDeleteSelectedInvoices(): Promise<void> {
+    if (selectedCount === 0) {
+      return;
+    }
+
+    const deletedCount = selectedCount;
+    let deletedAny = false;
+    setDeleting(true);
+
+    try {
+      const returnIds = Array.from(returnSelection.selectedIds);
+      if (returnIds.length > 0) {
+        await deleteReturnSellingDrafts(returnIds);
+        returnSelection.clearSelection();
+        deletedAny = true;
+      }
+
+      const sellingIds = Array.from(sellingSelection.selectedIds);
+      if (sellingIds.length > 0) {
+        await deleteSellingInvoices(sellingIds);
+        sellingSelection.clearSelection();
+        deletedAny = true;
+      }
+
+      setDeletePopupOpen(false);
+      toast.success(
+        dict.invoiceDeleteSuccess.replace("{count}", String(deletedCount)),
+      );
+    } catch (deleteError) {
+      toast.error(resolveApiErrorMessage(deleteError, dict));
+    } finally {
+      if (deletedAny) {
+        returnExpansion.resetExpansion();
+        void refetch();
+      }
+      setDeleting(false);
+    }
   }
 
   return (
@@ -200,6 +337,34 @@ export default function ManagerSellingInvoicesPage() {
       }}
       onResetFilters={handleResetFilters}
       isResetFilterDisabled={isResetFilterDisabled}
+      toolbarActions={
+        canManage ? (
+          <>
+            {selectedCount > 0 ? (
+              <Button
+                icon={<Trash2 className="h-3.5 w-3.5" />}
+                accent="danger"
+                size="sm"
+                onClick={function openDeletePopup(): void {
+                  setDeletePopupOpen(true);
+                }}
+              >
+                {dict.deleteSelected} ({selectedCount})
+              </Button>
+            ) : null}
+            <Button
+              icon={<Plus className="h-3.5 w-3.5" />}
+              accent="primary"
+              size="sm"
+              onClick={function openCreatePopup(): void {
+                setAddInvoicePopupOpen(true);
+              }}
+            >
+              {dict.createNewSellingInvoice}
+            </Button>
+          </>
+        ) : null
+      }
       filterGroups={
         <>
           <ListFilterSelectGroup
@@ -258,7 +423,7 @@ export default function ManagerSellingInvoicesPage() {
       onPageChange={listBase.setPage}
       totalResults={total}
       tableProps={{
-        expansionAfterColumnCount: 1,
+        expansionAfterColumnCount: canManage ? 2 : 1,
         expandedRowIds: returnExpansion.expandedRowIds,
         onToggleExpandRow: returnExpansion.handleToggleExpandRow,
         canExpandRow: (row) => row.returnCount > 0,
@@ -288,6 +453,33 @@ export default function ManagerSellingInvoicesPage() {
           );
         },
       }}
+      footer={
+        canManage ? (
+          <>
+            <BulkDeleteInvoicesPopup
+              open={deletePopupOpen}
+              selectedCount={selectedCount}
+              loading={deleting}
+              onClose={function closeDeletePopup(): void {
+                if (!deleting) {
+                  setDeletePopupOpen(false);
+                }
+              }}
+              onConfirm={handleDeleteSelectedInvoices}
+            />
+            <AddSellingInvoicePopup
+              open={addInvoicePopupOpen}
+              onClose={function closeCreatePopup(): void {
+                setAddInvoicePopupOpen(false);
+              }}
+              onCreated={function navigateToCreatedInvoice(invoiceId): void {
+                void refetch();
+                router.push(`/manager/invoices/selling/${invoiceId}`);
+              }}
+            />
+          </>
+        ) : null
+      }
     />
   );
 }

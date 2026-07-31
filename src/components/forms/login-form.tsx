@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Lock, LogIn, User } from "lucide-react";
 
 import { resolveApiErrorMessage } from "@/lib/api/errors";
+import { useFeatureFlags } from "@/lib/config/FeatureFlagsProvider";
 import { useDict } from "@/lib/lang/DictProvider";
 import type { Dictionary } from "@/lib/lang/i18n";
 
@@ -31,6 +32,7 @@ function createLoginSchema(dict: Dictionary) {
 
 export default function LoginForm() {
   const dict = useDict();
+  const { cashierInvoiceHide } = useFeatureFlags();
   const router = useRouter();
   const loginStore = useAuthStore((s) => s.login);
 
@@ -66,7 +68,10 @@ export default function LoginForm() {
         return;
       }
 
-      const home = defaultHomePathForRoles(signedInUser.roles);
+      const home = defaultHomePathForRoles(
+        signedInUser.roles,
+        cashierInvoiceHide,
+      );
 
       router.push(home);
 

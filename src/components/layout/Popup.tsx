@@ -70,6 +70,7 @@ type Props = {
   cancelText: string;
 
   loading?: boolean;
+  confirmDisabled?: boolean;
 
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
@@ -88,6 +89,7 @@ export function ConfirmPopup({
   confirmText,
   cancelText,
   loading,
+  confirmDisabled,
   onConfirm,
   onClose,
   icon,
@@ -104,7 +106,7 @@ export function ConfirmPopup({
     }
   }
 
-  useConfirmPopupKeyboard(open, loading, handleConfirm);
+  useConfirmPopupKeyboard(open, loading || confirmDisabled, handleConfirm);
 
   return (
     <Popup open={open} onClose={onClose} backdropBlur={backdropBlur}>
@@ -149,7 +151,7 @@ export function ConfirmPopup({
 
           <Button
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={loading || confirmDisabled}
             accent={accent === "danger" ? "danger" : "primary"}
           >
             {loading ? "..." : confirmText}
@@ -168,6 +170,7 @@ type DeletePopupProps = {
   confirmText: string;
   cancelText: string;
   loading?: boolean;
+  confirmDisabled?: boolean;
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
   icon?: ReactNode;
@@ -182,6 +185,7 @@ export function DeletePopup({
   confirmText,
   cancelText,
   loading,
+  confirmDisabled,
   onConfirm,
   onClose,
   icon,
@@ -196,6 +200,7 @@ export function DeletePopup({
       confirmText={confirmText}
       cancelText={cancelText}
       loading={loading}
+      confirmDisabled={confirmDisabled}
       onConfirm={onConfirm}
       onClose={onClose}
       icon={icon}

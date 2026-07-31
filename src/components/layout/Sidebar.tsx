@@ -12,6 +12,7 @@ import {
   effectiveRolesForSidebarNav,
   userHasAnyRole,
 } from "@/lib/auth/authUser";
+import { useFeatureFlags } from "@/lib/config/FeatureFlagsProvider";
 import { useDict } from "@/lib/lang/DictProvider";
 import { useAuthStore } from "@/stores/auth.store";
 import clsx from "clsx";
@@ -61,6 +62,7 @@ type SidebarProps = {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const dict = useDict();
+  const { cashierInvoiceHide } = useFeatureFlags();
   const authUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
@@ -87,7 +89,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       defaultOpen: false,
       requiredRoles: [USER_ROLE_CASHIER],
       items: [
-        { href: "/cashier/selling", label: dict.salesInvoices, icon: <ReceiptText className="h-4 w-4" /> },
+        {
+          href: cashierInvoiceHide
+            ? "/cashier/new-selling"
+            : "/cashier/selling",
+          label: cashierInvoiceHide
+            ? dict.createNewSellingInvoice
+            : dict.salesInvoices,
+          icon: <ReceiptText className="h-4 w-4" />,
+        },
         // { href: "/cashier/selling/report", label: dict.report, icon: <FileText className="h-4 w-4" />, disabled: true },
       ],
     },

@@ -33,7 +33,9 @@ describe("normalizeAuthUser", () => {
 
 describe("defaultHomePathForRoles", () => {
   it("prefers admin, then manager, then cashier", () => {
-    expect(defaultHomePathForRoles([USER_ROLE_CASHIER])).toBe("/cashier/selling");
+    expect(defaultHomePathForRoles([USER_ROLE_CASHIER])).toBe(
+      "/cashier/new-selling",
+    );
     expect(defaultHomePathForRoles([USER_ROLE_MANAGER])).toBe(
       "/manager/product-inventory",
     );
@@ -45,6 +47,12 @@ describe("defaultHomePathForRoles", () => {
         USER_ROLE_ADMIN,
       ]),
     ).toBe("/admin/dashboard");
+  });
+
+  it("restores the cashier invoice list when the feature flag is disabled", () => {
+    expect(defaultHomePathForRoles([USER_ROLE_CASHIER], false)).toBe(
+      "/cashier/selling",
+    );
   });
 });
 

@@ -105,10 +105,10 @@ export type ProductStatusFilter =
 
 // Helper
 
-export function formatDate(value: string) {
+export function formatDate(value: string, locale?: string) {
   const date = new Date(value);
 
   if (isNaN(date.getTime())) return value;
 
-  return date.toLocaleDateString();
+  return date.toLocaleDateString(locale);
 }

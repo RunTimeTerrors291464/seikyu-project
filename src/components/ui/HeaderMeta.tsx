@@ -3,7 +3,15 @@
 import clsx from "clsx";
 import { Clock } from "lucide-react";
 import React from "react";
+import { useUiLang } from "@/lib/lang/DictProvider";
+import type { Lang } from "@/lib/lang/i18n";
 import { ACCENT_STYLES, formatDate, type Accent } from "../types/ui";
+
+const DATE_LOCALE_BY_LANG: Record<Lang, string> = {
+  en: "en-US",
+  vi: "vi-VN",
+  hu: "hu-HU",
+};
 
 type HeaderMetaProps = {
   label: string;
@@ -22,8 +30,12 @@ export function HeaderMeta({
   accent = "neutral",
   format = "date",
 }: HeaderMetaProps) {
+  const lang = useUiLang();
   const isClickable = !!onClick;
-  const displayValue = format === "date" ? formatDate(value) : value;
+  const displayValue =
+    format === "date"
+      ? formatDate(value, DATE_LOCALE_BY_LANG[lang])
+      : value;
 
   return (
     <div

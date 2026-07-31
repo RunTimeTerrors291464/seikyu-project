@@ -67,12 +67,12 @@ export default function buildAddExistingProductsColumns(
       icon: (
         <input
           type="checkbox"
-            checked={allSelectableChecked}
-            onChange={function handleToggleAll(event): void {
-              onToggleVisibleProductSelection(
-                selectableRows,
-                event.target.checked,
-              );
+          checked={allSelectableChecked}
+          onChange={function handleToggleAll(event): void {
+            onToggleVisibleProductSelection(
+              selectableRows,
+              event.target.checked,
+            );
           }}
           className="h-4 w-4 rounded border-border"
           disabled={selectableRows.length === 0}
@@ -100,8 +100,8 @@ export default function buildAddExistingProductsColumns(
           />
         );
       },
-      thClassName: "w-[46px]",
-      tdClassName: "w-[46px]",
+      thClassName: "w-8",
+      tdClassName: "w-8",
     },
     {
       id: "sku",

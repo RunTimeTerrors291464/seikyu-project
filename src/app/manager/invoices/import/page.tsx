@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
+import BulkDeleteInvoicesPopup from "@/features/invoices/components/BulkDeleteInvoicesPopup";
 import InvoiceListExpandedReturnsPanel from "@/features/invoices/components/InvoiceListExpandedReturnsPanel";
 import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
@@ -16,6 +17,7 @@ import {
   ImportInvoiceRow,
   useImportInvoices,
 } from "@/features/invoices/hooks/useImportInvoices";
+import { useInvoiceListSelection } from "@/features/invoices/hooks/useInvoiceListSelection";
 import {
   useInvoiceListPageBase,
   useInvoiceListSort,
@@ -27,11 +29,17 @@ import type {
   ImportInvoiceListSortBy,
   ImportInvoiceStatus,
 } from "@/features/invoices/services/importInvoice.service";
+import { deleteImportInvoices } from "@/features/invoices/services/importInvoice.service";
 import type { ReturnImportInvoiceWithoutProductsDto } from "@/features/invoices/services/returnImportInvoice.service";
-import { getReturnImportInvoiceList } from "@/features/invoices/services/returnImportInvoice.service";
+import {
+  deleteReturnImportDrafts,
+  getReturnImportInvoiceList,
+} from "@/features/invoices/services/returnImportInvoice.service";
 import { importInvoiceColumns } from "@/features/invoices/table/importInvoiceColumns";
+import { invoiceListSelectionColumn } from "@/features/invoices/table/invoiceListSelectionColumn";
 import { returnImportInvoiceListColumns } from "@/features/invoices/table/returnImportInvoiceListColumns";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
   UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
@@ -41,8 +49,9 @@ import {
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
 import type { Accent } from "@/components/types/ui";
-import { Hash, Plus, User as UserIcon } from "lucide-react";
+import { Hash, Plus, Trash2, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const RETURN_CHILDREN_LIMIT = 100;
 const DEFAULT_SORT_BY: ImportInvoiceListSortBy = "createdAt";
@@ -59,6 +68,10 @@ export default function ImportInvoicesListPage() {
   const [statusFilter, setStatusFilter] =
     useState<ImportInvoiceStatusFilter>("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
+  const [deletePopupOpen, setDeletePopupOpen] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const importSelection = useInvoiceListSelection();
+  const returnSelection = useInvoiceListSelection();
   const { sortBy, sortOrder, handleSort, resetSort, isDefaultSort } =
     useInvoiceListSort(
       DEFAULT_SORT_BY,
@@ -80,25 +93,43 @@ export default function ImportInvoicesListPage() {
     isDefaultReturnSort,
   } = useReturnChildSort("createdAt", "desc");
 
-  const columns = useMemo(
-    () =>
-      importInvoiceColumns(dict, {
-        page: listBase.page,
-        rowsPerPage: listBase.rowsPerPage,
-      }),
-    [dict, listBase.page, listBase.rowsPerPage],
-  );
   const returnColumns = useMemo(
-    () =>
-      returnImportInvoiceListColumns(
+    function buildReturnColumns() {
+      const baseColumns = returnImportInvoiceListColumns(
         dict,
         {
           page: 1,
           rowsPerPage: RETURN_CHILDREN_LIMIT,
         },
         false,
-      ),
-    [dict],
+      );
+
+      if (!canManage) {
+        return baseColumns;
+      }
+
+      return [
+        invoiceListSelectionColumn<ReturnImportInvoiceWithoutProductsDto>({
+          dict,
+          rows: [],
+          selectedIds: returnSelection.selectedIds,
+          getRowId: (row) => row.id,
+          onToggleOne: returnSelection.toggleOne,
+          onToggleMany: returnSelection.toggleMany,
+          isRowSelectable: (row) => row.status === "draft",
+          getDisabledReason: () => dict.onlyDraftReturnInvoicesCanBeDeleted,
+          showSelectAll: false,
+        }),
+        ...baseColumns,
+      ];
+    },
+    [
+      canManage,
+      dict,
+      returnSelection.selectedIds,
+      returnSelection.toggleMany,
+      returnSelection.toggleOne,
+    ],
   );
   const statusOptions = useMemo(
     function buildStatusOptions() {
@@ -120,6 +151,41 @@ export default function ImportInvoicesListPage() {
     fromDate: listBase.listDateRange.fromDate,
     toDate: listBase.listDateRange.toDate,
   });
+
+  const columns = useMemo(
+    function buildColumns() {
+      const baseColumns = importInvoiceColumns(dict, {
+        page: listBase.page,
+        rowsPerPage: listBase.rowsPerPage,
+      });
+
+      if (!canManage) {
+        return baseColumns;
+      }
+
+      return [
+        invoiceListSelectionColumn<ImportInvoiceRow>({
+          dict,
+          rows,
+          selectedIds: importSelection.selectedIds,
+          getRowId: (row) => row.id,
+          onToggleOne: importSelection.toggleOne,
+          onToggleMany: importSelection.toggleMany,
+        }),
+        ...baseColumns,
+      ];
+    },
+    [
+      canManage,
+      dict,
+      importSelection.selectedIds,
+      importSelection.toggleMany,
+      importSelection.toggleOne,
+      listBase.page,
+      listBase.rowsPerPage,
+      rows,
+    ],
+  );
 
   const fetchReturnChildren = useCallback(async function fetchReturnChildren(
     invoiceNumber: string,
@@ -156,10 +222,12 @@ export default function ImportInvoicesListPage() {
     label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
     handler: handleUniversalNewShortcut,
     allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
-    enabled: canManage && !addInvoicePopupOpen,
+    enabled: canManage && !addInvoicePopupOpen && !deletePopupOpen,
   });
 
   const totalPages = total === 0 ? 1 : Math.ceil(total / listBase.rowsPerPage);
+  const selectedCount =
+    importSelection.selectedIds.size + returnSelection.selectedIds.size;
   const isResetFilterDisabled =
     listBase.search.length === 0 &&
     searchRule === DEFAULT_SEARCH_RULE &&
@@ -180,6 +248,45 @@ export default function ImportInvoicesListPage() {
     listBase.resetPagination();
     returnExpansion.resetExpansion();
     listBase.resetRuleInput();
+  }
+
+  async function handleDeleteSelectedInvoices(): Promise<void> {
+    if (selectedCount === 0) {
+      return;
+    }
+
+    const deletedCount = selectedCount;
+    let deletedAny = false;
+    setDeleting(true);
+
+    try {
+      const returnIds = Array.from(returnSelection.selectedIds);
+      if (returnIds.length > 0) {
+        await deleteReturnImportDrafts(returnIds);
+        returnSelection.clearSelection();
+        deletedAny = true;
+      }
+
+      const importIds = Array.from(importSelection.selectedIds);
+      if (importIds.length > 0) {
+        await deleteImportInvoices(importIds);
+        importSelection.clearSelection();
+        deletedAny = true;
+      }
+
+      setDeletePopupOpen(false);
+      toast.success(
+        dict.invoiceDeleteSuccess.replace("{count}", String(deletedCount)),
+      );
+    } catch (deleteError) {
+      toast.error(resolveApiErrorMessage(deleteError, dict));
+    } finally {
+      if (deletedAny) {
+        returnExpansion.resetExpansion();
+        void refetch();
+      }
+      setDeleting(false);
+    }
   }
 
   return (
@@ -216,16 +323,30 @@ export default function ImportInvoicesListPage() {
       isResetFilterDisabled={isResetFilterDisabled}
       toolbarActions={
         canManage ? (
-          <Button
-            icon={<Plus className="h-3.5 w-3.5" />}
-            accent="primary"
-            size="sm"
-            onClick={function openCreatePopup(): void {
-              setAddInvoicePopupOpen(true);
-            }}
-          >
-            {dict.createNewImportDraft}
-          </Button>
+          <>
+            {selectedCount > 0 ? (
+              <Button
+                icon={<Trash2 className="h-3.5 w-3.5" />}
+                accent="danger"
+                size="sm"
+                onClick={function openDeletePopup(): void {
+                  setDeletePopupOpen(true);
+                }}
+              >
+                {dict.deleteSelected} ({selectedCount})
+              </Button>
+            ) : null}
+            <Button
+              icon={<Plus className="h-3.5 w-3.5" />}
+              accent="primary"
+              size="sm"
+              onClick={function openCreatePopup(): void {
+                setAddInvoicePopupOpen(true);
+              }}
+            >
+              {dict.createNewImportDraft}
+            </Button>
+          </>
         ) : null
       }
       filterGroups={
@@ -268,7 +389,7 @@ export default function ImportInvoicesListPage() {
       onPageChange={listBase.setPage}
       totalResults={total}
       tableProps={{
-        expansionAfterColumnCount: 1,
+        expansionAfterColumnCount: canManage ? 2 : 1,
         expandedRowIds: returnExpansion.expandedRowIds,
         onToggleExpandRow: returnExpansion.handleToggleExpandRow,
         canExpandRow: (row) => row.returnCount > 0,
@@ -300,16 +421,29 @@ export default function ImportInvoicesListPage() {
       }}
       footer={
         canManage ? (
-          <AddImportInvoicePopup
-            open={addInvoicePopupOpen}
-            onClose={function closeCreatePopup(): void {
-              setAddInvoicePopupOpen(false);
-            }}
-            onCreated={function navigateToCreatedInvoice(invoiceId): void {
-              void refetch();
-              router.push(`/manager/invoices/import/${invoiceId}`);
-            }}
-          />
+          <>
+            <BulkDeleteInvoicesPopup
+              open={deletePopupOpen}
+              selectedCount={selectedCount}
+              loading={deleting}
+              onClose={function closeDeletePopup(): void {
+                if (!deleting) {
+                  setDeletePopupOpen(false);
+                }
+              }}
+              onConfirm={handleDeleteSelectedInvoices}
+            />
+            <AddImportInvoicePopup
+              open={addInvoicePopupOpen}
+              onClose={function closeCreatePopup(): void {
+                setAddInvoicePopupOpen(false);
+              }}
+              onCreated={function navigateToCreatedInvoice(invoiceId): void {
+                void refetch();
+                router.push(`/manager/invoices/import/${invoiceId}`);
+              }}
+            />
+          </>
         ) : null
       }
     />

@@ -7,11 +7,13 @@ import {
   parseUserRolesCookie,
   USER_ROLES_COOKIE,
 } from "@/lib/auth/authCookies";
+import { isCashierInvoiceHideEnabled } from "@/lib/config/featureFlags";
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const roles = parseUserRolesCookie(req.cookies.get(USER_ROLES_COOKIE)?.value);
+  const cashierInvoiceHide = isCashierInvoiceHideEnabled();
 
   const { pathname } = req.nextUrl;
 
@@ -26,7 +28,9 @@ export function middleware(req: NextRequest) {
 
   if (token && isAuthPage) {
     const home =
-      roles.length > 0 ? defaultHomePathForRoles(roles) : "/admin/dashboard";
+      roles.length > 0
+        ? defaultHomePathForRoles(roles, cashierInvoiceHide)
+        : "/admin/dashboard";
     return NextResponse.redirect(new URL(home, req.url));
   }
 
@@ -40,8 +44,23 @@ export function middleware(req: NextRequest) {
 
   if (token && roles.length > 0 && !userMayAccessPath(roles, pathname)) {
     return NextResponse.redirect(
-      new URL(defaultHomePathForRoles(roles), req.url),
+      new URL(defaultHomePathForRoles(roles, cashierInvoiceHide), req.url),
     );
+  }
+
+  const isCashierSellingPath =
+    pathname === "/cashier/selling" ||
+    pathname.startsWith("/cashier/selling/");
+  const isCashierNewSellingPath =
+    pathname === "/cashier/new-selling" ||
+    pathname.startsWith("/cashier/new-selling/");
+
+  if (token && cashierInvoiceHide && isCashierSellingPath) {
+    return NextResponse.redirect(new URL("/cashier/new-selling", req.url));
+  }
+
+  if (token && !cashierInvoiceHide && isCashierNewSellingPath) {
+    return NextResponse.redirect(new URL("/cashier/selling", req.url));
   }
 
   return NextResponse.next();

@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Buttons";
 import RuleInput from "@/components/ui/RuleInput";
+import BulkDeleteInvoicesPopup from "@/features/invoices/components/BulkDeleteInvoicesPopup";
 import ListFilterSelectGroup from "@/components/ui/ListFilterSelectGroup";
 import InvoiceListPageShell from "@/features/invoices/components/InvoiceListPageShell";
 import { STATUS_ACCENT } from "@/features/invoices/components/StockAdjustmentStatusPill";
@@ -16,9 +17,13 @@ import {
   useInvoiceListSort,
 } from "@/features/invoices/hooks/useInvoiceListPageBase";
 import { useStockAdjustmentInvoices } from "@/features/invoices/hooks/useStockAdjustmentInvoices";
+import { useInvoiceListSelection } from "@/features/invoices/hooks/useInvoiceListSelection";
 import AddStockAdjustmentInvoicePopup from "@/features/invoices/layout/AddStockAdjustmentInvoicePopup";
+import { deleteStockAdjustmentInvoices } from "@/features/invoices/services/stockAdjustmentInvoice.service";
+import { invoiceListSelectionColumn } from "@/features/invoices/table/invoiceListSelectionColumn";
 import { stockAdjustmentInvoiceColumns } from "@/features/invoices/table/stockAdjustmentInvoiceColumns";
 import { useMayUseManagerWorkflowControls } from "@/lib/hooks/useManagerWorkflowAccess";
+import { resolveApiErrorMessage } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import {
   UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
@@ -28,8 +33,9 @@ import {
 } from "@/lib/shortcuts/universalShortcut";
 import useShortcut from "@/lib/shortcuts/useShortcut";
 import type { Accent } from "@/components/types/ui";
-import { Hash, Package, Plus, User as UserIcon } from "lucide-react";
+import { Hash, Package, Plus, Trash2, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type StockAdjustmentSortBy =
   | "invoiceId"
@@ -51,6 +57,9 @@ export default function StockAdjustmentInvoicesListPage() {
   const [statusFilter, setStatusFilter] =
     useState<StockAdjustmentInvoiceStatusFilter>("all");
   const [addInvoicePopupOpen, setAddInvoicePopupOpen] = useState<boolean>(false);
+  const [deletePopupOpen, setDeletePopupOpen] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const selection = useInvoiceListSelection();
   const { sortBy, sortOrder, handleSort, resetSort, isDefaultSort } =
     useInvoiceListSort(
       DEFAULT_SORT_BY,
@@ -58,15 +67,6 @@ export default function StockAdjustmentInvoicesListPage() {
       ["invoiceId", "totalQuantity", "createdAt", "confirmedAt"],
       listBase.resetPageOnFilterChange,
     );
-
-  const columns = useMemo(
-    () =>
-      stockAdjustmentInvoiceColumns(dict, {
-        page: listBase.page,
-        rowsPerPage: listBase.rowsPerPage,
-      }),
-    [dict, listBase.page, listBase.rowsPerPage],
-  );
 
   const statusOptions = useMemo(
     function buildStatusOptions() {
@@ -91,6 +91,41 @@ export default function StockAdjustmentInvoicesListPage() {
     toDate: listBase.listDateRange.toDate,
   });
 
+  const columns = useMemo(
+    function buildColumns() {
+      const baseColumns = stockAdjustmentInvoiceColumns(dict, {
+        page: listBase.page,
+        rowsPerPage: listBase.rowsPerPage,
+      });
+
+      if (!canManage) {
+        return baseColumns;
+      }
+
+      return [
+        invoiceListSelectionColumn({
+          dict,
+          rows,
+          selectedIds: selection.selectedIds,
+          getRowId: (row) => row.id,
+          onToggleOne: selection.toggleOne,
+          onToggleMany: selection.toggleMany,
+        }),
+        ...baseColumns,
+      ];
+    },
+    [
+      canManage,
+      dict,
+      listBase.page,
+      listBase.rowsPerPage,
+      rows,
+      selection.selectedIds,
+      selection.toggleMany,
+      selection.toggleOne,
+    ],
+  );
+
   const handleUniversalNewShortcut = useCallback(function handleUniversalNewShortcut(
     _event: KeyboardEvent,
   ): void {
@@ -104,10 +139,11 @@ export default function StockAdjustmentInvoicesListPage() {
     label: UNIVERSAL_NEW_SHORTCUT_FALLBACK_LABEL,
     handler: handleUniversalNewShortcut,
     allowInEditable: UNIVERSAL_NEW_SHORTCUT_ALLOW_IN_EDITABLE,
-    enabled: canManage && !addInvoicePopupOpen,
+    enabled: canManage && !addInvoicePopupOpen && !deletePopupOpen,
   });
 
   const totalPages = total === 0 ? 1 : Math.ceil(total / listBase.rowsPerPage);
+  const selectedCount = selection.selectedIds.size;
   const isResetFilterDisabled =
     listBase.search.length === 0 &&
     searchRule === DEFAULT_SEARCH_RULE &&
@@ -124,6 +160,29 @@ export default function StockAdjustmentInvoicesListPage() {
     resetSort();
     listBase.resetPagination();
     listBase.resetRuleInput();
+  }
+
+  async function handleDeleteSelectedInvoices(): Promise<void> {
+    if (selectedCount === 0) {
+      return;
+    }
+
+    const ids = Array.from(selection.selectedIds);
+    setDeleting(true);
+
+    try {
+      await deleteStockAdjustmentInvoices(ids);
+      selection.clearSelection();
+      setDeletePopupOpen(false);
+      toast.success(
+        dict.invoiceDeleteSuccess.replace("{count}", String(ids.length)),
+      );
+      void refetch();
+    } catch (deleteError) {
+      toast.error(resolveApiErrorMessage(deleteError, dict));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -170,16 +229,30 @@ export default function StockAdjustmentInvoicesListPage() {
       isResetFilterDisabled={isResetFilterDisabled}
       toolbarActions={
         canManage ? (
-          <Button
-            icon={<Plus className="h-3.5 w-3.5" />}
-            accent="primary"
-            size="sm"
-            onClick={function openCreatePopup(): void {
-              setAddInvoicePopupOpen(true);
-            }}
-          >
-            {dict.createNewStockAdjustmentDraft}
-          </Button>
+          <>
+            {selectedCount > 0 ? (
+              <Button
+                icon={<Trash2 className="h-3.5 w-3.5" />}
+                accent="danger"
+                size="sm"
+                onClick={function openDeletePopup(): void {
+                  setDeletePopupOpen(true);
+                }}
+              >
+                {dict.deleteSelected} ({selectedCount})
+              </Button>
+            ) : null}
+            <Button
+              icon={<Plus className="h-3.5 w-3.5" />}
+              accent="primary"
+              size="sm"
+              onClick={function openCreatePopup(): void {
+                setAddInvoicePopupOpen(true);
+              }}
+            >
+              {dict.createNewStockAdjustmentDraft}
+            </Button>
+          </>
         ) : null
       }
       filterGroups={
@@ -225,16 +298,29 @@ export default function StockAdjustmentInvoicesListPage() {
       totalResults={total}
       footer={
         canManage ? (
-          <AddStockAdjustmentInvoicePopup
-            open={addInvoicePopupOpen}
-            onClose={function closeCreatePopup(): void {
-              setAddInvoicePopupOpen(false);
-            }}
-            onCreated={function navigateToCreatedInvoice(invoiceId): void {
-              void refetch();
-              router.push(`/manager/invoices/stock-adjustment/${invoiceId}`);
-            }}
-          />
+          <>
+            <BulkDeleteInvoicesPopup
+              open={deletePopupOpen}
+              selectedCount={selectedCount}
+              loading={deleting}
+              onClose={function closeDeletePopup(): void {
+                if (!deleting) {
+                  setDeletePopupOpen(false);
+                }
+              }}
+              onConfirm={handleDeleteSelectedInvoices}
+            />
+            <AddStockAdjustmentInvoicePopup
+              open={addInvoicePopupOpen}
+              onClose={function closeCreatePopup(): void {
+                setAddInvoicePopupOpen(false);
+              }}
+              onCreated={function navigateToCreatedInvoice(invoiceId): void {
+                void refetch();
+                router.push(`/manager/invoices/stock-adjustment/${invoiceId}`);
+              }}
+            />
+          </>
         ) : null
       }
     />

@@ -18,12 +18,12 @@ import {
   normalizeIntegerStringInput,
   normalizeMoneyStringInput,
 } from "@/lib/numeric/integerAndMoneyInputs";
+import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import {
   DollarSign,
   MessageSquare,
   Sigma,
 } from "lucide-react";
-import { rowIndexColumn } from "@/lib/table/rowIndexColumn";
 import type { SellingInvoiceProductDto } from "../services/sellingInvoice.service";
 import { toNumberOrZero } from "../types/importInvoiceDetail";
 import type { EditableReturnSellingDetailLine } from "../types/returnSellingDetail";
@@ -98,8 +98,8 @@ export function sellingInvoiceCreateProductColumns({
         />
       );
     },
-    thClassName: "w-[46px]",
-    tdClassName: "w-[46px]",
+    thClassName: "w-8",
+    tdClassName: "w-8",
   };
 
   const bodyColumns: Column<EditableSellingInvoiceCreateLine>[] = [
@@ -228,13 +228,13 @@ export function sellingInvoiceCreateProductColumns({
         const total = readOnly
           ? toNumberOrZero(row.totalSellingPrice)
           : lineTotalFromQuantityAndMoneyStrings(
-              row.quantity,
-              String(
-                (toNumberOrZero(row.sellingPrice) *
-                  (100 - toNumberOrZero(row.productDiscount))) /
-                  100,
-              ),
-            );
+            row.quantity,
+            String(
+              (toNumberOrZero(row.sellingPrice) *
+                (100 - toNumberOrZero(row.productDiscount))) /
+              100,
+            ),
+          );
         return (
           <span className="tabular-nums text-text">{formatPriceNumber(total)}</span>
         );

@@ -142,3 +142,11 @@ export async function createSellingInvoice(
   clearProductSkuLookupCache();
   return response.data;
 }
+
+export async function deleteSellingInvoices(ids: string[]): Promise<void> {
+  await apiClient.delete("/invoices/selling", {
+    data: { ids },
+  });
+
+  clearProductSkuLookupCache();
+}

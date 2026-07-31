@@ -19,8 +19,16 @@ import {
 } from "@/lib/api/errors";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
+import clsx from "clsx";
 import { AlertTriangle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import InvoiceProductLineEntryCard, {
   type InvoiceProductLineEntryCardHandle,
 } from "../components/InvoiceProductLineEntryCard";
@@ -38,6 +46,7 @@ type AddSellingInvoicePopupProps = {
   open: boolean;
   onClose: () => void;
   onCreated?: (invoiceId: string) => void;
+  presentation?: "popup" | "page";
 };
 
 type ConfirmAction = "cancel" | "create" | null;
@@ -46,10 +55,31 @@ function createInitialProducts(): EditableSellingInvoiceCreateLine[] {
   return [];
 }
 
+function SellingInvoiceCreateContainer({
+  children,
+  onClose,
+  presentation,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+  presentation: "popup" | "page";
+}) {
+  if (presentation === "page") {
+    return <>{children}</>;
+  }
+
+  return (
+    <Popup open onClose={onClose}>
+      {children}
+    </Popup>
+  );
+}
+
 export default function AddSellingInvoicePopup({
   open,
   onClose,
   onCreated,
+  presentation = "popup",
 }: AddSellingInvoicePopupProps) {
   const dict = useDict();
   const [products, setProducts] = useState<EditableSellingInvoiceCreateLine[]>(
@@ -62,7 +92,7 @@ export default function AddSellingInvoicePopup({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const nowText = useMemo(() => new Date().toISOString(), []);
+  const [nowText, setNowText] = useState<string>("");
   const previousProductCountRef = useRef<number>(0);
   const entryCardRef = useRef<InvoiceProductLineEntryCardHandle>(null);
   const [editingLineLocalId, setEditingLineLocalId] = useState<string | null>(null);
@@ -86,6 +116,10 @@ export default function AddSellingInvoicePopup({
   } = useSellingInvoiceCreateEditor(products, setProducts, createAttempted, taxFocusChoice);
 
   const noProductsMessage = dict.sellingCreateNoProductsError;
+
+  useEffect(function initializeCreatedDate(): void {
+    setNowText(new Date().toISOString());
+  }, []);
 
   useEffect(
     function onProductLineCountChange(): void {
@@ -113,6 +147,7 @@ export default function AddSellingInvoicePopup({
     setCreating(false);
     setErrorMessage("");
     setEditingLineLocalId(null);
+    setNowText(new Date().toISOString());
   }
 
   function handleClose(): void {
@@ -325,8 +360,18 @@ export default function AddSellingInvoicePopup({
   }
 
   return (
-    <Popup open={open} onClose={requestCancel}>
-      <div className="flex h-[90vh] w-[90vw] max-w-[1500px] bg-bg flex-col overflow-hidden">
+    <SellingInvoiceCreateContainer
+      presentation={presentation}
+      onClose={requestCancel}
+    >
+      <div
+        className={clsx(
+          "flex flex-col overflow-hidden bg-bg",
+          presentation === "popup"
+            ? "h-[90vh] w-[90vw] max-w-[1500px] "
+            : "h-[calc(100vh-3rem)] w-full rounded-lg border border-border",
+        )}
+      >
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
           <p className="text-xl shrink-0 font-semibold text-text">
             {dict.sellingDraft}
@@ -497,6 +542,6 @@ export default function AddSellingInvoicePopup({
         onConfirm={handleCreateConfirmed}
         onClose={() => setConfirmAction(null)}
       />
-    </Popup>
+    </SellingInvoiceCreateContainer>
   );
 }

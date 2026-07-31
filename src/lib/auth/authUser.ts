@@ -170,9 +170,13 @@ export function userMayViewProductHistory(
  * Prefers admin, then manager, then cashier.
  *
  * @param roles - Role codes for the signed-in user.
+ * @param cashierInvoiceHide - Whether cashiers use the continuous new-sale page.
  * @returns Default home path inside the app shell.
  */
-export function defaultHomePathForRoles(roles: UserRoleCode[]): string {
+export function defaultHomePathForRoles(
+  roles: UserRoleCode[],
+  cashierInvoiceHide = true,
+): string {
   if (roles.includes(USER_ROLE_ADMIN)) {
     return "/admin/dashboard";
   }
@@ -182,7 +186,9 @@ export function defaultHomePathForRoles(roles: UserRoleCode[]): string {
   }
 
   if (roles.includes(USER_ROLE_CASHIER)) {
-    return "/cashier/selling";
+    return cashierInvoiceHide
+      ? "/cashier/new-selling"
+      : "/cashier/selling";
   }
 
   return "/admin/dashboard";

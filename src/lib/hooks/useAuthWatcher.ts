@@ -1,11 +1,13 @@
 "use client";
 
 import { defaultHomePathForRoles } from "@/lib/auth/authUser";
+import { useFeatureFlags } from "@/lib/config/FeatureFlagsProvider";
 import { useAuthStore } from "@/stores/auth.store";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export const useAuthWatcher = () => {
+  const { cashierInvoiceHide } = useFeatureFlags();
   const token = useAuthStore((s) => s.token);
   const hydrated = useAuthStore((s) => s.hydrated);
   const authUser = useAuthStore((s) => s.user);
@@ -35,7 +37,7 @@ export const useAuthWatcher = () => {
     if (token && isAuthPage) {
       const home =
         authUser?.roles?.length != null && authUser.roles.length > 0
-          ? defaultHomePathForRoles(authUser.roles)
+          ? defaultHomePathForRoles(authUser.roles, cashierInvoiceHide)
           : "/admin/dashboard";
       router.replace(home);
       return;
@@ -43,5 +45,5 @@ export const useAuthWatcher = () => {
 
     // DO NOTHING about expiry
     // axios interceptor handles it
-  }, [pathname, token, hydrated, router, authUser]);
+  }, [pathname, token, hydrated, router, authUser, cashierInvoiceHide]);
 };

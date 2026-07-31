@@ -288,8 +288,8 @@ function buildImportInvoiceSelectColumn(
         />
       );
     },
-    thClassName: "w-[46px]",
-    tdClassName: "w-[46px]",
+    thClassName: "w-8",
+    tdClassName: "w-8",
   };
 }
 

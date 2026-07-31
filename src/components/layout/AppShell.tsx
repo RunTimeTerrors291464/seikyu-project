@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 const SIDEBAR_TOGGLE_CHORD = { code: "Backslash", mod: true } as const;
 
 function subscribeToClientMount(): () => void {
-  return () => {};
+  return () => { };
 }
 
 function getStoredSidebarOpen(): boolean {
@@ -89,7 +89,7 @@ function AppShellWithShortcuts({ children }: { children: React.ReactNode }) {
               <ChevronRight className="h-4 w-4 -translate-x-[2px]" />
             </button>
           ) : null}
-          <main className={isSidebarOpen ? "flex grow min-h-0 min-w-0 px-6 py-6 print:block print:p-0" : "flex grow min-h-0 min-w-0 pl-3 pr-6 py-6 print:block print:p-0"}>
+          <main className={isSidebarOpen ? "flex grow min-h-0 min-w-0 px-6 py-6 print:block print:p-0 " : "flex grow min-h-0 min-w-0 pl-3 pr-6 py-6 print:block print:p-0 "}>
             {children}
           </main>
         </div>
