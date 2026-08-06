@@ -50,7 +50,7 @@ Create a `.env.local` in the project root (Next.js loads it automatically). At m
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_API_URL`     | Base URL of the API **without** the `/api/v2` suffix. Example: `http://localhost:4000`. If unset, the client falls back to `http://localhost:4000`. |
 | `NEXT_PUBLIC_API_VERSION` | Optional API version segment (e.g. `2` or `v2`). Defaults to `v2`.                                                                                  |
-| `CASHIER_INVOICE_HIDE`    | When `true`, cashiers use `/cashier/new-selling` and cannot open the cashier invoice list or detail routes. Defaults to `true`; set to `false` to restore the list workflow. |
+| `CASHIER_INVOICE_HIDE`    | When `true`, cashiers use `/cashier/new-selling` and the cashier invoice list is hidden. Created invoice details remain available by their direct URL. Defaults to `true`; set to `false` to restore the list workflow. |
 
 The Axios instance in `src/services/api-client.ts` appends `/api/v2` to this base URL by default.
 
@@ -69,7 +69,7 @@ Users receive numeric role codes from the API: **1 = Admin**, **2 = Manager**, *
 ### Main areas
 
 - **Admin** — `/admin/dashboard`, `/admin/users` (user management).
-- **Cashier** — `/cashier/new-selling` for continuous sale entry by default. The invoice list and detail routes under `/cashier/selling` are restored when `CASHIER_INVOICE_HIDE=false`.
+- **Cashier** — `/cashier/new-selling` for sale entry by default. Creation opens `/cashier/selling/[id]`, while the invoice list is restored when `CASHIER_INVOICE_HIDE=false`.
 - **Manager** — product inventory (`/manager/product-inventory`, detail `[id]`), import invoices, stock adjustment invoices, selling invoices (list + detail), return flows (`return-invoice`, `return-selling`, etc.).
 
 The root page (`src/app/page.tsx`) redirects authenticated users to their role home via `defaultHomePathForRoles`, otherwise → `/login`.

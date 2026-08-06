@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmPopup } from "@/components/layout/Popup";
 import { formatDate } from "@/components/types/ui";
 import { Field, Textarea } from "@/components/ui/Fields";
 import { HeaderMeta } from "@/components/ui/HeaderMeta";
@@ -12,11 +13,18 @@ import {
   type SellingInvoiceResponseDto,
 } from "@/features/invoices/services/sellingInvoice.service";
 import { resolveApiErrorMessage } from "@/lib/api/errors";
+import { useFeatureFlags } from "@/lib/config/FeatureFlagsProvider";
 import { useDict } from "@/lib/lang/DictProvider";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
-import { AlertTriangle, Boxes, DollarSign, Package, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  DollarSign,
+  Package,
+  User,
+} from "lucide-react";
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const InvoicePrintPreviewPopup = dynamic(
@@ -26,13 +34,16 @@ const InvoicePrintPreviewPopup = dynamic(
 
 export default function CashierSellingInvoiceDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const dict = useDict();
+  const { cashierInvoiceHide } = useFeatureFlags();
   const invoiceId = params.id;
 
   const [invoice, setInvoice] = useState<SellingInvoiceResponseDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [printPopupOpen, setPrintPopupOpen] = useState<boolean>(false);
+  const [leaveWarningOpen, setLeaveWarningOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -128,7 +139,16 @@ export default function CashierSellingInvoiceDetailPage() {
       <SellingInvoiceHeader
         title={invoice.invoiceId ?? dict.sellingDraft}
         status={invoice.status}
-        listHref="/cashier/selling"
+        listHref={
+          cashierInvoiceHide ? "/cashier/new-selling" : "/cashier/selling"
+        }
+        onBack={
+          cashierInvoiceHide
+            ? function openLeaveWarning(): void {
+                setLeaveWarningOpen(true);
+              }
+            : undefined
+        }
         canPrint={true}
         onPrint={function handleOpenPrintPopup(): void {
           setPrintPopupOpen(true);
@@ -255,6 +275,23 @@ export default function CashierSellingInvoiceDetailPage() {
         compactTable={true}
         onClose={function handleClosePrintPopup(): void {
           setPrintPopupOpen(false);
+        }}
+      />
+
+      <ConfirmPopup
+        open={leaveWarningOpen}
+        title={dict.confirmLeaveCashierInvoiceTitle}
+        description={dict.confirmLeaveCashierInvoiceDescription}
+        confirmText={dict.back}
+        cancelText={dict.cancel}
+        accent="danger"
+        icon={<AlertTriangle className="h-4 w-4 text-danger" />}
+        onClose={function closeLeaveWarning(): void {
+          setLeaveWarningOpen(false);
+        }}
+        onConfirm={function leaveInvoiceDetail(): void {
+          setLeaveWarningOpen(false);
+          router.push("/cashier/new-selling");
         }}
       />
     </div>

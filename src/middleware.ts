@@ -48,14 +48,13 @@ export function middleware(req: NextRequest) {
     );
   }
 
-  const isCashierSellingPath =
-    pathname === "/cashier/selling" ||
-    pathname.startsWith("/cashier/selling/");
+  const isCashierSellingListPath =
+    pathname === "/cashier/selling" || pathname === "/cashier/selling/";
   const isCashierNewSellingPath =
     pathname === "/cashier/new-selling" ||
     pathname.startsWith("/cashier/new-selling/");
 
-  if (token && cashierInvoiceHide && isCashierSellingPath) {
+  if (token && cashierInvoiceHide && isCashierSellingListPath) {
     return NextResponse.redirect(new URL("/cashier/new-selling", req.url));
   }
 
