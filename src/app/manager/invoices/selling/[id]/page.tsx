@@ -110,7 +110,13 @@ export default function ManagerSellingInvoiceDetailPage() {
     totalProducts: invoice.totalProducts,
     totalQuantity: invoice.totalQuantity,
     totalAmount: invoice.totalSellingPrice,
+    showDiscount: true,
     lines: invoice.products.map(function toPrintLine(product) {
+      const effectiveDiscount =
+        product.productDiscount > 0
+          ? product.productDiscount
+          : (invoice.invoiceDiscount ?? 0);
+
       return {
         sku: product.productSku,
         name: product.productName,
@@ -119,6 +125,7 @@ export default function ManagerSellingInvoiceDetailPage() {
         unitPrice: product.sellingPrice,
         lineTotal: product.totalSellingPrice,
         notes: product.notes,
+        discount: effectiveDiscount,
       };
     }),
   };
