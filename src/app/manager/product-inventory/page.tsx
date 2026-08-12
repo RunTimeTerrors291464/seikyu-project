@@ -173,6 +173,16 @@ export default function ProductInventoryPage() {
     table.resetQuery(); // must exist in hook
   }
 
+  function handleKpiStockFilter(nextValue: ProductStockFilter): void {
+    const resolvedValue = statusFilter === nextValue ? "all" : nextValue;
+
+    setStatusFilter(resolvedValue);
+    setShowFilters(true);
+    table.setFilters({
+      stockStatus: resolvedValue === "all" ? undefined : resolvedValue,
+    });
+  }
+
   const stockFilterOptions = useMemo(
     () =>
       PRODUCT_STOCK_STATUS_OPTIONS.map((option) => ({
@@ -233,6 +243,9 @@ export default function ProductInventoryPage() {
             icon={<Package className="h-4 w-4 text-muted" />}
             helpText={dict.totalProductsHelp}
             sub={dict.totalProductsSub}
+            onClick={function showAllProducts(): void {
+              handleKpiStockFilter("all");
+            }}
           />
 
           <KpiTile
@@ -242,6 +255,10 @@ export default function ProductInventoryPage() {
             accent="success"
             helpText={dict.inStockHelp}
             sub={dict.inStockSub}
+            active={statusFilter === 0}
+            onClick={function showInStockProducts(): void {
+              handleKpiStockFilter(0);
+            }}
           />
 
           <KpiTile
@@ -251,6 +268,10 @@ export default function ProductInventoryPage() {
             accent="warning"
             helpText={dict.lowStockHelp}
             sub={dict.lowStockSub}
+            active={statusFilter === 1}
+            onClick={function showLowStockProducts(): void {
+              handleKpiStockFilter(1);
+            }}
           />
 
           <KpiTile
@@ -260,6 +281,10 @@ export default function ProductInventoryPage() {
             accent="danger"
             helpText={dict.outOfStockHelp}
             sub={dict.outOfStockSub}
+            active={statusFilter === 2}
+            onClick={function showOutOfStockProducts(): void {
+              handleKpiStockFilter(2);
+            }}
           />
 
           <KpiTile

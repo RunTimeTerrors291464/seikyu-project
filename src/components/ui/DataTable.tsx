@@ -22,7 +22,8 @@ export type Column<T> = {
   thClassName?: string;
   tdClassName?: string;
 
-  width?: string;
+  /** Fixed width, or a width derived from the currently rendered rows. */
+  width?: string | ((data: T[]) => string);
 
   sortable?: boolean;
 };
@@ -143,6 +144,12 @@ export default function DataTable<T>({
 
   const boundedHeight = Boolean(maxHeight) && !isFill && !isExpand;
 
+  function resolveColumnWidth(column: Column<T>): string | undefined {
+    return typeof column.width === "function"
+      ? column.width(data)
+      : column.width;
+  }
+
   useEffect(
     function scrollSelectedRowIntoView(): void {
       if (selectedRowId == null || !scrollContainerRef.current) {
@@ -168,13 +175,14 @@ export default function DataTable<T>({
   ): React.ReactElement {
     const isSorted =
       sortField && (column.field ?? column.id) === sortField;
+    const columnWidth = resolveColumnWidth(column);
 
     return (
       <th
         key={column.id ?? column.header ?? headerIndex}
         style={
-          column.width
-            ? { width: column.width, minWidth: column.width }
+          columnWidth
+            ? { width: columnWidth, minWidth: columnWidth }
             : undefined
         }
         className={clsx(
@@ -230,13 +238,14 @@ export default function DataTable<T>({
             String(column.field)
           ] as React.ReactNode)
         : null;
+    const columnWidth = resolveColumnWidth(column);
 
     return (
       <td
         key={(column.id ?? column.header ?? columnIndex) + "-" + columnIndex}
         style={
-          column.width
-            ? { width: column.width, minWidth: column.width }
+          columnWidth
+            ? { width: columnWidth, minWidth: columnWidth }
             : undefined
         }
         className={clsx(
@@ -327,7 +336,7 @@ export default function DataTable<T>({
               return (
                 <col
                   key={String(c.id ?? c.header ?? `before-${idx}`)}
-                  style={c.width ? { width: c.width } : undefined}
+                  style={{ width: resolveColumnWidth(c) }}
                   className={c.thClassName}
                 />
               );
@@ -339,7 +348,7 @@ export default function DataTable<T>({
                 return (
                   <col
                     key={String(c.id ?? c.header ?? `after-${idx}`)}
-                    style={c.width ? { width: c.width } : undefined}
+                    style={{ width: resolveColumnWidth(c) }}
                     className={c.thClassName}
                   />
                 );
@@ -348,7 +357,7 @@ export default function DataTable<T>({
                 return (
                   <col
                     key={String(c.id ?? c.header ?? idx)}
-                    style={c.width ? { width: c.width } : undefined}
+                    style={{ width: resolveColumnWidth(c) }}
                     className={c.thClassName}
                   />
                 );

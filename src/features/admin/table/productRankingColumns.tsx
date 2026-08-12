@@ -4,6 +4,7 @@ import type { ProductRankingDateType } from "@/features/admin/services/dashboard
 import type { Dictionary } from "@/lib/lang/i18n";
 import { formatPriceNumber } from "@/lib/numeric/integerAndMoneyInputs";
 import { paginatedRowDisplayIndex } from "@/lib/table/paginatedRowDisplayIndex";
+import { rowIndexColumnWidth } from "@/lib/table/rowIndexColumn";
 
 function formatRankingPeriod(
   row: ProductRankingRow,
@@ -32,7 +33,9 @@ export function productRankingColumns(
       id: "rank",
       header: "#",
       align: "center",
-      width: "3rem",
+      width: function resolveRankWidth(rows): string {
+        return rowIndexColumnWidth(rows.length, options.pagination);
+      },
       accessor: function renderRank(_row, rowIndex): number {
         return paginatedRowDisplayIndex(rowIndex, options.pagination);
       },

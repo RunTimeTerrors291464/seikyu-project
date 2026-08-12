@@ -153,7 +153,6 @@ export default function Select<V extends string = string>({
         triggerClassName ??
           clsx(SELECT_SURFACE, controlShellClasses(error, warning)),
         !triggerClassName && !disabled && "hover:bg-hover",
-        triggerClassName && !disabled && "hover:opacity-90",
         disabled && "cursor-not-allowed opacity-60",
         disabled && !triggerClassName && "bg-hover",
         className,

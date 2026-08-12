@@ -24,6 +24,8 @@ type Props = {
   delta?: Delta;
 
   helpText?: string;
+  onClick?: () => void;
+  active?: boolean;
 };
 
 export default function KpiTile({
@@ -34,6 +36,8 @@ export default function KpiTile({
   accent = "neutral",
   delta,
   helpText,
+  onClick,
+  active = false,
 }: Props) {
 
   /* ───────── Accent (SYSTEM TOKENS) ───────── */
@@ -60,16 +64,16 @@ export default function KpiTile({
       "text-muted bg-hover",
   };
 
-  return (
+  const tileClassName = clsx(
+    "rounded-lg border border-border bg-card p-4",
+    "transition-all duration-150",
+    onClick &&
+      "w-full cursor-pointer text-left hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+    active && "ring-1 ring-primary",
+  );
 
-    <div
-      className={clsx(
-        "rounded-lg border border-border bg-card p-4",
-        "transition-all duration-150",
-        "hover:bg-hover"
-      )}
-    >
-
+  const content = (
+    <>
       {/* HEADER */}
 
       <div className="flex items-center justify-between">
@@ -130,8 +134,21 @@ export default function KpiTile({
         </div>
 
       )}
-
-    </div>
-
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        className={tileClassName}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={tileClassName}>{content}</div>;
 }

@@ -20,6 +20,23 @@ export type RowIndexColumnOptions = {
 };
 
 /**
+ * Keeps the row-number column compact while allowing wider labels to fit.
+ */
+export function rowIndexColumnWidth(
+  rowCount: number,
+  pagination?: PaginatedRowIndexParams,
+): string {
+  const lastVisibleRowIndex = Math.max(0, rowCount - 1);
+  const largestLabel = paginatedRowDisplayIndex(
+    lastVisibleRowIndex,
+    pagination,
+  );
+  const digitCount = String(largestLabel).length;
+
+  return `max(2rem, calc(${digitCount}ch + 1rem))`;
+}
+
+/**
  * Standard DataTable column: Hash header, 1-based row labels, optional pagination offset.
  *
  * @param options - Pagination and whether to show numbers vs blank placeholder cells.
@@ -46,7 +63,8 @@ export function rowIndexColumn<T>(options?: RowIndexColumnOptions): Column<T> {
         </span>
       );
     },
-    thClassName: "w-8",
-    tdClassName: "w-8",
+    width: function resolveRowIndexWidth(rows): string {
+      return rowIndexColumnWidth(rows.length, pagination);
+    },
   };
 }
